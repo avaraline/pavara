@@ -1,0 +1,51 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Bwadi" author="Ryan Herriman &lt;rherriman@gmail.com&gt;">
+	<sky color="0,0.6,0.6" horizon="0.2,0.4,0.4" />
+	<ground color="0,0.2,0.2" />
+
+	<!-- incarnators -->
+	<incarnator location="28,30,-28" angle="45" />
+	<incarnator location="-28,30,28" angle="225" />
+	<incarnator location="-34,30,-18" angle="135" />
+	<incarnator location="34,30,18" angle="315" />
+	<incarnator location="-6.5,30,-42.5" angle="135" />
+	<incarnator location="6.5,30,42.5" angle="315" />
+
+	<!-- center -->
+	<block size="16,2,16" center="0,1,0" color="0.27,0.27,0.27" />
+	<block size="8,2,8" center="0,3,0" color="0.33,0.33,0.33" />
+
+	<!-- four blocks -->
+	<block size="4,2.5,4" center="18,1.25,-6" color="0.27,0.27,0.27" />
+	<block size="4,2.5,4" center="6,1.25,-18" color="0.27,0.27,0.27" />
+	<block size="4,2.5,4" center="-6,1.25,18" color="0.27,0.27,0.27" />
+	<block size="4,2.5,4" center="-18,1.25,6" color="0.27,0.27,0.27" />
+
+	<!-- grenade structures -->
+	<block size="4,2.5,16" center="18,1.25,-24" color="0.27,0.27,0.27" />
+	<block size="12,2.5,4" center="26,1.25,-18" color="0.27,0.27,0.27" />
+	<block size="4,2.5,16" center="-18,1.25,24" color="0.27,0.27,0.27" />
+	<block size="12,2.5,4" center="-26,1.25,18" color="0.27,0.27,0.27" />
+
+	<!-- missile structures -->
+	<block size="4,4.5,24" center="6,2.25,-40" color="0.27,0.27,0.27" />
+	<block size="20,4.5,4" center="-6,2.25,-30" color="0.27,0.27,0.27" />
+	<block size="6,4.5,6" center="1,2.25,-35" color="0.27,0.27,0.27" />
+	<block size="4,4.5,24" center="-6,2.25,40" color="0.27,0.27,0.27" />
+	<block size="20,4.5,4" center="6,2.25,30" color="0.27,0.27,0.27" />
+	<block size="6,4.5,6" center="-1,2.25,35" color="0.27,0.27,0.27" />
+	<ramp base="14,0,35" top="2,4.5,35" width="6" thickness="0.25" color="0,0,0.2" />
+	<ramp base="-14,0,-35" top="-2,4.5,-35" width="6" thickness="0.25" color="0,0,0.2" />
+	<ramp base="-1,0,50" top="-1,4.5,38" width="6" thickness="0.25" color="0,0,0.2" />
+	<ramp base="1,0,-50" top="1,4.5,-38" width="6" thickness="0.25" color="0,0,0.2" />
+
+	<!-- grenade "pits" -->
+	<block size="4,2,16" center="-22,1,-12" color="0.27,0.27,0.27" />
+	<block size="4,2,16" center="-34,1,-12" color="0.27,0.27,0.27" />
+	<block size="8,2,4" center="-28,1,-6" color="0.27,0.27,0.27" />
+	<block size="8,2,4" center="-28,1,-18" color="0.27,0.27,0.27" />
+	<block size="4,2,16" center="22,1,12" color="0.27,0.27,0.27" />
+	<block size="4,2,16" center="34,1,12" color="0.27,0.27,0.27" />
+	<block size="8,2,4" center="28,1,6" color="0.27,0.27,0.27" />
+	<block size="8,2,4" center="28,1,18" color="0.27,0.27,0.27" />
+</map>

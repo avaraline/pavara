@@ -1,0 +1,85 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Quell" author="Ryan Herriman &lt;rherriman@gmail.com&gt;">
+	<sky color="1,1,1" horizon="0.84,0.94,0.99" />
+	<ground color="1,1,1" />
+
+	<!-- incarnators -->
+	<incarnator location="-32,9,0" angle="90" />
+	<incarnator location="32,9,0" angle="270" />
+	<incarnator location="-22,13,-12" angle="135" />
+	<incarnator location="22,13,-12" angle="225" />
+	<incarnator location="22,13,12" angle="315" />
+	<incarnator location="-22,13,12" angle="45" />
+	<incarnator location="-22,11,-32" angle="135" />
+	<incarnator location="22,11,-32" angle="225" />
+	<incarnator location="22,11,32" angle="315" />
+	<incarnator location="-22,11,32" angle="45" />
+	<incarnator location="0,10,-32" angle="180" />
+	<incarnator location="0,10,32" angle="0" />
+
+	<!-- center -->
+	<block size="4,2.5,4" center="0,1.25,-6" color="0.14,0.18,0.25" />
+	<block size="4,2.5,4" center="0,1.25,6" color="0.14,0.18,0.25" />
+
+	<!-- dark blocks -->
+	<block size="8,4,8" center="-14,2,-8" color="0.02,0.05,0.13" />
+	<block size="8,4,8" center="14,2,-8" color="0.02,0.05,0.13" />
+	<block size="8,4,8" center="14,2,8" color="0.02,0.05,0.13" />
+	<block size="8,4,8" center="-14,2,8" color="0.02,0.05,0.13" />
+	<block size="8,4,8" center="-14,2,-24" color="0.02,0.05,0.13" />
+	<block size="8,4,8" center="14,2,-24" color="0.02,0.05,0.13" />
+	<block size="8,4,8" center="14,2,24" color="0.02,0.05,0.13" />
+	<block size="8,4,8" center="-14,2,24" color="0.02,0.05,0.13" />
+	<block size="8,4,16" center="-22,2,-12" color="0.02,0.05,0.13" />
+	<block size="8,4,16" center="22,2,-12" color="0.02,0.05,0.13" />
+	<block size="8,4,16" center="22,2,12" color="0.02,0.05,0.13" />
+	<block size="8,4,16" center="-22,2,12" color="0.02,0.05,0.13" />
+
+	<!-- sentinels -->
+	<block size="0.5,10,8" center="-10.25,9,-8" color="0.02,0.05,0.13" />
+	<block size="0.5,10,8" center="10.25,9,-8" color="0.02,0.05,0.13" />
+	<block size="0.5,10,8" center="10.25,9,8" color="0.02,0.05,0.13" />
+	<block size="0.5,10,8" center="-10.25,9,8" color="0.02,0.05,0.13" />
+	<block size="0.5,10,8" center="-10.25,9,-24" color="0.02,0.05,0.13" />
+	<block size="0.5,10,8" center="10.25,9,-24" color="0.02,0.05,0.13" />
+	<block size="0.5,10,8" center="10.25,9,24" color="0.02,0.05,0.13" />
+	<block size="0.5,10,8" center="-10.25,9,24" color="0.02,0.05,0.13" />
+
+	<!-- bridges -->
+	<block size="8,0.2,8" center="-22,3.9,0" color="0.14,0.18,0.25" />
+	<block size="8,0.2,8" center="22,3.9,0" color="0.14,0.18,0.25" />
+
+	<!-- domes -->
+	<dome center="-38,0,0" radius="2" color="0.25,0.31,0.38" />
+	<dome center="38,0,0" radius="2" color="0.25,0.31,0.38" />
+
+	<!-- light blocks -->
+	<block size="16,2,8" center="-26,1,-24" color="0.25,0.31,0.38" />
+	<block size="16,2,8" center="26,1,-24" color="0.25,0.31,0.38" />
+	<block size="16,2,8" center="26,1,24" color="0.25,0.31,0.38" />
+	<block size="16,2,8" center="-26,1,24" color="0.25,0.31,0.38" />
+	<block size="20,2,8" center="-16,1,-32" color="0.25,0.31,0.38" />
+	<block size="20,2,8" center="16,1,-32" color="0.25,0.31,0.38" />
+	<block size="20,2,8" center="16,1,32" color="0.25,0.31,0.38" />
+	<block size="20,2,8" center="-16,1,32" color="0.25,0.31,0.38" />
+	<block size="12,2,8" center="0,1,-40" color="0.25,0.31,0.38" />
+	<block size="12,2,8" center="0,1,40" color="0.25,0.31,0.38" />
+
+	<!-- ramps -->
+	<ramp base="-10.5,0,-16" top="-18,4,-16" color="0.37,0.44,0.5" />
+	<ramp base="10.5,0,-16" top="18,4,-16" color="0.37,0.44,0.5" />
+	<ramp base="-10.5,0,16" top="-18,4,16" color="0.37,0.44,0.5" />
+	<ramp base="10.5,0,16" top="18,4,16" color="0.37,0.44,0.5" />
+	<ramp base="0,0,-28" top="0,2,-36" width="12" color="0.37,0.44,0.5" />
+	<ramp base="0,0,28" top="0,2,36" width="12" color="0.37,0.44,0.5" />
+
+	<!-- markings -->
+	<block size="2,0,2" center="0,0.01,0" color="0.02,0.05,0.13" hologram="true" />
+	<block size="2,0,2" center="0,0.01,-10" color="0.02,0.05,0.13" hologram="true" />
+	<block size="2,0,2" center="0,0.01,10" color="0.02,0.05,0.13" hologram="true" />
+	<block size="1,0,8" center="0,0.01,0" color="0.02,0.05,0.13" hologram="true" />
+	<block size="2,0,2" center="-22,4.01,0" color="0.02,0.05,0.13" hologram="true" />
+	<block size="2,0,2" center="22,4.01,0" color="0.02,0.05,0.13" hologram="true" />
+	<block size="2,0,2" center="0,2.01,-40" color="0.02,0.05,0.13" hologram="true" />
+	<block size="2,0,2" center="0,2.01,40" color="0.02,0.05,0.13" hologram="true" />
+</map>

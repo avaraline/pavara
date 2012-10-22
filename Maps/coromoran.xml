@@ -1,0 +1,106 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Coromoran" author="Ryan Herriman &lt;rherriman@gmail.com&gt;">
+	<sky color="1,0.99,0.81" horizon="0.05,0.13,0.01" />
+	<ground color="0,0,0" />
+
+	<!-- incarnators -->
+	<incarnator location="48,30,-20" angle="225" />
+	<incarnator location="48,30,20" angle="315" />
+	<incarnator location="0,30,52" angle="0" />
+	<incarnator location="-48,30,20" angle="45" />
+	<incarnator location="-48,30,-20" angle="135" />
+	<incarnator location="0,30,-52" angle="180" />
+
+	<!-- center "H" -->
+	<block size="8,4.5,16" center="0,2.25,0" color="0.18,0.39,0.40" />
+	<block size="8,4.5,32" center="-8,2.25,0" color="0.18,0.39,0.40" />
+	<block size="8,4.5,32" center="8,2.25,0" color="0.18,0.39,0.40" />
+
+	<!-- tier 2 bases -->
+	<block size="32,4.5,32" center="-28,2.25,0" color="0.18,0.39,0.40" />
+	<block size="32,4.5,32" center="28,2.25,0" color="0.18,0.39,0.40" />
+
+	<!-- misc tier 1 blocks (negative x) -->
+	<block size="24,4.5,8" center="-24,2.25,-20" color="0.18,0.39,0.40" />
+	<block size="24,4.5,8" center="-24,2.25,20" color="0.18,0.39,0.40" />
+	<block size="8,4.5,16" center="-48,2.25,0" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-48,2.25,-20" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-48,2.25,20" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-24,2.25,-28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-8,2.25,-28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-8,2.25,-44" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-24,2.25,28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-8,2.25,28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="-8,2.25,44" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="0,2.25,-36" color="0.18,0.39,0.40" />
+
+	<!-- misc tier 1 blocks (positive x) -->
+	<block size="24,4.5,8" center="24,2.25,-20" color="0.18,0.39,0.40" />
+	<block size="24,4.5,8" center="24,2.25,20" color="0.18,0.39,0.40" />
+	<block size="8,4.5,16" center="48,2.25,0" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="48,2.25,-20" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="48,2.25,20" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="24,2.25,-28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="8,2.25,-28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="8,2.25,-44" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="24,2.25,28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="8,2.25,28" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="8,2.25,44" color="0.18,0.39,0.40" />
+	<block size="8,4.5,8" center="0,2.25,36" color="0.18,0.39,0.40" />
+
+	<!-- pit (negative z) -->
+	<ramp base="-4,0,-20" top="-12,4.5,-20" color="0,0.06,0.32" />
+	<ramp base="0,0,-24" top="0,4.5,-32" color="0,0.06,0.32" />
+	<ramp base="4,0,-20" top="12,4.5,-20" color="0,0.06,0.32" />
+	<ramp base="0,0,-16" top="0,4.5,-8" color="0,0.06,0.32" />
+
+	<!-- pit (positive z) -->
+	<ramp base="-4,0,20" top="-12,4.5,20" color="0,0.06,0.32" />
+	<ramp base="0,0,24" top="0,4.5,32" color="0,0.06,0.32" />
+	<ramp base="4,0,20" top="12,4.5,20" color="0,0.06,0.32" />
+	<ramp base="0,0,16" top="0,4.5,8" color="0,0.06,0.32" />
+
+	<!-- misc tier 1 ramps (negative z) -->
+	<ramp base="-52,0,-12" top="-44,4.5,-12" color="0,0.06,0.32" />
+	<ramp base="-40,0,-24" top="-40,4.5,-16" color="0,0.06,0.32" />
+	<ramp base="52,0,-12" top="44,4.5,-12" color="0,0.06,0.32" />
+	<ramp base="40,0,-24" top="40,4.5,-16" color="0,0.06,0.32" />
+	<ramp base="-16,0,-32" top="-16,4.5,-24" color="0,0.06,0.32" />
+	<ramp base="-12,0,-36" top="-4,4.5,-36" color="0,0.06,0.32" />
+	<ramp base="16,0,-32" top="16,4.5,-24" color="0,0.06,0.32" />
+	<ramp base="12,0,-36" top="4,4.5,-36" color="0,0.06,0.32" />
+	<ramp base="0,0,-48" top="0,4.5,-40" color="0,0.06,0.32" />
+
+	<!-- misc tier 1 ramps (positive z) -->
+	<ramp base="-52,0,12" top="-44,4.5,12" color="0,0.06,0.32" />
+	<ramp base="-40,0,24" top="-40,4.5,16" color="0,0.06,0.32" />
+	<ramp base="52,0,12" top="44,4.5,12" color="0,0.06,0.32" />
+	<ramp base="40,0,24" top="40,4.5,16" color="0,0.06,0.32" />
+	<ramp base="-16,0,32" top="-16,4.5,24" color="0,0.06,0.32" />
+	<ramp base="-12,0,36" top="-4,4.5,36" color="0,0.06,0.32" />
+	<ramp base="16,0,32" top="16,4.5,24" color="0,0.06,0.32" />
+	<ramp base="12,0,36" top="4,4.5,36" color="0,0.06,0.32" />
+	<ramp base="0,0,48" top="0,4.5,40" color="0,0.06,0.32" />
+
+	<!-- tier 2 hills (negative x) -->
+	<block size="8,4.5,8" center="-28,6.75,0" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="-36,6.75,-8" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="-20,6.75,-8" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="-36,6.75,8" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="-20,6.75,8" color="0.33,0.59,0.60" />
+	<ramp base="-40,4.5,0" top="-32,9,0" color="0,0.06,0.32" />
+	<ramp base="-28,4.5,-12" top="-28,9,-4" color="0,0.06,0.32" />
+	<ramp base="-16,4.5,0" top="-24,9,0" color="0,0.06,0.32" />
+	<ramp base="-28,4.5,12" top="-28,9,4" color="0,0.06,0.32" />
+
+	<!-- tier 2 hills (positive x) -->
+	<block size="8,4.5,8" center="28,6.75,0" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="36,6.75,8" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="20,6.75,8" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="36,6.75,-8" color="0.33,0.59,0.60" />
+	<block size="8,4.5,8" center="20,6.75,-8" color="0.33,0.59,0.60" />
+	<ramp base="40,4.5,0" top="32,9,0" color="0,0.06,0.32" />
+	<ramp base="28,4.5,12" top="28,9,4" color="0,0.06,0.32" />
+	<ramp base="16,4.5,0" top="24,9,0" color="0,0.06,0.32" />
+	<ramp base="28,4.5,-12" top="28,9,-4" color="0,0.06,0.32" />
+</map>
