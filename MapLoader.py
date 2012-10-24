@@ -1,4 +1,5 @@
 from xml.dom.minidom import parse
+from math import pi, sin, cos
 from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWriter, GeomVertexData
 from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
 from panda3d.core import DirectionalLight, Vec4
@@ -18,7 +19,7 @@ def makeSquare(colorf, x1,y1,z1, x2,y2,z2):
     color=GeomVertexWriter(vdata, 'color')
     texcoord=GeomVertexWriter(vdata, 'texcoord')
     
-    #make sure we draw the sqaure in the right plane
+    #make sure we draw the square in the right plane
     if x1!=x2:
         vertex.addData3f(x1, y1, z1)
         vertex.addData3f(x2, y1, z1)
@@ -97,6 +98,69 @@ def makeBox(color, center, xsize, ysize, zsize):
                                    center[0] + xsize/2., center[1] + ysize/2., center[2] + zsize/2.))
     return node
 
+def toCartesian(azimuth, elevation, length):
+    x = length * sin(azimuth) * cos(elevation)
+    y = length * sin(elevation)
+    z = -length * cos(azimuth) * cos(elevation)
+    return (x,y,z)
+
+def makeDome(colorf, radius, radialSamples, planes):
+    if len(colorf) == 3:
+        colorf = (colorf[0], colorf[1], colorf[2], 1)
+    format=GeomVertexFormat.getV3n3cpt2()
+    vdata=GeomVertexData('square', format, Geom.UHDynamic)
+
+    vertex=GeomVertexWriter(vdata, 'vertex')
+    normal=GeomVertexWriter(vdata, 'normal')
+    color=GeomVertexWriter(vdata, 'color')
+    texcoord=GeomVertexWriter(vdata, 'texcoord')
+
+    two_pi = pi * 2
+    half_pi = pi / 2
+    azimuths = [(two_pi * i)/radialSamples for i in range(radialSamples+1)]
+    elevations = [(half_pi * i) / (planes - 1) for i in range(planes)]
+    point_id = 0
+    tri = GeomTriangles(Geom.UHDynamic)
+    for i in range(0, len(elevations) - 1):
+        for j in range(0, len(azimuths) - 1):
+            x1, y1, z1 = toCartesian(azimuths[j], elevations[i], radius)
+            x2, y2, z2 = toCartesian(azimuths[j], elevations[i+1], radius)
+            x3, y3, z3 = toCartesian(azimuths[j+1], elevations[i+1], radius)
+            x4, y4, z4 = toCartesian(azimuths[j+1], elevations[i], radius)
+            vertex.addData3f(x1, y1, z1)
+            vertex.addData3f(x2, y2, z2)
+            vertex.addData3f(x3, y3, z3)
+            vertex.addData3f(x4, y4, z4)
+            v1 = Point3(x1, y1, z1) - Point3(x2, y2, z2)
+            v2 = Point3(x3, y3, z3) - Point3(x2, y2, z2)
+            n = v2.cross(v1)
+            n.normalize()
+            normal.addData3f(n)
+            normal.addData3f(n)
+            normal.addData3f(n)
+            normal.addData3f(n)
+            color.addData4f(*colorf)
+            color.addData4f(*colorf)
+            color.addData4f(*colorf)
+            color.addData4f(*colorf)
+            texcoord.addData2f(0.0, 1.0)
+            texcoord.addData2f(0.0, 0.0)
+            texcoord.addData2f(1.0, 0.0)
+            texcoord.addData2f(1.0, 1.0)
+            tri.addVertex(point_id)
+            tri.addVertex(point_id+1)
+            tri.addVertex(point_id+3)
+            tri.closePrimitive()
+            tri.addConsecutiveVertices(point_id + 1, 3)
+            tri.closePrimitive()
+            point_id += 4
+    dome = Geom(vdata)
+    dome.addPrimitive(tri)
+    node = GeomNode('dome')
+    node.addGeom(dome)
+    return node
+
+
 def parseVector(s):
     return [float(v) for v in s.split(',')]
 
@@ -115,6 +179,13 @@ class Block(WorldObject):
         self.geom = makeBox(color, (0,0,0), *size)
     def rotate(self, yaw, pitch, roll):
         self.node.setHpr(self.node, yaw, pitch, roll)
+    def move(self, center):
+        self.node.setPos(*center)
+
+class Dome(WorldObject):
+    def __init__(self, radius, color):
+        WorldObject.__init__(self, 'Dome')
+        self.geom = makeDome(color, radius, 8, 5)
     def move(self, center):
         self.node.setPos(*center)
 
@@ -170,6 +241,12 @@ class World(object):
         b.rotate(yaw, pitch, roll)
         return b
 
+    def addDome(self, center, radius, color):
+        d = Dome(radius, color)
+        self.addWorldObject(d)
+        d.move(center)
+        return d
+
     def addRamp(self, base, top, width, thickness, color):
         r = Ramp(base, top, width, thickness, color)
         self.addWorldObject(r)
@@ -217,6 +294,14 @@ class MapParser(object):
                 elif child.nodeName.lower() == 'ground':
                     color = parseVector(child.attributes['color'].value)
                     current.setGround(500, color)
+                elif child.nodeName.lower() == 'dome':
+                    center = child.attributes.get('center')
+                    radius = child.attributes.get('radius')
+                    color = child.attributes.get('color')
+                    center = parseVector(center.value if center else '0,0,0')
+                    radius = float(radius.value if radius else '2.5')
+                    color = parseVector(color.value if color else '0,0,0')
+                    current.addDome(center, radius, color)
             self.maps.append(current)
 
 
