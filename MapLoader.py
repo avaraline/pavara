@@ -4,81 +4,78 @@ from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWrite
 from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
 from panda3d.core import DirectionalLight, Vec4
 
-def myNormalize(myVec):
-    myVec.normalize()
-    return myVec
+class VertexDataWriter(object):
+    def __init__(self, vdata):
+        self.vertex = GeomVertexWriter(vdata, 'vertex')
+        self.normal = GeomVertexWriter(vdata, 'normal')
+        self.color = GeomVertexWriter(vdata, 'color')
+        self.texcoord = GeomVertexWriter(vdata, 'texcoord')
+
+    def addVertex(self, point, normal, color, texcoord):
+        self.vertex.addData3f(point)
+        self.normal.addData3f(normal)
+        self.color.addData4f(*color)
+        self.texcoord.addData2f(*texcoord)
+
+
+class Polygon(object):
+    def __init__(self, points=None):
+        if points:
+            self.points = points
+        else:
+            self.points = []
+
+    def getNormal(self):
+        seen = set()
+        points = [point for point in self.points if point not in seen and not seen.add(point)]
+        if len(points) >= 3:
+            v1 = points[0] - points[1]
+            v2 = points[1] - points[2]
+            normal = v1.cross(v2)
+            normal.normalize()
+        else:
+            normal = Vec3.up()
+        return normal
+
+
+def makeAxisAlignedSquare(x1,y1,z1, x2,y2,z2):
+    p1 = Point3(x1, y1, z1)
+    p3 = Point3(x2, y2, z2)
+
+    #make sure we draw the square in the right plane
+    if x1 != x2:
+        p2 = Point3(x2, y1, z1)
+        p4 = Point3(x1, y2, z2)
+    else:
+        p2 = Point3(x2, y2, z1)
+        p4 = Point3(x1, y1, z2)
+
+    return Polygon([p1, p2, p3, p4])
+
 
 def makeSquare(colorf, x1,y1,z1, x2,y2,z2):
     if len(colorf) == 3:
         colorf = (colorf[0], colorf[1], colorf[2], 1)
-    format=GeomVertexFormat.getV3n3cpt2()
-    vdata=GeomVertexData('square', format, Geom.UHDynamic)
+    vdata = GeomVertexData('square', GeomVertexFormat.getV3n3cpt2(), Geom.UHDynamic)
+    writer = VertexDataWriter(vdata)
+    aasquare = makeAxisAlignedSquare(x1, y1, z1, x2, y2, z2)
 
-    vertex=GeomVertexWriter(vdata, 'vertex')
-    normal=GeomVertexWriter(vdata, 'normal')
-    color=GeomVertexWriter(vdata, 'color')
-    texcoord=GeomVertexWriter(vdata, 'texcoord')
-    
-    #make sure we draw the square in the right plane
-    if x1!=x2:
-        vertex.addData3f(x1, y1, z1)
-        vertex.addData3f(x2, y1, z1)
-        vertex.addData3f(x2, y2, z2)
-        vertex.addData3f(x1, y2, z2)
-        v1 = Point3(x1, y1, z1) - Point3(x2, y1, z1)
-        if y1 != y2:
-            v2 = Point3(x2, y1, z1) - Point3(x2, y2, z1)
-        else:
-            v2 = Point3(x2, y1, z1) - Point3(x2, y1, z2)
-        n = myNormalize(v1.cross(v2))
-        normal.addData3f(n)
-        normal.addData3f(n)
-        normal.addData3f(n)
-        normal.addData3f(n)
-        
-    else:
-        vertex.addData3f(x1, y1, z1)
-        vertex.addData3f(x2, y2, z1)
-        vertex.addData3f(x2, y2, z2)
-        vertex.addData3f(x1, y1, z2)
-        v1 = Point3(x1, y1, z1) - Point3(x2, y2, z1)
-        v2 = Point3(x2, y2, z1) - Point3(x1, y1, z2)
-        n = myNormalize(v1.cross(v2))
-        normal.addData3f(n)
-        normal.addData3f(n)
-        normal.addData3f(n)
-        normal.addData3f(n)
+    # add points to vertex data
+    normal = aasquare.getNormal()
+    for point in aasquare.points:
+        writer.addVertex(point, normal, colorf, (0.0, 1.0))
 
-    #adding different colors to the vertex for visibility
-    color.addData4f(*colorf)
-    color.addData4f(*colorf)
-    color.addData4f(*colorf)
-    color.addData4f(*colorf)
+    tri = GeomTriangles(Geom.UHDynamic)
 
-    texcoord.addData2f(0.0, 1.0)
-    texcoord.addData2f(0.0, 0.0)
-    texcoord.addData2f(1.0, 0.0)
-    texcoord.addData2f(1.0, 1.0)
+    tri.addVertex(0)
+    tri.addVertex(1)
+    tri.addVertex(3)
+    tri.closePrimitive()
+    tri.addConsecutiveVertices(1, 3)
+    tri.closePrimitive()
 
-    #quads arent directly supported by the Geom interface
-    #you might be interested in the CardMaker class if you are
-    #interested in rectangle though
-    tri1=GeomTriangles(Geom.UHDynamic)
-    tri2=GeomTriangles(Geom.UHDynamic)
-
-    tri1.addVertex(0)
-    tri1.addVertex(1)
-    tri1.addVertex(3)
-
-    tri2.addConsecutiveVertices(1,3)
-
-    tri1.closePrimitive()
-    tri2.closePrimitive()
-
-
-    square=Geom(vdata)
-    square.addPrimitive(tri1)
-    square.addPrimitive(tri2)
+    square = Geom(vdata)
+    square.addPrimitive(tri)
     
     return square
 
@@ -107,13 +104,8 @@ def toCartesian(azimuth, elevation, length):
 def makeDome(colorf, radius, radialSamples, planes):
     if len(colorf) == 3:
         colorf = (colorf[0], colorf[1], colorf[2], 1)
-    format=GeomVertexFormat.getV3n3cpt2()
-    vdata=GeomVertexData('square', format, Geom.UHDynamic)
-
-    vertex=GeomVertexWriter(vdata, 'vertex')
-    normal=GeomVertexWriter(vdata, 'normal')
-    color=GeomVertexWriter(vdata, 'color')
-    texcoord=GeomVertexWriter(vdata, 'texcoord')
+    vdata=GeomVertexData('square', GeomVertexFormat.getV3n3cpt2(), Geom.UHDynamic)
+    writer = VertexDataWriter(vdata)
 
     two_pi = pi * 2
     half_pi = pi / 2
@@ -123,30 +115,18 @@ def makeDome(colorf, radius, radialSamples, planes):
     tri = GeomTriangles(Geom.UHDynamic)
     for i in range(0, len(elevations) - 1):
         for j in range(0, len(azimuths) - 1):
+            poly = Polygon()
             x1, y1, z1 = toCartesian(azimuths[j], elevations[i], radius)
             x2, y2, z2 = toCartesian(azimuths[j], elevations[i+1], radius)
             x3, y3, z3 = toCartesian(azimuths[j+1], elevations[i+1], radius)
             x4, y4, z4 = toCartesian(azimuths[j+1], elevations[i], radius)
-            vertex.addData3f(x1, y1, z1)
-            vertex.addData3f(x2, y2, z2)
-            vertex.addData3f(x3, y3, z3)
-            vertex.addData3f(x4, y4, z4)
-            v1 = Point3(x1, y1, z1) - Point3(x2, y2, z2)
-            v2 = Point3(x3, y3, z3) - Point3(x2, y2, z2)
-            n = v2.cross(v1)
-            n.normalize()
-            normal.addData3f(n)
-            normal.addData3f(n)
-            normal.addData3f(n)
-            normal.addData3f(n)
-            color.addData4f(*colorf)
-            color.addData4f(*colorf)
-            color.addData4f(*colorf)
-            color.addData4f(*colorf)
-            texcoord.addData2f(0.0, 1.0)
-            texcoord.addData2f(0.0, 0.0)
-            texcoord.addData2f(1.0, 0.0)
-            texcoord.addData2f(1.0, 1.0)
+            poly.points.append(Point3(x1, y1, z1))
+            poly.points.append(Point3(x2, y2, z2))
+            poly.points.append(Point3(x3, y3, z3))
+            poly.points.append(Point3(x4, y4, z4))
+            normal = poly.getNormal()
+            for point in poly.points:
+                writer.addVertex(point, normal, colorf, (0.0, 1.0))
             tri.addVertex(point_id)
             tri.addVertex(point_id+1)
             tri.addVertex(point_id+3)
@@ -261,6 +241,48 @@ class MapParser(object):
     def __init__(self, render):
         self.render = render
         self.maps = []
+    def parse_block(self, node, current):
+        center = node.attributes.get('center')
+        center = parseVector(center.value) if center else (0,0,0)
+        size = node.attributes.get('size')
+        size = parseVector(size.value) if size else (4,4,4)
+        color = node.attributes.get('color')
+        color = parseVector(color.value) if color else (1,1,1,1)
+        yaw = node.attributes.get('yaw')
+        yaw = float(yaw.value) if yaw else 0
+        pitch = node.attributes.get('pitch')
+        pitch = float(pitch.value) if pitch else 0
+        roll = node.attributes.get('roll')
+        roll = float(roll.value) if roll else 0
+        current.addBlock(center, size, color, yaw, pitch, roll)
+        
+    def parse_ramp(self, node, current):
+        base = node.attributes.get('base')
+        base = parseVector(base.value) if base else (-2, 0, 0)
+        base = Point3(*base)
+        top = node.attributes.get('top')
+        top = parseVector(top.value) if top else (2, 4, 0)
+        top = Point3(*top)
+        color = node.attributes.get('color')
+        color = parseVector(color.value) if color else (1, 1, 1, 1)
+        width = node.attributes.get('width') 
+        width = float(width.value) if width else 8
+        thickness = node.attributes.get('thickness')
+        thickness = float(thickness.value) if thickness else 0
+        current.addRamp(base, top, width, thickness, color)
+    
+    def parse_ground(self, node, current):
+        color = parseVector(node.attributes['color'].value)
+        current.setGround(500, color)
+
+    def parse_dome(self, node, current):
+        center = node.attributes.get('center')
+        radius = node.attributes.get('radius')
+        color = node.attributes.get('color')
+        center = parseVector(center.value if center else '0,0,0')
+        radius = float(radius.value if radius else '2.5')
+        color = parseVector(color.value if color else '0,0,0')
+        current.addDome(center, radius, color)
 
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
@@ -268,40 +290,9 @@ class MapParser(object):
             current.name = m.attributes['name'].value
             current.author = m.attributes['author'].value
             for child in m.childNodes:
-                if child.nodeName.lower() == 'block':
-                    center = child.attributes.get('center')
-                    center = parseVector(center.value) if center else (0,0,0)
-                    size = child.attributes.get('size')
-                    size = parseVector(size.value) if size else (4,4,4)
-                    color = child.attributes.get('color')
-                    color = parseVector(color.value) if color else (1,1,1,1)
-                    yaw = float(child.attributes['yaw'].value) if child.attributes.get('yaw') else 0
-                    pitch = float(child.attributes['pitch'].value) if child.attributes.get('pitch') else 0
-                    roll = float(child.attributes['roll'].value) if child.attributes.get('roll') else 0
-                    current.addBlock(center, size, color, yaw, pitch, roll)
-
-                elif child.nodeName.lower() == 'incarnator':
-                    pass
-                elif child.nodeName.lower() == 'ramp':
-                    base = parseVector(child.attributes['base'].value) if child.attributes.get('base') else (-2, 0, 0)
-                    base = Point3(*base)
-                    top = parseVector(child.attributes['top'].value) if child.attributes.get('top') else (2, 4, 0)
-                    top = Point3(*top)
-                    color = parseVector(child.attributes['color'].value) if child.attributes.get('color') else (1, 1, 1, 1)
-                    width = float(child.attributes['width'].value) if child.attributes.get('width') else 8
-                    thickness = float(child.attributes['thickness'].value) if child.attributes.get('thickness') else 0
-                    current.addRamp(base, top, width, thickness, color)
-                elif child.nodeName.lower() == 'ground':
-                    color = parseVector(child.attributes['color'].value)
-                    current.setGround(500, color)
-                elif child.nodeName.lower() == 'dome':
-                    center = child.attributes.get('center')
-                    radius = child.attributes.get('radius')
-                    color = child.attributes.get('color')
-                    center = parseVector(center.value if center else '0,0,0')
-                    radius = float(radius.value if radius else '2.5')
-                    color = parseVector(color.value if color else '0,0,0')
-                    current.addDome(center, radius, color)
+                name = "parse_" + child.nodeName.lower()
+                if hasattr(self, name):
+                    getattr(self, name)(child, current)
             self.maps.append(current)
 
 
