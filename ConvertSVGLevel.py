@@ -329,7 +329,7 @@ class ConvertSVGLevel():
 	
 	def chunks(self, l, n):
 		return [l[i:i+n] for i in range(0, len(l), n)]
-
+		
 	def parse_script(self, scriptlines):
 		print scriptlines
 		scriptlines = [x for x in scriptlines if x]
@@ -344,6 +344,9 @@ class ConvertSVGLevel():
 		has_wall = False
 		nonramp = False
 		
+		set_sky_color = False
+		set_ground_color = False
+		
 		has_wa = False
 		
 		y = 0
@@ -352,6 +355,11 @@ class ConvertSVGLevel():
 		for line in scriptlines:
 			words = [x for x in re.split("\s?=?\s?", line) if x]
 			print "testing on %s, in_object = %s" % (words[0],in_object)
+			if(words[0] == "adjust"):
+				if(words[1] == "SkyColor"):
+					set_sky_color = True
+				if(words[1] == "GroundColor"):
+					set_ground_color = True
 			if(words[0] == "wa"):
 				self.block_follows = True
 				self.curr_wa = float(words[1])
@@ -388,6 +396,12 @@ class ConvertSVGLevel():
 				object_type = ""
 		#end for
 		
+		if set_sky_color:
+			self.make_sky_element()
+			
+		if set_ground_color:
+			self.make_ground_element()
+		
 		if info_text:
 			descel = et.SubElement(self.newtree, "description")
 			descel.text = info_text
@@ -413,15 +427,15 @@ class ConvertSVGLevel():
 		x = float(coord_tuple[0])# - self.center_x
 		y = float(coord_tuple[1])# - self.center_y 
 		return (self.pix_to_units(x),self.pix_to_units(y))
-		
+	
 	def hex_color_to_rgb(self, color):
-		
 		color = color.lstrip("#")
 		if len(color) != 6:
 			raise ValueError, "input #%s is not in #RRGGBB format" % color
 		r, g, b = color[:2], color[2:4], color[4:]
 		r, g, b = [int(n, 16) for n in (r, g, b)] 
 		return "%s,%s,%s"%((r/255.0, g/255.0, b/255.0)) # colors are rgb between 1 and 0
+	
 	
 	def make_ramp(self, y, delta_y):
 		ramp_base = 0
@@ -446,12 +460,12 @@ class ConvertSVGLevel():
 		
 		print "pointing ramp downhill to %s" % arc.angle
 		#angle points to bottom of ramp
-		if(arc.angle == 180 or arc.angle == 135):
+		if(arc.angle == 180):
 			#points to top
 			top_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y+rect.height))
 			base_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y))
 			ramp_width = str(self.pix_to_units(rect.width))
-		elif(arc.angle == 360 or arc.angle == 0 or arc.angle == -45):
+		elif(arc.angle == 360 or arc.angle == 0):
 			#points to bottom
 			top_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y))
 			base_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y+rect.height))
@@ -508,10 +522,10 @@ class ConvertSVGLevel():
 			
 			
 			#sanity bumpz for 0 thickness blox
-			if self.curr_wa == 0 and self.curr_wall_height == 0:
-				center_y += .28
-			if(self.curr_wall_height == 0):
+			if self.curr_wall_height == 0:
 				center_y += .001
+			#if(self.curr_wall_height == 0):
+			#	center_y += .001
 			
 			new_block = et.SubElement(self.newtree, "block")
 			
@@ -544,7 +558,33 @@ class ConvertSVGLevel():
 				new_incarn.set("angle", "%s" % (str(incarn_angle)))
 				print "added incarn - pos: %s,%s,%s angle: %s" % (location, angle)
 				del(self.el_stack[idx])
-
+				
+	def make_sky_element(self):
+		horizon = 0
+		color = 0
+		print "Making sky element"
+		print self.el_stack
+		for el in self.el_stack:
+			if isinstance(el, self.Arc):
+				if el.fill != "none":
+					horizon = self.hex_color_to_rgb(el.fill)
+				if el.stroke:
+					color = self.hex_color_to_rgb(el.stroke)
+		new_sky = et.SubElement(self.newtree, "sky")
+		new_sky.set("horizon", horizon)
+		new_sky.set("color", color)
+		del(self.el_stack[:])
+	
+	def make_ground_element(self):
+		color = 0
+		for el in self.el_stack:
+			if isinstance(el, self.Arc):
+				if el.fill != "none":
+					color = self.hex_color_to_rgb(el.fill)
+		new_ground = et.SubElement(self.newtree, "ground")
+		new_ground.set("color", color)
+		del(self.el_stack[:])
+		
 if __name__ == "__main__":
 	try:
 		c = ConvertSVGLevel(sys.argv[1], sys.argv[2], sys.argv[3])

@@ -1,17 +1,44 @@
 from direct.actor.Actor import Actor
 from direct.gui.OnscreenText import OnscreenText
-
+from panda3d.core import Vec3, CollisionNode, CollisionRay, BitMask32
+from pandac.PandaModules import GeomVertexReader, GeomVertexWriter, LVecBase4f
+import math
 class Hector():
-
-    def __init__(self, render, pos_x, pos_y, pos_z):
+    def __init__(self, render, pos_x, pos_y, pos_z, angle):
         #self.model = Actor("hector_b2.4_2segment.egg")
         self.model = Actor("hector_b2.4_anim.egg")
         self.model.setPlayRate(6.5, "walk")
         self.model.setScale(3.0)
         self.model.setHpr(self.model, 0, 0, 0)
+        self.model.setH(self.model, angle)
         self.model.reparentTo(render)
         self.model.setPos(pos_x,pos_y,pos_z)
+        self.model.setColorScale(.9,.6,0,.1)
         self.walking = False
+        """
+        self.hectorRay = CollisionRay()
+        self.hectorRay.setOrigin(pos_x,pos_y,pos_z)
+        self.hectorRay.setDirection(0,-1,0)
+        self.hectorCol = CollisionNode('hectorRay')
+        self.hectorCol.addSolid(self.hectorRay)
+        self.hectorCol.setFromCollideMask(BitMask32.bit(1))
+        self.hectorCol.setIntoCollideMask(BitMask32.allOff())
+        self.hectorNode = self.model.attachNewNode(self.hectorCol)
+        collisionTraverser.addCollider(self.hectorNode, collisionHandler)
+        """
+        self.velocity = Vec3(0,0,0)
+        self.accel = Vec3(0,0,0)
+        
+        self.model.enableBlend()
+        self.model.setControlEffect('stand', 1.0)
+        self.model.setControlEffect('crouch', 0.0)
+        #self.model.loop('crouch')
+        
+        self.crouchcontrol = self.model.getAnimControl('crouch')
+        self.crouchfactor = 0
+        
+        
+        
         #this prints the bones available in the model to the console
         #self.model.listJoints()
     
@@ -31,6 +58,8 @@ class Hector():
         self.lbb_rest = self.left_bottom_bone.getP()
         self.rbb_rest = self.right_bottom_bone.getP()
         
+
+        
     def walk(self):
         #self.right_top_bone.setP(self.right_top_bone, 1)
         #self.right_bottom_bone.setP(self.right_bottom_bone, -2)
@@ -38,6 +67,12 @@ class Hector():
         #self.left_bottom_bone.setP(self.left_bottom_bone, -2)
         
         if not self.walking:
+            if self.crouchfactor > 0:
+                self.model.setControlEffect('walk', 1.0)
+                self.model.setControlEffect('stand', 0)
+            else:
+                self.model.setControlEffect('walk', .5)
+                self.model.setControlEffect('crouch', .5)
             self.model.loop("walk")
             self.walking = True
         
@@ -48,8 +83,45 @@ class Hector():
         #self.left_bottom_bone.setP(self.lbb_rest)
         
         if self.walking:
+            self.model.setControlEffect('walk', 0.0)
+            if self.crouchfactor > 0:
+                self.model.setControlEffect('crouch', .50)
+                self.model.setControlEffect('stand', .50)
+            else:
+                self.model.setControlEffect('stand', 1.0)
+            
+
+            self.model.stop("walk")
             self.model.play("stand")
             self.walking = False
+    
+    def crouch(self):
+        if not self.walking:
+            self.model.setControlEffect('walk', .5)
+            self.model.setControlEffect('crouch', .5)
+        else:
+            self.model.setControlEffect('crouch', 1)
+            self.model.setControlEffect('stand', 0)
+        
+        if(self.crouchfactor < 1):
+            self.crouchfactor +=.2
+        
+        self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
+        
+    def uncrouch(self):
+        if not self.walking:
+            self.model.setControlEffect('walk', 1.0)
+            self.model.setControlEffect('crouch', 0)
+        else:
+            self.model.setControlEffect('stand', 1.0)
+            self.model.setControlEffect('crouch', 0)
+        
+        if self.crouchfactor > 0:
+            self.crouchfactor -= .2
+            
+        self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
+    
+
     
     def rotateLeft(self):
         self.model.setH(self.model, 1)

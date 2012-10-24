@@ -1,7 +1,8 @@
 from xml.dom.minidom import parse
 from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWriter, GeomVertexData
 from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
-from panda3d.core import DirectionalLight, Vec4
+from panda3d.core import DirectionalLight, Vec4, CollisionPlane, Plane
+from Hector import Hector
 
 def myNormalize(myVec):
     myVec.normalize()
@@ -108,6 +109,7 @@ class WorldObject(object):
         self.name = objType + ':' + str(lastUniqueID)
         lastUniqueID += 1
         self.node = None
+        self.solid = None
 
 class Block(WorldObject):
     def __init__(self, size, color):
@@ -122,15 +124,18 @@ class Ground(WorldObject):
     def __init__(self, radius, color):
         WorldObject.__init__(self, 'Ground')
         self.geom = makeBox(color, (0, 0, 0), radius, 0.5, radius)
+        self.solid = CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0)))
 
 class Ramp(WorldObject):
     def __init__(self, base, top, width, thickness, color):
         WorldObject.__init__(self, 'Block')
         self.base = base
         self.top = top
+        self.thickness = thickness
         distance = top - base
         length = distance.length()
         self.geom = makeBox(color, (0,0,0), thickness, width, length)
+        
     def orientate(self):
         v1 = self.top - self.base
         if self.base.getX() != self.top.getX():
@@ -142,7 +147,17 @@ class Ramp(WorldObject):
         up.normalize()
         midpoint = Point3((self.base + self.top) / 2.0)
         self.node.setPos(midpoint)
-        self.node.lookAt(self.top, up)
+        self.node.lookAt(self.top, up) 
+
+class Incarnator(WorldObject):
+	def __init__(self, pos, angle):
+		WorldObject.__init__(self, 'Incarnator')
+		self.pos = pos
+		self.angle = angle
+		self.h = None
+		
+	def placeHector(self, render):
+		self.h = Hector(render, self.pos[0], self.pos[1], self.pos[2], self.angle)
 
 class World(object):
     def __init__(self, render):
@@ -158,10 +173,13 @@ class World(object):
         lightNode.setHpr(20, -120, 0)
         render.setLight(lightNode)
         self.worldObjects = {}
+        self.solids = []
 
     def addWorldObject(self, obj):
         self.worldObjects[obj.name] = obj
         obj.node = self.render.attachNewNode(obj.geom)
+        if(obj.solid):
+        	self.solids.append(obj.solid)
 
     def addBlock(self, center, size, color, yaw, pitch, roll):
         b = Block(size, color)
@@ -174,6 +192,10 @@ class World(object):
         r = Ramp(base, top, width, thickness, color)
         self.addWorldObject(r)
         r.orientate()
+        
+    def addIncarn(self, pos, angle):
+    	i = Incarnator(pos, angle)
+    	i.placeHector(self.render)
 
     def setGround(self, radius, color):
         g = Ground(radius, color)
@@ -184,6 +206,7 @@ class MapParser(object):
     def __init__(self, render):
         self.render = render
         self.maps = []
+        self.solids = []
 
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
@@ -205,6 +228,9 @@ class MapParser(object):
 
                 elif child.nodeName.lower() == 'incarnator':
                     pass
+                    pos = parseVector(child.attributes['location'].value) if child.attributes.get('location') else (0, -5, 0)
+                    angle = float(child.attributes['angle'].value) if child.attributes.get('angle') else 0
+                    current.addIncarn(pos, angle)
                 elif child.nodeName.lower() == 'ramp':
                     base = parseVector(child.attributes['base'].value) if child.attributes.get('base') else (-2, 0, 0)
                     base = Point3(*base)
@@ -217,11 +243,15 @@ class MapParser(object):
                 elif child.nodeName.lower() == 'ground':
                     color = parseVector(child.attributes['color'].value)
                     current.setGround(500, color)
+            self.solids += current.solids
             self.maps.append(current)
+        
+            
 
 
 def load(path, render):
     dom = parse(path)
     parser = MapParser(render)
     parser.loadMaps(dom)
+    return parser
     

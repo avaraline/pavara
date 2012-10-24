@@ -14,11 +14,24 @@ class Pavara(ShowBase):
         # init panda3d crap
         self.initP3D()
         # load level
-        MapLoader.load('Maps/phosphorus.xml', render)
+        m = MapLoader.load('Maps/IYA.xml',render)
+        
+        #collision setup
+        self.worldColNode = CollisionNode('worldSolids')
+        for s in m.solids:
+        	print s
+        	self.worldColNode.addSolid(s)
+        self.worldColNode.setFromCollideMask(BitMask32.allOff())
+        self.worldColNode.setIntoCollideMask(BitMask32.bit(1))
+        
+        self.worldColNp = self.render.attachNewNode(self.worldColNode)
+        self.worldColNp.show()
+        
+        #MapLoader.load('Maps/errant.xml', render)
         render.attachNewNode(MapLoader.makeBox((1, 0, 0, 1), (0, 0, 0), 1000, 0.5, 0.5))
         render.attachNewNode(MapLoader.makeBox((0, 1, 0, 1), (0, 0, 0), 0.5, 1000, 0.5))
         render.attachNewNode(MapLoader.makeBox((0, 0, 1, 1), (0, 0, 0), 0.5, 0.5, 1000))
-        self.h = Hector(render, 0, 12, 14)
+        self.h = Hector(render,0, 12, 14, 0)
 
     def initP3D(self):
         self.keyMap = { 'left': 0
@@ -28,6 +41,7 @@ class Pavara(ShowBase):
                       , 'rotateLeft': 0
                       , 'rotateRight': 0
                       , 'walkForward': 0
+                      , 'crouch': 0
                       }
         self.accept('escape', sys.exit)
         self.accept('w', self.setKey, ['forward', 1])
@@ -44,7 +58,13 @@ class Pavara(ShowBase):
         self.accept('k-up', self.setKey, ['rotateRight', 0])
         self.accept('n', self.setKey, ['walkForward', 1])
         self.accept('n-up', self.setKey, ['walkForward', 0])
-
+        self.accept('m', self.setKey, ['crouch', 1])
+        self.accept('m-up', self.setKey, ['crouch', 0])
+        
+        self.collisionTraverser = CollisionTraverser()
+        self.collisionHandler = CollisionHandlerQueue()
+        self.collisionTraverser.showCollisions(render)
+        base.cTrav = self.collisionTraverser
         taskMgr.add(self.move,'moveTask')
         base.setBackgroundColor(0,0,0)
         base.enableParticles()
@@ -100,14 +120,24 @@ class Pavara(ShowBase):
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
         if (self.keyMap['rotateRight']):
-            self.h.rotateRight()
-
+            self.h.rotateRight()  
+            
+        if (self.keyMap['crouch']):
+        	self.h.crouch()
+        else: 
+        	self.h.uncrouch()
                
         if (self.keyMap['walkForward']):
             self.h.walk()
         else:
             self.h.unwalk()
-
+        for i in range(self.collisionHandler.getNumEntries()):
+			entry = self.collisionHandler.getEntry(i)
+			name = entry.getIntoNode().getName()
+			if name == "worldNode": self.groundCollideHandler(entry)
+		
+		
+		
         return task.cont
 
 if __name__ == '__main__':
