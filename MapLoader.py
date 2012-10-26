@@ -237,6 +237,7 @@ class World(object):
         self.author = None
         alight = AmbientLight('alight')
         alight.setColor(VBase4(0.4, 0.4, 0.4, 1))
+        
         render.setLight(render.attachNewNode(alight))
         dlight = DirectionalLight('directionalLight')
         dlight.setColor(Vec4(1, 1, 1, 1))
@@ -328,7 +329,7 @@ class MapParser(object):
                     radius = float(radius.value if radius else '2.5')
                     color = parseVector(color.value if color else '0,0,0')
                     current.addDome(center, radius, color)
-			self.solids += current.solids
+            self.solids += current.solids
             self.maps.append(current)
         
             

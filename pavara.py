@@ -11,21 +11,15 @@ class Pavara(ShowBase):
         ShowBase.__init__(self)
         self.x = None
         self.y = None
+        
         # init panda3d crap
         self.initP3D()
+        
         # load level
-        m = MapLoader.load('Maps/IYA.xml',render)
+        m = MapLoader.load('Maps/errant.xml',render)
         
-        #collision setup
-        self.worldColNode = CollisionNode('worldSolids')
-        for s in m.solids:
-        	print s
-        	self.worldColNode.addSolid(s)
-        self.worldColNode.setFromCollideMask(BitMask32.allOff())
-        self.worldColNode.setIntoCollideMask(BitMask32.bit(1))
-        
-        self.worldColNp = self.render.attachNewNode(self.worldColNode)
-        self.worldColNp.show()
+        #TODO: setup bullet
+        #self.setupCollision(m)
         
         #MapLoader.load('Maps/errant.xml', render)
         render.attachNewNode(MapLoader.makeBox((1, 0, 0, 1), (0, 0, 0), 1000, 0.5, 0.5))
@@ -34,6 +28,39 @@ class Pavara(ShowBase):
         self.h = Hector(render,0, 12, 14, 0)
 
     def initP3D(self):
+        self.setupInput()
+        self.collisionTraverser = CollisionTraverser()
+        self.collisionHandler = CollisionHandlerQueue()
+        self.collisionTraverser.showCollisions(render)
+        base.cTrav = self.collisionTraverser
+        taskMgr.add(self.move,'moveTask')
+        base.setBackgroundColor(0,0,0)
+        base.enableParticles()
+        base.disableMouse()
+        render.setAntialias(AntialiasAttrib.MAuto)
+        props = WindowProperties()
+        props.setCursorHidden(True)
+        base.win.requestProperties(props)
+        base.camera.setPos(0,20,40)
+        base.camera.setHpr(0,0,0)
+        self.floater = NodePath(PandaNode("floater"))
+        self.floater.reparentTo(render)
+        self.up = Vec3(0, 1, 0)
+
+    def setKey(self, key, value):
+        self.keyMap[key] = value
+        
+    def setupCollision(self, m):
+        self.worldColNode = CollisionNode('worldSolids')
+        for s in m.solids:
+            self.worldColNode.addSolid(s)
+        self.worldColNode.setFromCollideMask(BitMask32.allOff())
+        self.worldColNode.setIntoCollideMask(BitMask32.bit(1))
+        
+        self.worldColNp = self.render.attachNewNode(self.worldColNode)
+        self.worldColNp.show()
+    
+    def setupInput(self):
         self.keyMap = { 'left': 0
                       , 'right': 0
                       , 'forward': 0
@@ -61,27 +88,6 @@ class Pavara(ShowBase):
         self.accept('m', self.setKey, ['crouch', 1])
         self.accept('m-up', self.setKey, ['crouch', 0])
         
-        self.collisionTraverser = CollisionTraverser()
-        self.collisionHandler = CollisionHandlerQueue()
-        self.collisionTraverser.showCollisions(render)
-        base.cTrav = self.collisionTraverser
-        taskMgr.add(self.move,'moveTask')
-        base.setBackgroundColor(0,0,0)
-        base.enableParticles()
-        base.disableMouse()
-        render.setAntialias(AntialiasAttrib.MMultisample)
-        props = WindowProperties()
-        props.setCursorHidden(True)
-        base.win.requestProperties(props)
-        base.camera.setPos(0,20,40)
-        base.camera.setHpr(0,0,0)
-        self.floater = NodePath(PandaNode("floater"))
-        self.floater.reparentTo(render)
-        self.up = Vec3(0, 1, 0)
-
-    def setKey(self, key, value):
-        self.keyMap[key] = value
-
     def move(self, task):
         dt = globalClock.getDt()
         if base.mouseWatcherNode.hasMouse():
@@ -123,21 +129,20 @@ class Pavara(ShowBase):
             self.h.rotateRight()  
             
         if (self.keyMap['crouch']):
-        	self.h.crouch()
+            self.h.crouch()
         else: 
-        	self.h.uncrouch()
+            self.h.uncrouch()
                
         if (self.keyMap['walkForward']):
             self.h.walk()
         else:
             self.h.unwalk()
+            
         for i in range(self.collisionHandler.getNumEntries()):
-			entry = self.collisionHandler.getEntry(i)
-			name = entry.getIntoNode().getName()
-			if name == "worldNode": self.groundCollideHandler(entry)
-		
-		
-		
+            entry = self.collisionHandler.getEntry(i)
+            name = entry.getIntoNode().getName()
+            if name == "worldNode": self.groundCollideHandler(entry)
+            
         return task.cont
 
 if __name__ == '__main__':

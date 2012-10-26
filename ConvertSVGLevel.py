@@ -351,6 +351,7 @@ class ConvertSVGLevel():
 		
 		y = 0
 		delta_y = 0
+		ramp_thickness = 0
 		
 		for line in scriptlines:
 			words = [x for x in re.split("\s?=?\s?", line) if x]
@@ -386,6 +387,8 @@ class ConvertSVGLevel():
 					has_ramp = True
 					if(words[0] == "deltaY"):
 						delta_y = float(words[1])
+					if(words[0] == "thickness"):
+						ramp_thickness = words[1];
 				else:
 					nonramp = True
 				if(object_type == "Incarnator"):
@@ -407,15 +410,14 @@ class ConvertSVGLevel():
 			descel.text = info_text
 		
 		if has_incarn:
-			self.make_incarn(y)
-		
-		if has_ramp:
-			self.make_ramp(y, delta_y)
-			
+			self.make_incarn(y)	
 			
 		if (self.block_follows or nonramp) and (has_ramp == False):
 			self.make_block_from_rect()
-				
+		
+		if has_ramp:
+			self.make_ramp(y, delta_y, ramp_thickness)
+			
 		if not has_wa:
 			self.curr_wa = 0
 			
@@ -437,19 +439,23 @@ class ConvertSVGLevel():
 		return "%s,%s,%s"%((r/255.0, g/255.0, b/255.0)) # colors are rgb between 1 and 0
 	
 	
-	def make_ramp(self, y, delta_y):
+	def make_ramp(self, y, delta_y, thickness):
 		ramp_base = 0
 		ramp_top = 0
 		base_x_z_coords = (0,0)
 		top_x_z_coords = (0,0)
 		arc = False
 		rect = False
+		fill = 0
 		
 		for el in self.el_stack:
 			if isinstance(el, self.Arc):
 				arc = el
 			if isinstance(el, self.Rect):
-				rect = el
+				if el.fill == "none":
+					rect = el
+				else:
+					fill = el.fill
 		if arc == False	:
 			print "warning no arc found for ramp..."
 			return
@@ -457,15 +463,17 @@ class ConvertSVGLevel():
 			print "warning no rect found for ramp..."
 			return
 		
+		if arc.fill != "#FFFFFF":
+			arc.fill = fill
 		
 		print "pointing ramp downhill to %s" % arc.angle
 		#angle points to bottom of ramp
-		if(arc.angle == 180):
+		if(arc.angle == 180 or arc.angle == 135):
 			#points to top
 			top_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y+rect.height))
 			base_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y))
 			ramp_width = str(self.pix_to_units(rect.width))
-		elif(arc.angle == 360 or arc.angle == 0):
+		elif(arc.angle == 360 or arc.angle == 0 or arc.angle == -45):
 			#points to bottom
 			top_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y))
 			base_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y+rect.height))
@@ -492,6 +500,8 @@ class ConvertSVGLevel():
 		new_ramp.set("top", ramp_top)
 		new_ramp.set("width", ramp_width)
 		new_ramp.set("color", self.hex_color_to_rgb(arc.fill))
+		if thickness > 0:
+			new_ramp.set("thickness", thickness)
 		print "added ramp - base: %s, top:%s, width: %s, color: %s, y: %s, deltaY: %s" % (ramp_base, ramp_top, ramp_width, new_ramp.get('color'), y, delta_y)
 		del(self.el_stack[:])
 		
