@@ -28,10 +28,9 @@ Graphics
 *   **walker animations**
 	*   seperate animations for `walk, stand, crouched_walk, crouch, airbourne_walk`
 	*   animation blending based on crouch/walk factor, physics forces, and terrain
-*   **dynamic model coloring**: either
-    *   model tinting (`setColorScale(r,g,b)`), or
-    *   seperate models for each color scheme, or
-    *   vertex recoloring (?)
+*   **dynamic model coloring**
+    *   vertex recoloring
+    	*	figure out head model coloring
 
 ###lo priority
 *   **updated assets needed**

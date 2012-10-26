@@ -1,7 +1,8 @@
 from direct.actor.Actor import Actor
 from direct.gui.OnscreenText import OnscreenText
-from panda3d.core import Vec3, CollisionNode, CollisionRay, BitMask32
+from panda3d.core import Vec3, CollisionNode, CollisionRay, BitMask32, Geom
 from pandac.PandaModules import GeomVertexReader, GeomVertexWriter, LVecBase4f
+from pandac.PandaModules import GeomVertexArrayFormat, InternalName, GeomVertexFormat
 import math
 class Hector():
     def __init__(self, render, pos_x, pos_y, pos_z, angle):
@@ -13,7 +14,6 @@ class Hector():
         self.model.setH(self.model, angle)
         self.model.reparentTo(render)
         self.model.setPos(pos_x,pos_y,pos_z)
-        self.model.setColorScale(.9,.6,0,.1)
         self.walking = False
         """
         self.hectorRay = CollisionRay()
@@ -37,6 +37,7 @@ class Hector():
         self.crouchcontrol = self.model.getAnimControl('crouch')
         self.crouchfactor = 0
         
+        self.setupColor(.2,.3,.8,1)
         
         
         #this prints the bones available in the model to the console
@@ -128,3 +129,33 @@ class Hector():
     
     def rotateRight(self):
         self.model.setH(self.model, -1)
+    
+    def setupColor(self, r, g, b, a):
+    	gvarrayf = GeomVertexArrayFormat()
+        gvarrayf.addColumn(InternalName.make('color'), 4, Geom.NTFloat32, Geom.CColor)
+        gformat = GeomVertexFormat()
+        gformat.addArray(gvarrayf)
+        gformat = GeomVertexFormat.registerFormat(gformat)
+        
+        geomNodeCollection = self.model.findAllMatches('**/+GeomNode')
+        for nodePath in geomNodeCollection:
+            geomNode = nodePath.node()
+            for i in range(geomNode.getNumGeoms()):
+                geom = geomNode.modifyGeom(i)
+                vdata = geom.modifyVertexData()
+                pre_existing_color = False
+                
+                if(vdata.hasColumn('color')):
+                    pre_existing_color = True
+
+                new_format = vdata.getFormat().getUnionFormat(gformat)
+                vdata.setFormat(new_format)
+                color = GeomVertexWriter(vdata, 'color')
+                vertex = GeomVertexReader(vdata, 'vertex')
+                while not vertex.isAtEnd():
+                    v = vertex.getData3f()
+                    if pre_existing_color:
+                        color.setData4f(r,g,b,a)
+                    else:
+                        color.addData4f(r,g,b,a)
+        
