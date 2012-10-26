@@ -273,7 +273,7 @@ class MapParser(object):
     
     def parse_ground(self, node, current):
         color = parseVector(node.attributes['color'].value)
-        current.setGround(500, color)
+        #current.setGround(500, color)
 
     def parse_dome(self, node, current):
         center = node.attributes.get('center')

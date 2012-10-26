@@ -15,10 +15,28 @@ class Pavara(ShowBase):
         self.initP3D()
         # load level
         MapLoader.load('Maps/phosphorus.xml', render)
-        render.attachNewNode(MapLoader.makeBox((1, 0, 0, 1), (0, 0, 0), 1000, 0.5, 0.5))
-        render.attachNewNode(MapLoader.makeBox((0, 1, 0, 1), (0, 0, 0), 0.5, 1000, 0.5))
-        render.attachNewNode(MapLoader.makeBox((0, 0, 1, 1), (0, 0, 0), 0.5, 0.5, 1000))
+        #render.attachNewNode(MapLoader.makeBox((1, 0, 0, 1), (0, 0, 0), 1000, 0.5, 0.5))
+        #render.attachNewNode(MapLoader.makeBox((0, 1, 0, 1), (0, 0, 0), 0.5, 1000, 0.5))
+        #render.attachNewNode(MapLoader.makeBox((0, 0, 1, 1), (0, 0, 0), 0.5, 0.5, 1000))
         self.h = Hector(render, 0, 12, 14)
+        node = GeomNode('sky')
+        bounds = base.camLens.make_bounds()
+        dl = bounds.getMin()
+        ur = bounds.getMax()
+        z = dl.getZ() * 0.99
+        node.addGeom(MapLoader.makeSquare((1,1,1,1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0))
+        node = render.attachNewNode(node)
+        node.reparentTo(base.camera)
+        node.setPos(base.camera, 0,0, z)
+        self.shader = Shader.load('Shaders/Sky.sha')
+        node.setShader(self.shader)
+        render.setShaderInput('camera', base.cam)
+        render.setShaderInput('sky', node)
+        render.setShaderInput('m_skyColor', Vec4(0, 0, 0, 0))
+        render.setShaderInput('m_horizonColor', Vec4(0.15, 0, 0.3, 0))
+        render.setShaderInput('m_groundColor', Vec4(0.15, 0.15, 0.15, 0.15))
+        render.setShaderInput('m_gradientHeight', 0.05, 0.05, 0.05, 0.05)
+        self.sky = node
 
     def initP3D(self):
         self.keyMap = { 'left': 0
@@ -108,6 +126,8 @@ class Pavara(ShowBase):
         else:
             self.h.unwalk()
 
+        #render.setShaderInput('m_camToWorld.mat4', base.camLens.getProjectionMat())
+        #self.sky.setShaderInput('m_cameraPosition.vec3', base.cam.getPos())
         return task.cont
 
 if __name__ == '__main__':
