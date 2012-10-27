@@ -1,0 +1,34 @@
+//Cg
+
+void vshader(
+    uniform float4x4 mat_modelproj,
+    in float4 vtx_position : POSITION,
+    uniform float4 mspos_camera,
+    uniform float4x4 wstrans_sky,
+    out float3 l_vector,
+    out float4 l_position : POSITION)
+{
+    l_position = mul(mat_modelproj, vtx_position);
+    l_vector = mul(wstrans_sky, vtx_position).xyz;// - float3(mspos_camera.x, 0.0, mspos_camera.z);
+}
+
+void fshader(
+    uniform float4 m_skyColor : COLOR,
+    uniform float4 m_horizonColor : COLOR,
+    uniform float4 m_groundColor : COLOR,
+    uniform float4 m_gradientHeight,
+    in float3 l_vector,
+    out float4 o_color : COLOR)
+{
+    float phi = normalize(l_vector).y;
+    if (phi <= 0.0) {
+        o_color = m_groundColor;
+    }
+    else if (phi > m_gradientHeight[0]) {
+        o_color = m_skyColor;
+    }
+    else {
+        float gradientValue = phi / m_gradientHeight[0];
+        o_color = m_skyColor * gradientValue + m_horizonColor * (1.0 - gradientValue);
+    }
+}

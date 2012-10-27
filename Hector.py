@@ -15,17 +15,7 @@ class Hector():
         self.model.reparentTo(render)
         self.model.setPos(pos_x,pos_y,pos_z)
         self.walking = False
-        """
-        self.hectorRay = CollisionRay()
-        self.hectorRay.setOrigin(pos_x,pos_y,pos_z)
-        self.hectorRay.setDirection(0,-1,0)
-        self.hectorCol = CollisionNode('hectorRay')
-        self.hectorCol.addSolid(self.hectorRay)
-        self.hectorCol.setFromCollideMask(BitMask32.bit(1))
-        self.hectorCol.setIntoCollideMask(BitMask32.allOff())
-        self.hectorNode = self.model.attachNewNode(self.hectorCol)
-        collisionTraverser.addCollider(self.hectorNode, collisionHandler)
-        """
+        
         self.velocity = Vec3(0,0,0)
         self.accel = Vec3(0,0,0)
         
