@@ -2,7 +2,12 @@ from xml.dom.minidom import parse
 from math import pi, sin, cos
 from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWriter, GeomVertexData
 from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
-from panda3d.core import DirectionalLight, Vec4
+from panda3d.core import DirectionalLight, Vec4, Shader
+
+def addAlpha(color):
+    if len(color) == 3:
+        color = (color[0], color[1], color[2], 1)
+    return color
 
 class VertexDataWriter(object):
     def __init__(self, vdata):
@@ -54,8 +59,7 @@ def makeAxisAlignedSquare(x1,y1,z1, x2,y2,z2):
 
 
 def makeSquare(colorf, x1,y1,z1, x2,y2,z2):
-    if len(colorf) == 3:
-        colorf = (colorf[0], colorf[1], colorf[2], 1)
+    colorf = addAlpha(colorf)
     vdata = GeomVertexData('square', GeomVertexFormat.getV3n3cpt2(), Geom.UHDynamic)
     writer = VertexDataWriter(vdata)
     aasquare = makeAxisAlignedSquare(x1, y1, z1, x2, y2, z2)
@@ -102,8 +106,7 @@ def toCartesian(azimuth, elevation, length):
     return (x,y,z)
 
 def makeDome(colorf, radius, radialSamples, planes):
-    if len(colorf) == 3:
-        colorf = (colorf[0], colorf[1], colorf[2], 1)
+    colorf = addAlpha(colorf)
     vdata=GeomVertexData('square', GeomVertexFormat.getV3n3cpt2(), Geom.UHDynamic)
     writer = VertexDataWriter(vdata)
 
@@ -196,13 +199,19 @@ class Ramp(WorldObject):
         self.node.lookAt(self.top, up)
 
 class World(object):
-    def __init__(self, render):
+    def __init__(self, render, cam, camLens):
         self.render = render
         self.name = None
         self.author = None
-        alight = AmbientLight('alight')
-        alight.setColor(VBase4(0.4, 0.4, 0.4, 1))
-        render.setLight(render.attachNewNode(alight))
+        self.setGround((0.75,0.5,0.25,1))
+        self.setSky((0.7, 0.80, 1, 1))
+        self.setHorizon((1, 0.8, 0, 1))
+        self.setHorizonScale(0.1)
+
+        self.makeSky(cam, camLens)
+
+        self.makeAmbientLight()
+
         dlight = DirectionalLight('directionalLight')
         dlight.setColor(Vec4(1, 1, 1, 1))
         lightNode = render.attachNewNode(dlight)
@@ -210,6 +219,30 @@ class World(object):
         render.setLight(lightNode)
         self.worldObjects = {}
 
+    def makeAmbientLight(self):
+        alight = AmbientLight('alight')
+        alight.setColor(VBase4(0.4, 0.4, 0.4, 1))
+        self.ambientLight = self.render.attachNewNode(alight)
+        self.render.setLight(self.ambientLight)
+        
+    def makeSky(self, cam, camLens):
+        node = GeomNode('sky')
+        bounds = camLens.makeBounds()
+        dl = bounds.getMin()
+        ur = bounds.getMax()
+        z = dl.getZ() * 0.99
+        node.addGeom(makeSquare((1,1,1,1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0))
+        self.sky = render.attachNewNode(node)
+        self.sky.reparentTo(cam)
+        self.sky.setPos(cam, 0,0, z)
+        self.loadShader('Shaders/Sky.sha')
+
+    def loadShader(self, path):
+        shader = Shader.load(path)
+        self.sky.setShader(shader)
+        self.render.setShaderInput('camera', base.cam)
+        self.render.setShaderInput('sky', self.sky)
+        
     def addWorldObject(self, obj):
         self.worldObjects[obj.name] = obj
         obj.node = self.render.attachNewNode(obj.geom)
@@ -232,15 +265,34 @@ class World(object):
         self.addWorldObject(r)
         r.orientate()
 
-    def setGround(self, radius, color):
-        g = Ground(radius, color)
-        self.addWorldObject(g)
-        return g
+    def setAmbientLight(self, color):
+        color = addAlpha(color)
+        self.ambientLight.node().setColor(color)
+
+    def setHorizon(self, color):
+        color = addAlpha(color)
+        self.horizonColor = color
+        render.setShaderInput('horizonColor', *self.horizonColor)
+
+    def setHorizonScale(self, height):
+        self.horizonScale = 0.15
+        render.setShaderInput('gradientHeight', self.horizonScale, 0, 0, 0)
+
+    def setSky(self, color):
+        color = addAlpha(color)
+        self.skyColor = color
+        render.setShaderInput('skyColor', *self.skyColor)
+
+    def setGround(self, color):
+        color = addAlpha(color)
+        self.groundColor = color
+        self.render.setShaderInput('groundColor', *self.groundColor)
 
 class MapParser(object):
     def __init__(self, render):
         self.render = render
         self.maps = []
+
     def parse_block(self, node, current):
         center = node.attributes.get('center')
         center = parseVector(center.value) if center else (0,0,0)
@@ -273,7 +325,7 @@ class MapParser(object):
     
     def parse_ground(self, node, current):
         color = parseVector(node.attributes['color'].value)
-        #current.setGround(500, color)
+        current.setGround(color)
 
     def parse_dome(self, node, current):
         center = node.attributes.get('center')
@@ -284,9 +336,23 @@ class MapParser(object):
         color = parseVector(color.value if color else '0,0,0')
         current.addDome(center, radius, color)
 
+    def parse_sky(self, node, current):
+        color = node.attributes.get('color')
+        horizon = node.attributes.get('horizon')
+        ambient = node.attributes.get('ambient')
+        horizonScale = node.attributes.get('horizonScale')
+        if color:
+            current.setSky(parseVector(color.value))
+        if horizon:
+            current.setHorizon(parseVector(horizon.value))
+        if ambient:
+            current.setAmbientLight(parseVector(ambient.value))
+        if horizonScale:
+            current.setHorizonScale(float(horizonScale.value))
+
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
-            current = World(render)
+            current = World(render, base.cam, base.camLens)
             current.name = m.attributes['name'].value
             current.author = m.attributes['author'].value
             for child in m.childNodes:
