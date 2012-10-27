@@ -446,7 +446,7 @@ class ConvertSVGLevel():
 		top_x_z_coords = (0,0)
 		arc = False
 		rect = False
-		fill = 0
+		fill = "#FFFFFF"
 		
 		for el in self.el_stack:
 			if isinstance(el, self.Arc):

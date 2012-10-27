@@ -1,10 +1,13 @@
 import sys
 from panda3d.core import *
+from panda3d.ode import *
 from pandac.PandaModules import WindowProperties
 from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
 import MapLoader
 from Hector import Hector
+from random import randint, random
+from wireGeom import wireGeom
 
 class Pavara(ShowBase):
     def __init__(self):
@@ -17,11 +20,13 @@ class Pavara(ShowBase):
         
         # load level
 
-        MapLoader.load('Maps/phosphorus.xml', render)
+        MapLoader.load('Maps/phosphorus.xml', render, self.physWorld, self.physSpace, self.objects)
         #render.attachNewNode(MapLoader.makeBox((1, 0, 0, 1), (0, 0, 0), 1000, 0.5, 0.5))
         #render.attachNewNode(MapLoader.makeBox((0, 1, 0, 1), (0, 0, 0), 0.5, 1000, 0.5))
         #render.attachNewNode(MapLoader.makeBox((0, 0, 1, 1), (0, 0, 0), 0.5, 0.5, 1000))
-        self.h = Hector(render, 0, 12, 14)
+        self.h = Hector(render, 0, 12, 14, 90)
+        
+        
         node = GeomNode('sky')
         bounds = base.camLens.make_bounds()
         dl = bounds.getMin()
@@ -44,11 +49,10 @@ class Pavara(ShowBase):
 
     def initP3D(self):
         self.setupInput()
-        self.collisionTraverser = CollisionTraverser()
-        self.collisionHandler = CollisionHandlerQueue()
-        self.collisionTraverser.showCollisions(render)
-        base.cTrav = self.collisionTraverser
-        taskMgr.add(self.move,'moveTask')
+        self.setupCollision(render)     
+        
+        #self.globalClock = globalClock
+        
         base.setBackgroundColor(0,0,0)
         base.enableParticles()
         base.disableMouse()
@@ -61,19 +65,59 @@ class Pavara(ShowBase):
         self.floater = NodePath(PandaNode("floater"))
         self.floater.reparentTo(render)
         self.up = Vec3(0, 1, 0)
+        taskMgr.add(self.move, 'move')
+        taskMgr.doMethodLater(0.5, self.stepPhysics, "Physics Simulation")
 
     def setKey(self, key, value):
         self.keyMap[key] = value
+    
+    def setupCollision(self, render):
+        self.physWorld = OdeWorld()
+        self.physWorld.setGravity(0,-9.81,0)
         
-    def setupCollision(self, m):
-        self.worldColNode = CollisionNode('worldSolids')
-        for s in m.solids:
-            self.worldColNode.addSolid(s)
-        self.worldColNode.setFromCollideMask(BitMask32.allOff())
-        self.worldColNode.setIntoCollideMask(BitMask32.bit(1))
+        self.physWorld.initSurfaceTable(1)
+        self.physWorld.setSurfaceEntry(0, 0, 150, 0.0, 9.1, 0.9, 0.00001, 0.0, 0.002)
         
-        self.worldColNp = self.render.attachNewNode(self.worldColNode)
-        self.worldColNp.show()
+        self.physSpace = OdeSimpleSpace()
+        self.physSpace.setAutoCollideWorld(self.physWorld)
+        
+        self.contactgroup = OdeJointGroup()
+        self.physSpace.setAutoCollideJointGroup(self.contactgroup)
+        
+        testmodel = loader.loadModel('hector_b2.4_anim.egg')
+        testmodel.setScale(.5)
+        
+        self.objects = []
+        for i in range(randint(15,20)):
+            testnp = testmodel.copyTo(render)
+            testnp.setPos(randint(-10, 10), 13, randint(-14, 15) + random())
+            testnp.setHpr(randint(-45, 45), 13, randint(-45, 45))
+            boxBody = OdeBody(self.physWorld)
+            M = OdeMass()
+            M.setBox(50,1,1,1)
+            boxBody.setMass(M)
+            boxBody.setPosition(testnp.getPos(render))
+            boxBody.setQuaternion(testnp.getQuat(render))
+            boxGeom = OdeBoxGeom(self.physSpace, 1,1,1)
+            boxGeom.setCollideBits(BitMask32(0x00000002))
+            boxGeom.setCategoryBits(BitMask32(0x00000001))
+            boxGeom.setBody(boxBody)
+            
+            boxDebugShape = wireGeom().generate('box',extents = (1,1,1))
+            boxDebugShape.reparentTo(render)
+            boxDebugShape.setPos(testnp.getPos(render))
+            boxDebugShape.setQuat(testnp.getQuat(render))
+            
+            
+            self.objects.append((testnp, boxBody, boxDebugShape))
+        
+        groundGeom = OdePlaneGeom(self.physSpace, Vec4(0, 1, 0, 0))
+        groundGeom.setCollideBits(BitMask32(0x00000001))
+        groundGeom.setCategoryBits(BitMask32(0x00000002))
+        
+        self.dtAccumulator = 0.0
+        self.physStepSize = 1.0/90.0
+        
     
     def setupInput(self):
         self.keyMap = { 'left': 0
@@ -154,8 +198,26 @@ class Pavara(ShowBase):
             self.h.unwalk()
 
         #render.setShaderInput('m_camToWorld.mat4', base.camLens.getProjectionMat())
-        #self.sky.setShaderInput('m_cameraPosition.vec3', base.cam.getPos())
-
+        #self.sky.setShaderInput('m_cameraPosition.vec3', base.cam.getPos())        
+        
+        
+        
+        return task.cont
+    
+    
+    def stepPhysics(self, task):
+        dt = globalClock.getDt()
+        self.physSpace.autoCollide()
+        #self.physWorld.quickStep(dt)
+        self.dtAccumulator += dt
+        while self.dtAccumulator > self.physStepSize:
+        	self.dtAccumulator -= self.physStepSize
+        	self.physWorld.quickStep(self.physStepSize)
+        for np, body, dbgnp in self.objects:
+            np.setPosQuat(render, body.getPosition(), Quat(body.getQuaternion()))
+            np.setPos(np, 0,-1,0)
+            dbgnp.setPosQuat(render, body.getPosition(), Quat(body.getQuaternion()))
+        self.contactgroup.empty()
         return task.cont
 
 if __name__ == '__main__':
