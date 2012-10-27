@@ -2,7 +2,16 @@ from xml.dom.minidom import parse
 from math import pi, sin, cos
 from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWriter, GeomVertexData
 from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
+from panda3d.core import DirectionalLight, Vec4, Plane, BitMask32
+from panda3d.ode import OdeBoxGeom, OdeSphereGeom
+from wireGeom import wireGeom
 from panda3d.core import DirectionalLight, Vec4, Shader
+
+from Hector import Hector
+
+DEBUG_MAP_COLLISION = True
+MAP_COLLIDE_BIT = BitMask32(0x00000001)
+MAP_COLLIDE_CATEGORY = BitMask32(0x00000002)
 
 def addAlpha(color):
     if len(color) == 3:
@@ -155,6 +164,7 @@ class WorldObject(object):
         self.name = objType + ':' + str(lastUniqueID)
         lastUniqueID += 1
         self.node = None
+        self.solid = None
 
 class Block(WorldObject):
     def __init__(self, size, color):
@@ -176,15 +186,18 @@ class Ground(WorldObject):
     def __init__(self, radius, color):
         WorldObject.__init__(self, 'Ground')
         self.geom = makeBox(color, (0, 0, 0), radius, 0.5, radius)
+        self.solid = CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0)))
 
 class Ramp(WorldObject):
     def __init__(self, base, top, width, thickness, color):
         WorldObject.__init__(self, 'Block')
         self.base = base
         self.top = top
+        self.thickness = thickness
         distance = top - base
         length = distance.length()
         self.geom = makeBox(color, (0,0,0), thickness, width, length)
+        
     def orientate(self):
         v1 = self.top - self.base
         if self.base.getX() != self.top.getX():
@@ -196,13 +209,28 @@ class Ramp(WorldObject):
         up.normalize()
         midpoint = Point3((self.base + self.top) / 2.0)
         self.node.setPos(midpoint)
-        self.node.lookAt(self.top, up)
+        self.node.lookAt(self.top, up) 
+
+class Incarnator(WorldObject):
+	def __init__(self, pos, angle):
+		WorldObject.__init__(self, 'Incarnator')
+		self.pos = pos
+		self.angle = angle
+		self.h = None
+		
+	def placeHector(self, render):
+		self.h = Hector(render, self.pos[0], self.pos[1], self.pos[2], self.angle)
 
 class World(object):
-    def __init__(self, render, cam, camLens):
+    def __init__(self, render, cam, camLens, physSpace):
         self.render = render
+        self.physSpace = physSpace
         self.name = None
         self.author = None
+        alight = AmbientLight('alight')
+        alight.setColor(VBase4(0.4, 0.4, 0.4, 1))
+        
+        render.setLight(render.attachNewNode(alight))
         self.setGround((0.75,0.5,0.25,1))
         self.setSky((0.7, 0.80, 1, 1))
         self.setHorizon((1, 0.8, 0, 1))
@@ -211,13 +239,13 @@ class World(object):
         self.makeSky(cam, camLens)
 
         self.makeAmbientLight()
-
         dlight = DirectionalLight('directionalLight')
         dlight.setColor(Vec4(1, 1, 1, 1))
         lightNode = render.attachNewNode(dlight)
         lightNode.setHpr(20, -120, 0)
         render.setLight(lightNode)
         self.worldObjects = {}
+        self.solids = []
 
     def makeAmbientLight(self):
         alight = AmbientLight('alight')
@@ -246,24 +274,69 @@ class World(object):
     def addWorldObject(self, obj):
         self.worldObjects[obj.name] = obj
         obj.node = self.render.attachNewNode(obj.geom)
+        if(obj.solid):
+        	self.solids.append(obj.solid)
 
     def addBlock(self, center, size, color, yaw, pitch, roll):
         b = Block(size, color)
         self.addWorldObject(b)
         b.move(center)
         b.rotate(yaw, pitch, roll)
+        blockGeom = OdeBoxGeom(self.physSpace, size[0], size[1], size[2])
+        blockGeom.setCollideBits(MAP_COLLIDE_BIT)
+        blockGeom.setCategoryBits(MAP_COLLIDE_CATEGORY)
+        blockGeom.setPosition(b.node.getPos())
+        blockGeom.setQuaternion(b.node.getQuat())
+        if DEBUG_MAP_COLLISION:
+			blockDebugShape = wireGeom().generate('box', extents = (size[0],size[1],size[2]))
+			blockDebugShape.reparentTo(render)
+			blockDebugShape.setPos(b.node.getPos())
+			blockDebugShape.setQuat(b.node.getQuat())
         return b
 
     def addDome(self, center, radius, color):
         d = Dome(radius, color)
         self.addWorldObject(d)
         d.move(center)
+        
+        domeGeom = OdeSphereGeom(self.physSpace, radius)
+        domeGeom.setCollideBits(MAP_COLLIDE_BIT)
+        domeGeom.setCategoryBits(MAP_COLLIDE_CATEGORY)
+        domeGeom.setPosition(d.node.getPos())
+        domeGeom.setQuaternion(d.node.getQuat())
+        
+        if DEBUG_MAP_COLLISION:
+        	domeDebugShape = wireGeom().generate('sphere', radius=radius)
+        	domeDebugShape.reparentTo(render)
+        	domeDebugShape.setPos(d.node.getPos(render))
+        	domeDebugShape.setQuat(d.node.getQuat(render))
+        
         return d
 
     def addRamp(self, base, top, width, thickness, color):
         r = Ramp(base, top, width, thickness, color)
         self.addWorldObject(r)
         r.orientate()
+        
+        #physics doesn't work with 0 thickness blocks!
+        if thickness == 0:
+        	thickness = .001
+        
+        rampGeom = OdeBoxGeom(self.physSpace, thickness, width, (top-base).length())
+        rampGeom.setCollideBits(MAP_COLLIDE_BIT)
+        rampGeom.setCategoryBits(MAP_COLLIDE_CATEGORY)
+        rampGeom.setPosition(r.node.getPos())
+        rampGeom.setQuaternion(r.node.getQuat())
+        if DEBUG_MAP_COLLISION:
+			rampDebugShape = wireGeom().generate('box', extents = (thickness, width, (top-base).length()))
+			rampDebugShape.reparentTo(render)
+			rampDebugShape.setPos(r.node.getPos())
+			rampDebugShape.setQuat(r.node.getQuat())        
+        return r
+        
+    def addIncarn(self, pos, angle):
+    	i = Incarnator(pos, angle)
+    	#i.placeHector(self.render)
 
     def setAmbientLight(self, color):
         color = addAlpha(color)
@@ -289,9 +362,11 @@ class World(object):
         self.render.setShaderInput('groundColor', *self.groundColor)
 
 class MapParser(object):
-    def __init__(self, render):
+    def __init__(self, render, physSpace):
         self.render = render
+        self.physSpace = physSpace
         self.maps = []
+        self.solids = []
 
     def parse_block(self, node, current):
         center = node.attributes.get('center')
@@ -352,7 +427,7 @@ class MapParser(object):
 
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
-            current = World(render, base.cam, base.camLens)
+            current = World(render, base.cam, base.camLens, self.physSpace)
             current.name = m.attributes['name'].value
             current.author = m.attributes['author'].value
             for child in m.childNodes:
@@ -360,10 +435,13 @@ class MapParser(object):
                 if hasattr(self, name):
                     getattr(self, name)(child, current)
             self.maps.append(current)
+        
+            
 
 
-def load(path, render):
+def load(path, render, physSpace):
     dom = parse(path)
-    parser = MapParser(render)
+    parser = MapParser(render, physSpace)
     parser.loadMaps(dom)
+    return parser
     

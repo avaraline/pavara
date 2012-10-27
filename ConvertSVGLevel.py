@@ -329,7 +329,7 @@ class ConvertSVGLevel():
 	
 	def chunks(self, l, n):
 		return [l[i:i+n] for i in range(0, len(l), n)]
-
+		
 	def parse_script(self, scriptlines):
 		print scriptlines
 		scriptlines = [x for x in scriptlines if x]
@@ -344,14 +344,23 @@ class ConvertSVGLevel():
 		has_wall = False
 		nonramp = False
 		
+		set_sky_color = False
+		set_ground_color = False
+		
 		has_wa = False
 		
 		y = 0
 		delta_y = 0
+		ramp_thickness = 0
 		
 		for line in scriptlines:
 			words = [x for x in re.split("\s?=?\s?", line) if x]
 			print "testing on %s, in_object = %s" % (words[0],in_object)
+			if(words[0] == "adjust"):
+				if(words[1] == "SkyColor"):
+					set_sky_color = True
+				if(words[1] == "GroundColor"):
+					set_ground_color = True
 			if(words[0] == "wa"):
 				self.block_follows = True
 				self.curr_wa = float(words[1])
@@ -378,6 +387,8 @@ class ConvertSVGLevel():
 					has_ramp = True
 					if(words[0] == "deltaY"):
 						delta_y = float(words[1])
+					if(words[0] == "thickness"):
+						ramp_thickness = words[1];
 				else:
 					nonramp = True
 				if(object_type == "Incarnator"):
@@ -388,20 +399,25 @@ class ConvertSVGLevel():
 				object_type = ""
 		#end for
 		
+		if set_sky_color:
+			self.make_sky_element()
+			
+		if set_ground_color:
+			self.make_ground_element()
+		
 		if info_text:
 			descel = et.SubElement(self.newtree, "description")
 			descel.text = info_text
 		
 		if has_incarn:
-			self.make_incarn(y)
-		
-		if has_ramp:
-			self.make_ramp(y, delta_y)
-			
+			self.make_incarn(y)	
 			
 		if (self.block_follows or nonramp) and (has_ramp == False):
 			self.make_block_from_rect()
-				
+		
+		if has_ramp:
+			self.make_ramp(y, delta_y, ramp_thickness)
+			
 		if not has_wa:
 			self.curr_wa = 0
 			
@@ -413,9 +429,8 @@ class ConvertSVGLevel():
 		x = float(coord_tuple[0])# - self.center_x
 		y = float(coord_tuple[1])# - self.center_y 
 		return (self.pix_to_units(x),self.pix_to_units(y))
-		
+	
 	def hex_color_to_rgb(self, color):
-		
 		color = color.lstrip("#")
 		if len(color) != 6:
 			raise ValueError, "input #%s is not in #RRGGBB format" % color
@@ -423,19 +438,24 @@ class ConvertSVGLevel():
 		r, g, b = [int(n, 16) for n in (r, g, b)] 
 		return "%s,%s,%s"%((r/255.0, g/255.0, b/255.0)) # colors are rgb between 1 and 0
 	
-	def make_ramp(self, y, delta_y):
+	
+	def make_ramp(self, y, delta_y, thickness):
 		ramp_base = 0
 		ramp_top = 0
 		base_x_z_coords = (0,0)
 		top_x_z_coords = (0,0)
 		arc = False
 		rect = False
+		fill = "#FFFFFF"
 		
 		for el in self.el_stack:
 			if isinstance(el, self.Arc):
 				arc = el
 			if isinstance(el, self.Rect):
-				rect = el
+				if el.fill == "none":
+					rect = el
+				else:
+					fill = el.fill
 		if arc == False	:
 			print "warning no arc found for ramp..."
 			return
@@ -443,6 +463,8 @@ class ConvertSVGLevel():
 			print "warning no rect found for ramp..."
 			return
 		
+		if arc.fill != "#FFFFFF":
+			arc.fill = fill
 		
 		print "pointing ramp downhill to %s" % arc.angle
 		#angle points to bottom of ramp
@@ -478,6 +500,8 @@ class ConvertSVGLevel():
 		new_ramp.set("top", ramp_top)
 		new_ramp.set("width", ramp_width)
 		new_ramp.set("color", self.hex_color_to_rgb(arc.fill))
+		if thickness > 0:
+			new_ramp.set("thickness", thickness)
 		print "added ramp - base: %s, top:%s, width: %s, color: %s, y: %s, deltaY: %s" % (ramp_base, ramp_top, ramp_width, new_ramp.get('color'), y, delta_y)
 		del(self.el_stack[:])
 		
@@ -508,10 +532,10 @@ class ConvertSVGLevel():
 			
 			
 			#sanity bumpz for 0 thickness blox
-			if self.curr_wa == 0 and self.curr_wall_height == 0:
-				center_y += .28
-			if(self.curr_wall_height == 0):
+			if self.curr_wall_height == 0:
 				center_y += .001
+			#if(self.curr_wall_height == 0):
+			#	center_y += .001
 			
 			new_block = et.SubElement(self.newtree, "block")
 			
@@ -544,7 +568,33 @@ class ConvertSVGLevel():
 				new_incarn.set("angle", "%s" % (str(incarn_angle)))
 				print "added incarn - pos: %s,%s,%s angle: %s" % (location, angle)
 				del(self.el_stack[idx])
-
+				
+	def make_sky_element(self):
+		horizon = 0
+		color = 0
+		print "Making sky element"
+		print self.el_stack
+		for el in self.el_stack:
+			if isinstance(el, self.Arc):
+				if el.fill != "none":
+					horizon = self.hex_color_to_rgb(el.fill)
+				if el.stroke:
+					color = self.hex_color_to_rgb(el.stroke)
+		new_sky = et.SubElement(self.newtree, "sky")
+		new_sky.set("horizon", horizon)
+		new_sky.set("color", color)
+		del(self.el_stack[:])
+	
+	def make_ground_element(self):
+		color = 0
+		for el in self.el_stack:
+			if isinstance(el, self.Arc):
+				if el.fill != "none":
+					color = self.hex_color_to_rgb(el.fill)
+		new_ground = et.SubElement(self.newtree, "ground")
+		new_ground.set("color", color)
+		del(self.el_stack[:])
+		
 if __name__ == "__main__":
 	try:
 		c = ConvertSVGLevel(sys.argv[1], sys.argv[2], sys.argv[3])
