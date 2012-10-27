@@ -20,7 +20,7 @@ class Pavara(ShowBase):
         #render.attachNewNode(MapLoader.makeBox((0, 0, 1, 1), (0, 0, 0), 0.5, 0.5, 1000))
         self.h = Hector(render, 0, 12, 14)
         node = GeomNode('sky')
-        bounds = base.camLens.make_bounds()
+        bounds = base.camLens.makeBounds()
         dl = bounds.getMin()
         ur = bounds.getMax()
         z = dl.getZ() * 0.99
@@ -32,10 +32,10 @@ class Pavara(ShowBase):
         node.setShader(self.shader)
         render.setShaderInput('camera', base.cam)
         render.setShaderInput('sky', node)
-        render.setShaderInput('m_skyColor', Vec4(0, 0, 0, 0))
-        render.setShaderInput('m_horizonColor', Vec4(0.15, 0, 0.3, 0))
-        render.setShaderInput('m_groundColor', Vec4(0.15, 0.15, 0.15, 0.15))
-        render.setShaderInput('m_gradientHeight', 0.05, 0.05, 0.05, 0.05)
+        render.setShaderInput('skyColor', Vec4(0, 0, 0, 0))
+        render.setShaderInput('horizonColor', Vec4(0.15, 0, 0.3, 0))
+        render.setShaderInput('groundColor', Vec4(0.15, 0.15, 0.15, 0.15))
+        render.setShaderInput('gradientHeight', 0.05, 0.05, 0.05, 0.05)
         self.sky = node
 
     def initP3D(self):
