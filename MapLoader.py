@@ -1,11 +1,12 @@
 from xml.dom.minidom import parse
-from math import pi, sin, cos
+from math import pi, sin, cos, radians, acos
 from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWriter, GeomVertexData
 from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
-from panda3d.core import DirectionalLight, Vec4, Plane, BitMask32
+from panda3d.core import DirectionalLight, Vec4, Plane, BitMask32, Shader
+from panda3d.core import CompassEffect, TransparencyAttrib
 from panda3d.ode import OdeBoxGeom, OdeSphereGeom
 from wireGeom import wireGeom
-from panda3d.core import DirectionalLight, Vec4, Shader
+import random
 
 from Hector import Hector
 
@@ -223,14 +224,12 @@ class Incarnator(WorldObject):
 
 class World(object):
     def __init__(self, render, cam, camLens, physSpace):
+        self.cam = cam
         self.render = render
         self.physSpace = physSpace
         self.name = None
         self.author = None
-        alight = AmbientLight('alight')
-        alight.setColor(VBase4(0.4, 0.4, 0.4, 1))
         
-        render.setLight(render.attachNewNode(alight))
         self.setGround((0.75,0.5,0.25,1))
         self.setSky((0.7, 0.80, 1, 1))
         self.setHorizon((1, 0.8, 0, 1))
@@ -239,11 +238,6 @@ class World(object):
         self.makeSky(cam, camLens)
 
         self.makeAmbientLight()
-        dlight = DirectionalLight('directionalLight')
-        dlight.setColor(Vec4(1, 1, 1, 1))
-        lightNode = render.attachNewNode(dlight)
-        lightNode.setHpr(20, -120, 0)
-        render.setLight(lightNode)
         self.worldObjects = {}
         self.solids = []
 
@@ -339,6 +333,7 @@ class World(object):
     	#i.placeHector(self.render)
 
     def setAmbientLight(self, color):
+        print color
         color = addAlpha(color)
         self.ambientLight.node().setColor(color)
 
@@ -360,6 +355,23 @@ class World(object):
         color = addAlpha(color)
         self.groundColor = color
         self.render.setShaderInput('groundColor', *self.groundColor)
+   
+    def addCelestial(self, azimuth, elevation, color, intensity, radius, visible):
+        location = Vec3(toCartesian(azimuth, elevation, 1000.0 * 255.0 / 256.0))
+        dlight = DirectionalLight('directionalLight')
+        dlight.setColor((color[0]*intensity, color[1]*intensity, color[2]*intensity, 1.0))
+        lightNode = self.render.attachNewNode(dlight)
+        lightNode.lookAt(*(location * -1))
+        self.render.setLight(lightNode)
+        if visible:
+            sphere = loader.loadModel('misc/sphere')
+            sphere.setTransparency(TransparencyAttrib.MAlpha)
+            sphere.reparentTo(self.render)
+            sphere.setLightOff()
+            sphere.setEffect(CompassEffect.make(self.cam, CompassEffect.PPos))
+            sphere.setScale(45*radius)
+            sphere.setColor(*color)
+            sphere.setPos(location)
 
 class MapParser(object):
     def __init__(self, render, physSpace):
@@ -411,6 +423,59 @@ class MapParser(object):
         color = parseVector(color.value if color else '0,0,0')
         current.addDome(center, radius, color)
 
+    def parse_starfield(self, node, current):
+        seed = node.attributes.get('seed')
+        count = node.attributes.get('count')
+        minColor = node.attributes.get('minColor')
+        maxColor = node.attributes.get('maxColor')
+        minSize = node.attributes.get('minSize')
+        maxSize = node.attributes.get('maxSize')
+        monochrome = node.attributes.get('monochrome')
+        if seed:
+            random.seed(int(seed.value))
+        count = int(count.value) if count else 500
+        minColor = parseVector(minColor.value) if minColor else (1,1,1,1)
+        maxColor = parseVector(maxColor.value) if maxColor else (1,1,1,1)
+        minSize = float(minSize.value) if minSize else 0.025
+        maxSize = float(maxSize.value) if maxSize else 0.025
+        monochrome = True if monochrome and monochrome.value.lower() in ('yes', 'y', 'true', 't') else False
+        minR = minColor[0]
+        deltaR = maxColor[0] - minR
+        minG = minColor[1]
+        deltaG = maxColor[1] - minG
+        minB = minColor[2]
+        deltaB = maxColor[2] - minB
+        deltaSize = maxSize - minSize
+        two_pi = pi * 2
+        half_pi = pi / 2
+        for s in range(count):
+            theta = two_pi * random.random()
+            phi = abs(half_pi - acos(random.random()))
+            starType = random.randint(0,2)
+            #if starType == 0: # white star
+            #    r = g = b = 1
+            #elif starType == 1: # orange/yellow
+            #    r = 1
+            #    g = 0.5 + random.random() * 0.5
+            #    b = g/2
+            #elif starType == 2: # blue
+            #    b = 1
+            #    g = b * (1 - random.random() * 0.30)
+            #    r = g * (1 - random.random() * 0.30)
+            if monochrome:
+                dice = random.random()
+                r = minR + dice * deltaR
+                g = minG + dice * deltaG
+                b = minB + dice * deltaB
+            else:
+                r = minR + random.random() * deltaR
+                g = minG + random.random() * deltaG
+                b = minB + random.random() * deltaB
+            color = (r, g, b, 1 - (1 - phi/pi)**6)
+            size = minSize + random.random() * deltaSize
+            current.addCelestial(theta, phi, color, 0, size, True)
+
+            
     def parse_sky(self, node, current):
         color = node.attributes.get('color')
         horizon = node.attributes.get('horizon')
@@ -424,6 +489,19 @@ class MapParser(object):
             current.setAmbientLight(parseVector(ambient.value))
         if horizonScale:
             current.setHorizonScale(float(horizonScale.value))
+        for child in node.childNodes:
+            if "celestial" == child.nodeName.lower():
+                azimuth = child.attributes.get('azimuth')
+                elevation = child.attributes.get('elevation')
+                color = child.attributes.get('color')
+                intensity = child.attributes.get('intensity')
+                visible = child.attributes.get('visible')
+                azimuth = radians(float(azimuth.value) if azimuth else 30)
+                elevation = radians(float(elevation.value) if elevation else 20)
+                color = parseVector(color.value) if color else (1.0, 1.0, 1.0, 1.0)
+                intensity = float(intensity.value) if intensity else 0.6
+                visible = True if visible and visible.value.lower() in ('yes', 'y', 'true', 't') else False
+                current.addCelestial(azimuth, elevation, color, intensity, 1.0, visible)
 
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
@@ -436,9 +514,6 @@ class MapParser(object):
                     getattr(self, name)(child, current)
             self.maps.append(current)
         
-            
-
-
 def load(path, render, physSpace):
     dom = parse(path)
     parser = MapParser(render, physSpace)

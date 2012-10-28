@@ -1,7 +1,7 @@
 from direct.actor.Actor import Actor
 from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import Vec3, CollisionNode, CollisionRay, BitMask32, Geom
-from pandac.PandaModules import GeomVertexReader, GeomVertexWriter, LVecBase4f
+from pandac.PandaModules import GeomVertexReader, GeomVertexWriter
 from pandac.PandaModules import GeomVertexArrayFormat, InternalName, GeomVertexFormat
 import math
 class Hector():
