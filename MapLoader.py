@@ -233,7 +233,7 @@ class World(object):
         self.setGround((0.75,0.5,0.25,1))
         self.setSky((0.7, 0.80, 1, 1))
         self.setHorizon((1, 0.8, 0, 1))
-        self.setHorizonScale(0.1)
+        self.setHorizonScale(0.15)
 
         self.makeSky(cam, camLens)
 
@@ -333,7 +333,6 @@ class World(object):
     	#i.placeHector(self.render)
 
     def setAmbientLight(self, color):
-        print color
         color = addAlpha(color)
         self.ambientLight.node().setColor(color)
 
@@ -343,7 +342,7 @@ class World(object):
         render.setShaderInput('horizonColor', *self.horizonColor)
 
     def setHorizonScale(self, height):
-        self.horizonScale = 0.15
+        self.horizonScale = height
         render.setShaderInput('gradientHeight', self.horizonScale, 0, 0, 0)
 
     def setSky(self, color):
