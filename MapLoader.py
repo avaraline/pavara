@@ -233,7 +233,7 @@ class World(object):
         self.setGround((0.75,0.5,0.25,1))
         self.setSky((0.7, 0.80, 1, 1))
         self.setHorizon((1, 0.8, 0, 1))
-        self.setHorizonScale(0.15)
+        self.setHorizonScale(0.05)
 
         self.makeSky(cam, camLens)
 

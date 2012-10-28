@@ -1,7 +1,6 @@
 <?xml version="1.0" standalone="yes" ?>
 <map name="Phosphorus" author="Ryan Herriman &lt;rherriman@gmail.com&gt;">
-	<!-- Note, this ambient light is actually 0.3 in the original level. -->
-	<sky ambient="0.6,0.6,0.6" color="0.24,0.24,0.31" horizon="0.7,0.7,0.73" horizonScale="0.15">
+	<sky ambient="0.3,0.3,0.3" color="0.24,0.24,0.31" horizon="0.7,0.7,0.73" horizonScale="0.15">
 		<celestial azimuth="90" elevation="90" color="1,1,1" intensity="0.6" visible="true" />
 		<celestial azimuth="200" elevation="20" color="1,1,1" intensity="0.3" visible="true" />
 	</sky>
