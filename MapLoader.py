@@ -488,6 +488,7 @@ class MapParser(object):
             current.setAmbientLight(parseVector(ambient.value))
         if horizonScale:
             current.setHorizonScale(float(horizonScale.value))
+        celestialCount = 0
         for child in node.childNodes:
             if "celestial" == child.nodeName.lower():
                 azimuth = child.attributes.get('azimuth')
@@ -501,6 +502,10 @@ class MapParser(object):
                 intensity = float(intensity.value) if intensity else 0.6
                 visible = True if visible and visible.value.lower() in ('yes', 'y', 'true', 't') else False
                 current.addCelestial(azimuth, elevation, color, intensity, 1.0, visible)
+                celestialCount += 1
+        if celestialCount == 0:
+            current.addCelestial(radians(20), radians(45), (1,1,1,1), 0.4, 1.0, False)
+            current.addCelestial(radians(200), radians(20), (1,1,1,1), 0.3, 1.0, False)
 
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
