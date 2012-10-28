@@ -9,7 +9,7 @@ from panda3d.core import DirectionalLight, Vec4, Shader
 
 from Hector import Hector
 
-DEBUG_MAP_COLLISION = True
+DEBUG_MAP_COLLISION = False
 MAP_COLLIDE_BIT = BitMask32(0x00000001)
 MAP_COLLIDE_CATEGORY = BitMask32(0x00000002)
 

@@ -6,8 +6,8 @@ from pandac.PandaModules import GeomVertexArrayFormat, InternalName, GeomVertexF
 import math
 class Hector():
     def __init__(self, render, pos_x, pos_y, pos_z, angle):
-        #self.model = Actor("hector_b2.4_2segment.egg")
-        self.model = Actor("hector_b2.4_anim.egg")
+        self.model = Actor("hector_b2.4_no_mats.egg")
+        #self.model = Actor("hector_b2.4_anim.egg")
         self.model.setPlayRate(6.5, "walk")
         self.model.setScale(3.0)
         self.model.setHpr(self.model, 0, 0, 0)
@@ -24,7 +24,7 @@ class Hector():
         self.model.setControlEffect('crouch', 0.0)
         #self.model.loop('crouch')
         
-        self.crouchcontrol = self.model.getAnimControl('crouch')
+        self.crouchcontrol = None #self.model.getAnimControl('crouch')
         self.crouchfactor = 0
         
         self.setupColor(.2,.3,.8,1)
@@ -97,7 +97,7 @@ class Hector():
         if(self.crouchfactor < 1):
             self.crouchfactor +=.2
         
-        self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
+        #self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
         
     def uncrouch(self):
         if not self.walking:
@@ -110,7 +110,7 @@ class Hector():
         if self.crouchfactor > 0:
             self.crouchfactor -= .2
             
-        self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
+        #self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
     
 
     
@@ -121,7 +121,7 @@ class Hector():
         self.model.setH(self.model, -1)
     
     def setupColor(self, r, g, b, a):
-    	gvarrayf = GeomVertexArrayFormat()
+        gvarrayf = GeomVertexArrayFormat()
         gvarrayf.addColumn(InternalName.make('color'), 4, Geom.NTFloat32, Geom.CColor)
         gformat = GeomVertexFormat()
         gformat.addArray(gvarrayf)
@@ -132,6 +132,7 @@ class Hector():
             geomNode = nodePath.node()
             for i in range(geomNode.getNumGeoms()):
                 geom = geomNode.modifyGeom(i)
+                print geom
                 vdata = geom.modifyVertexData()
                 pre_existing_color = False
                 
@@ -142,8 +143,10 @@ class Hector():
                 vdata.setFormat(new_format)
                 color = GeomVertexWriter(vdata, 'color')
                 vertex = GeomVertexReader(vdata, 'vertex')
+                read_color = GeomVertexReader(vdata, 'color')
                 while not vertex.isAtEnd():
                     v = vertex.getData3f()
+                    #print v
                     if pre_existing_color:
                         color.setData4f(r,g,b,a)
                     else:

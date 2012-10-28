@@ -188,11 +188,11 @@ class Pavara(ShowBase):
     def stepPhysics(self, task):
         dt = globalClock.getDt()
         self.physSpace.autoCollide()
-        #self.physWorld.quickStep(dt)
-        self.dtAccumulator += dt
-        while self.dtAccumulator > self.physStepSize:
-        	self.dtAccumulator -= self.physStepSize
-        	self.physWorld.quickStep(self.physStepSize)
+        self.physWorld.quickStep(dt)
+        #self.dtAccumulator += dt
+        #while self.dtAccumulator > self.physStepSize:
+        #	self.dtAccumulator -= self.physStepSize
+        #	self.physWorld.quickStep(self.physStepSize)
         for np, body, dbgnp in self.objects:
             np.setPosQuat(render, body.getPosition(), Quat(body.getQuaternion()))
             np.setPos(np, 0,-1,0)
