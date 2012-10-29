@@ -73,6 +73,7 @@ Networking
 ----------
 ###high priority
 *   **game object distribution and sync**
+
 ###low priority
 *   **server tracking**
 *   **game metadata distribution (chat/level and asset distribution)**
