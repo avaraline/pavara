@@ -20,7 +20,7 @@ class Pavara(ShowBase):
         
         # load level
 
-        MapLoader.load('Maps/freezerburn.xml', render, self.physSpace)
+        MapLoader.load('Maps/phosphorus.xml', render, self.physSpace)
         #render.attachNewNode(MapLoader.makeBox((1, 0, 0, 1), (0, 0, 0), 1000, 0.5, 0.5))
         #render.attachNewNode(MapLoader.makeBox((0, 1, 0, 1), (0, 0, 0), 0.5, 1000, 0.5))
         #render.attachNewNode(MapLoader.makeBox((0, 0, 1, 1), (0, 0, 0), 0.5, 0.5, 1000))

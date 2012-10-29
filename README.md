@@ -12,6 +12,7 @@ Pavara depends on Panda3D which can be downloaded here: http://www.panda3d.org/d
 For Windows: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe
 
 For Macs: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg
+Mac users also need: https://developer.nvidia.com/cg-toolkit
 
 For Ubuntu: http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk
 
