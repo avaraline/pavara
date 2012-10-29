@@ -233,7 +233,7 @@ class World(object):
         self.setGround((0.75,0.5,0.25,1))
         self.setSky((0.7, 0.80, 1, 1))
         self.setHorizon((1, 0.8, 0, 1))
-        self.setHorizonScale(0.1)
+        self.setHorizonScale(0.15)
 
         self.makeSky(cam, camLens)
 
@@ -333,7 +333,6 @@ class World(object):
     	#i.placeHector(self.render)
 
     def setAmbientLight(self, color):
-        print color
         color = addAlpha(color)
         self.ambientLight.node().setColor(color)
 
@@ -343,7 +342,7 @@ class World(object):
         render.setShaderInput('horizonColor', *self.horizonColor)
 
     def setHorizonScale(self, height):
-        self.horizonScale = 0.15
+        self.horizonScale = height
         render.setShaderInput('gradientHeight', self.horizonScale, 0, 0, 0)
 
     def setSky(self, color):
@@ -489,6 +488,7 @@ class MapParser(object):
             current.setAmbientLight(parseVector(ambient.value))
         if horizonScale:
             current.setHorizonScale(float(horizonScale.value))
+        celestialCount = 0
         for child in node.childNodes:
             if "celestial" == child.nodeName.lower():
                 azimuth = child.attributes.get('azimuth')
@@ -502,6 +502,10 @@ class MapParser(object):
                 intensity = float(intensity.value) if intensity else 0.6
                 visible = True if visible and visible.value.lower() in ('yes', 'y', 'true', 't') else False
                 current.addCelestial(azimuth, elevation, color, intensity, 1.0, visible)
+                celestialCount += 1
+        if celestialCount == 0:
+            current.addCelestial(radians(20), radians(45), (1,1,1,1), 0.4, 1.0, False)
+            current.addCelestial(radians(200), radians(20), (1,1,1,1), 0.3, 1.0, False)
 
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
