@@ -3,6 +3,29 @@ pavara
 
 A game inspired by the classic Mac game.
 
+how to install dependencies
+===========================
+
+Pavara depends on Panda3D which can be downloaded here: http://www.panda3d.org/download.php?sdk&version=1.8.0
+
+For Windows: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe
+
+For Macs: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg
+
+For Ubuntu: http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk
+
+For Ubuntu 12.04, you can install the oneiric version, but it will complain about 2 unmet dependencies. 
+You can download those dependencies from here: http://packages.ubuntu.com/oneiric/allpackages. Then it will install.
+
+running it
+==========
+
+Windows: navigate to the source code directory with cmd and run ppython pavara.py
+
+Macs: navigate to the source code directory in a terminal and run ppython pavara.py
+
+Linux: navigate to the source code directory in a terminal and run python pavara.py
+
 roadmap
 =======
 * * * 
