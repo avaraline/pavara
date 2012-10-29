@@ -20,12 +20,13 @@ class Pavara(ShowBase):
         
         # load level
 
-        MapLoader.load('Maps/nightsky.xml', render, self.physSpace)
+        MapLoader.load('Maps/freezerburn.xml', render, self.physSpace)
         #render.attachNewNode(MapLoader.makeBox((1, 0, 0, 1), (0, 0, 0), 1000, 0.5, 0.5))
         #render.attachNewNode(MapLoader.makeBox((0, 1, 0, 1), (0, 0, 0), 0.5, 1000, 0.5))
         #render.attachNewNode(MapLoader.makeBox((0, 0, 1, 1), (0, 0, 0), 0.5, 0.5, 1000))
-
-        self.h = Hector(render, 0, 12, 14, 90)
+        self.hectors = []
+        self.h = Hector(render, self.physSpace, self.physWorld, 0, 12, 14, 90)
+        self.hectors.append(self.h)
 
     def initP3D(self):
         self.setupInput()
@@ -197,6 +198,7 @@ class Pavara(ShowBase):
             np.setPosQuat(render, body.getPosition(), Quat(body.getQuaternion()))
             np.setPos(np, 0,-1,0)
             dbgnp.setPosQuat(render, body.getPosition(), Quat(body.getQuaternion()))
+        #for np, body, dbgnp in self.hectors:
         self.contactgroup.empty()
         return task.cont
 
