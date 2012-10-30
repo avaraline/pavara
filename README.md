@@ -3,6 +3,7 @@ pavara
 
 A game inspired by the classic Mac game.
 
+* * *
 how to install dependencies
 ===========================
 
@@ -12,9 +13,12 @@ For Windows: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe
 
 For Macs: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg
 
+Mac users also need: https://developer.nvidia.com/cg-toolkit
+
 For Ubuntu: http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk
 
 For Ubuntu 12.04, you can install the oneiric version, but it will complain about 2 unmet dependencies. 
+
 You can download those dependencies from here: http://packages.ubuntu.com/oneiric/allpackages. Then it will install.
 
 running it
@@ -26,65 +30,102 @@ Macs: navigate to the source code directory in a terminal and run ppython pavara
 
 Linux: navigate to the source code directory in a terminal and run python pavara.py
 
+* * *
 roadmap
 =======
-* * * 
+
 Maps
 ----
-*   **port skybox from JME3 code**
+###high priority
 *   **legacy map converter**
 	*   add conversion for
 		*   domes
 		*   rounded rects
+
+###low priority
 *   **map syntax**
-	*   need definitions for
+	*   need definitions/implementation for
         *   level description
-		*   lighting
-		*   per-level logic
+		*   per-level logic/scripting
+		*	assign ids to objects for scripting
+		*	assign mass to objects to make freeSolids
 		*   fields/areas
 		*   goodies
 		*   custom shapes
 		
 Graphics
 --------
-###hi priority
-*   **walker animations**
-	*   seperate animations for `walk, stand, crouched_walk, crouch, airbourne_walk`
-	*   animation blending based on crouch/walk factor, physics forces, and terrain
-*   **dynamic model coloring**
-    *   vertex recoloring
-    	*	figure out head model coloring
+###high priority
+*   **walking animation**
+	*	use `LerpInterval`s to move hector model rigging
+	*	work with colliision character to stop feet on terrain
 
-###lo priority
-*   **updated assets needed**
+###low priority
+*	**multiple hector colors**
+	*	look at geom group naming with `egg-optchar`
+	*	see https://www.panda3d.org/manual/index.php/Egg_Syntax
+	*	also see https://www.panda3d.org/manual/index.php/Manipulating_a_Piece_of_a_Model
+*   **updated assets**
     *   walker(s) (export bobski's model)
 	*   missile/grenade/plasma
 	*   unigoody
 *   **shadows**
     *   directional soft shadow mapping
 *   **particle effects**
-	* explosions
+	*	explosions
+	*	missle/lazer trails
 	
 Networking
 ----------
+###high priority
 *   **game object distribution and sync**
+
+###low priority
 *   **server tracking**
 *   **game metadata distribution (chat/level and asset distribution)**
 
-Physics
+Logic
+-----
+*	**player data**
+	*	shield/plasma recharge rates based on energy level 
+	*	ammo and boosters
+	*	respawns
+	*	incarnator selection
+	*	position, speed, velocity
+*	**game data**: setup, types, start/end conditions
+	
+Sound
+-----
+###low priority
+*	**doppler effect/stereo positioned playback**
+*	**updated assets**
+	*	plasma/missle/grenade loop
+	*	kArticWind etc. replacements
+	*	footstep sounds, goody sounds
+	*	incarnator and teleporter sounds
+	*	xplosions
+
+Physics (ODE)
 -------
-*   **bullet physics**
-    *   same engine as JME3 clone
-    *   need collision objects for all map objects -> bullet collision 'world'
-    *   need custom hector 'kinematic' character controller (example: https://github.com/peterpodgorski/panda3d-bullet-kcc)
-    *   integrate with animations
-*   or, **panda physics manager**
-    *   must create collision polys for map from primitives (Quads preferred over Tris)
-    *   implement CollisionTraverser and CollisionHandlerQueue
-    *   build hector controller from scratch, add collision meshes to model in Blender
+###higher priority
+*	**kinematic character controller**
+	*	apply forces after physics tick for movement
+	*	keep collision shape upright
+	*	send messages to hector object for animation
+	*	update position and rotation of hector object
+*	**ballistics**
+	*	grenade lobbing
+	*	"smart" missle tracking
+	*	lazers
+	*	damage 
+	
+###lower priority
+*	**other collidables**
+	*	goodies
+	*	fields/areas
+	*	kinematic map objects
     
 User Interface
 --------------
-either:
-*   2d rendering in Panda3d context, or
-*   wxPython/window manager windows for configuration/setup and Panda3d context for gameplay
+###lowest priority
+*	**preliminary designs**
