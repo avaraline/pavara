@@ -63,6 +63,8 @@ Graphics
 ###low priority
 *	**multiple hector colors**
 	*	look at geom group naming with `egg-optchar`
+	*	see https://www.panda3d.org/manual/index.php/Egg_Syntax
+	*	also see https://www.panda3d.org/manual/index.php/Manipulating_a_Piece_of_a_Model
 *   **updated assets**
     *   walker(s) (export bobski's model)
 	*   missile/grenade/plasma
