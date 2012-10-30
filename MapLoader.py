@@ -2,17 +2,11 @@ from xml.dom.minidom import parse
 from math import pi, sin, cos, radians, acos
 from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWriter, GeomVertexData
 from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
-from panda3d.core import DirectionalLight, Vec4, Plane, BitMask32, Shader
+from panda3d.core import DirectionalLight, Vec4, Plane, Shader
 from panda3d.core import CompassEffect, TransparencyAttrib
-from panda3d.ode import OdeBoxGeom, OdeSphereGeom
-from wireGeom import wireGeom
 import random
 
 from Hector import Hector
-
-DEBUG_MAP_COLLISION = False
-MAP_COLLIDE_BIT = BitMask32(0x00000001)
-MAP_COLLIDE_CATEGORY = BitMask32(0x00000002)
 
 def addAlpha(color):
     if len(color) == 3:
@@ -223,10 +217,10 @@ class Incarnator(WorldObject):
 		self.h = Hector(render, self.pos[0], self.pos[1], self.pos[2], self.angle)
 
 class World(object):
-    def __init__(self, render, cam, camLens, physSpace):
+    def __init__(self, render, cam, camLens, pm):
         self.cam = cam
         self.render = render
-        self.physSpace = physSpace
+        self.pm = pm
         self.name = None
         self.author = None
         
@@ -276,56 +270,21 @@ class World(object):
         self.addWorldObject(b)
         b.move(center)
         b.rotate(yaw, pitch, roll)
-        blockGeom = OdeBoxGeom(self.physSpace, size[0], size[1], size[2])
-        blockGeom.setCollideBits(MAP_COLLIDE_BIT)
-        blockGeom.setCategoryBits(MAP_COLLIDE_CATEGORY)
-        blockGeom.setPosition(b.node.getPos())
-        blockGeom.setQuaternion(b.node.getQuat())
-        if DEBUG_MAP_COLLISION:
-			blockDebugShape = wireGeom().generate('box', extents = (size[0],size[1],size[2]))
-			blockDebugShape.reparentTo(render)
-			blockDebugShape.setPos(b.node.getPos())
-			blockDebugShape.setQuat(b.node.getQuat())
+        self.pm.addStaticObject(size = size, block = b)
         return b
 
     def addDome(self, center, radius, color):
         d = Dome(radius, color)
         self.addWorldObject(d)
         d.move(center)
-        
-        domeGeom = OdeSphereGeom(self.physSpace, radius)
-        domeGeom.setCollideBits(MAP_COLLIDE_BIT)
-        domeGeom.setCategoryBits(MAP_COLLIDE_CATEGORY)
-        domeGeom.setPosition(d.node.getPos())
-        domeGeom.setQuaternion(d.node.getQuat())
-        
-        if DEBUG_MAP_COLLISION:
-        	domeDebugShape = wireGeom().generate('sphere', radius=radius)
-        	domeDebugShape.reparentTo(render)
-        	domeDebugShape.setPos(d.node.getPos(render))
-        	domeDebugShape.setQuat(d.node.getQuat(render))
-        
+        self.pm.addStaticObject(radius = radius, dome = d)
         return d
 
     def addRamp(self, base, top, width, thickness, color):
         r = Ramp(base, top, width, thickness, color)
         self.addWorldObject(r)
         r.orientate()
-        
-        #physics doesn't work with 0 thickness blocks!
-        if thickness == 0:
-        	thickness = .001
-        
-        rampGeom = OdeBoxGeom(self.physSpace, thickness, width, (top-base).length())
-        rampGeom.setCollideBits(MAP_COLLIDE_BIT)
-        rampGeom.setCategoryBits(MAP_COLLIDE_CATEGORY)
-        rampGeom.setPosition(r.node.getPos())
-        rampGeom.setQuaternion(r.node.getQuat())
-        if DEBUG_MAP_COLLISION:
-			rampDebugShape = wireGeom().generate('box', extents = (thickness, width, (top-base).length()))
-			rampDebugShape.reparentTo(render)
-			rampDebugShape.setPos(r.node.getPos())
-			rampDebugShape.setQuat(r.node.getQuat())        
+        self.pm.addStaticObject(top = top, base = base, thickness = thickness, width = width, ramp = r)        
         return r
         
     def addIncarn(self, pos, angle):
@@ -373,9 +332,9 @@ class World(object):
             sphere.setPos(location)
 
 class MapParser(object):
-    def __init__(self, render, physSpace):
+    def __init__(self, render, pm):
         self.render = render
-        self.physSpace = physSpace
+        self.pm = pm
         self.maps = []
         self.solids = []
 
@@ -509,7 +468,7 @@ class MapParser(object):
 
     def loadMaps(self, dom):
         for m in dom.getElementsByTagName('map'):
-            current = World(render, base.cam, base.camLens, self.physSpace)
+            current = World(render, base.cam, base.camLens, self.pm)
             current.name = m.attributes['name'].value
             current.author = m.attributes['author'].value
             for child in m.childNodes:
@@ -518,9 +477,9 @@ class MapParser(object):
                     getattr(self, name)(child, current)
             self.maps.append(current)
         
-def load(path, render, physSpace):
+def load(path, render, pm):
     dom = parse(path)
-    parser = MapParser(render, physSpace)
+    parser = MapParser(render, pm)
     parser.loadMaps(dom)
     return parser
     

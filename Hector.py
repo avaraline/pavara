@@ -1,119 +1,100 @@
 from direct.actor.Actor import Actor
+from direct.interval.LerpInterval import LerpPosHprInterval
 from direct.gui.OnscreenText import OnscreenText
-from panda3d.core import Vec3, CollisionNode, CollisionRay, BitMask32, Geom
+from panda3d.core import *
 from pandac.PandaModules import GeomVertexReader, GeomVertexWriter
 from pandac.PandaModules import GeomVertexArrayFormat, InternalName, GeomVertexFormat
+from panda3d.ode import *
+from direct.interval.IntervalGlobal import Sequence, Parallel
 import math
 class Hector():
     def __init__(self, render, pos_x, pos_y, pos_z, angle):
-        #self.model = Actor("hector_b2.4_2segment.egg")
-        self.model = Actor("hector_b2.4_anim.egg")
-        self.model.setPlayRate(6.5, "walk")
+        self.model = Actor("hector.egg")
         self.model.setScale(3.0)
         self.model.setHpr(self.model, 0, 0, 0)
         self.model.setH(self.model, angle)
         self.model.reparentTo(render)
         self.model.setPos(pos_x,pos_y,pos_z)
-        self.walking = False
-        
-        self.velocity = Vec3(0,0,0)
-        self.accel = Vec3(0,0,0)
-        
-        self.model.enableBlend()
-        self.model.setControlEffect('stand', 1.0)
-        self.model.setControlEffect('crouch', 0.0)
-        #self.model.loop('crouch')
-        
-        self.crouchcontrol = self.model.getAnimControl('crouch')
-        self.crouchfactor = 0
+    
+    	measure = loader.loadModel("models/yup-axis")
+        measure.reparentTo(render)
+        measure.setPos(pos_x, pos_y, pos_z)
         
         self.setupColor(.2,.3,.8,1)
         
+        self.walking = False
         
         #this prints the bones available in the model to the console
         #self.model.listJoints()
-    
-        return
+        
         #using these prevents animations from being played
         #if these bones aren't in the list printed out by listJoints it doesn't work 
         self.head_bone = self.model.controlJoint(None, "modelRoot", "headBone")
         self.left_top_bone = self.model.controlJoint(None, "modelRoot", "leftTopBone")
         self.right_top_bone = self.model.controlJoint(None, "modelRoot", "rightTopBone")
-        self.left_middle_bone = self.model.controlJoint(None, "modelRoot", "leftMiddleBone")
-        self.right_middle_bone = self.model.controlJoint(None, "modelRoot", "rightMiddleBone")
+        self.left_middle_bone = self.model.controlJoint(None, "modelRoot", "leftMidBone")
+        self.right_middle_bone = self.model.controlJoint(None, "modelRoot", "rightMidBone")
         self.left_bottom_bone = self.model.controlJoint(None, "modelRoot", "leftBottomBone")
         self.right_bottom_bone = self.model.controlJoint(None, "modelRoot", "rightBottomBone")
         
         self.ltb_rest = self.left_top_bone.getP()
         self.rtb_rest = self.right_top_bone.getP()
+        self.lmb_rest = self.left_middle_bone.getP()
+        self.rmb_rest = self.right_middle_bone.getP()
         self.lbb_rest = self.left_bottom_bone.getP()
         self.rbb_rest = self.right_bottom_bone.getP()
         
-
+        #this is just an example to get started
+        
+        walk_int_1 = LerpPosHprInterval(self.left_top_bone, 
+                                        .2, 
+                                        pos=self.get_leg_pos(self.left_top_bone),
+                                        hpr=self.get_leg_hpr(self.left_top_bone),
+                                        startPos = None,
+                                        blendType = "easeOut",
+                                        bakeInStart = 0
+                                    )
+        walk_int_2 = LerpPosHprInterval(self.left_bottom_bone, 
+                                        .2, 
+                                        pos=self.get_leg_pos(self.left_bottom_bone),
+                                        hpr=self.get_leg_hpr(self.left_bottom_bone),
+                                        startPos = None,
+                                        blendType = "easeIn",
+                                        bakeInStart = 0
+                                    )
+        self.walk_seq_1 = Sequence(Parallel(walk_int_1, walk_int_2))
+        
         
     def walk(self):
-        #self.right_top_bone.setP(self.right_top_bone, 1)
-        #self.right_bottom_bone.setP(self.right_bottom_bone, -2)
-        #self.left_top_bone.setP(self.left_top_bone, -1)
-        #self.left_bottom_bone.setP(self.left_bottom_bone, -2)
-        
         if not self.walking:
-            if self.crouchfactor > 0:
-                self.model.setControlEffect('walk', 1.0)
-                self.model.setControlEffect('stand', 0)
-            else:
-                self.model.setControlEffect('walk', .5)
-                self.model.setControlEffect('crouch', .5)
-            self.model.loop("walk")
-            self.walking = True
-        
-    def unwalk(self):
-        #self.right_top_bone.setP(self.rtb_rest)
-        #self.right_bottom_bone.setP(self.rbb_rest)
-        #self.left_top_bone.setP(self.ltb_rest)
-        #self.left_bottom_bone.setP(self.lbb_rest)
-        
-        if self.walking:
-            self.model.setControlEffect('walk', 0.0)
-            if self.crouchfactor > 0:
-                self.model.setControlEffect('crouch', .50)
-                self.model.setControlEffect('stand', .50)
-            else:
-                self.model.setControlEffect('stand', 1.0)
-            
+        	self.walk_seq_1.start()
+        	self.walking = True
 
-            self.model.stop("walk")
-            self.model.play("stand")
-            self.walking = False
+    def get_leg_pos(self, obj):
+    	pos = obj.getPos()
+    	if obj.__repr__().split('/')[-1] == "leftTopBone":
+    		pos.addY(-.1)
+    	print pos
+        return pos
+        
+    def get_leg_hpr(self, obj):
+    	hpr = obj.getHpr()
+    	hpr.addY(20)
+    	print hpr
+        return hpr
+    
+    def unwalk(self):
+        if self.walking:
+        	self.walk_seq_1.pause()
+        	self.walking = False
+        return
     
     def crouch(self):
-        if not self.walking:
-            self.model.setControlEffect('walk', .5)
-            self.model.setControlEffect('crouch', .5)
-        else:
-            self.model.setControlEffect('crouch', 1)
-            self.model.setControlEffect('stand', 0)
-        
-        if(self.crouchfactor < 1):
-            self.crouchfactor +=.2
-        
-        self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
+		return
         
     def uncrouch(self):
-        if not self.walking:
-            self.model.setControlEffect('walk', 1.0)
-            self.model.setControlEffect('crouch', 0)
-        else:
-            self.model.setControlEffect('stand', 1.0)
-            self.model.setControlEffect('crouch', 0)
-        
-        if self.crouchfactor > 0:
-            self.crouchfactor -= .2
-            
-        self.crouchcontrol.pose(math.floor(((self.crouchcontrol.getNumFrames()/2) * self.crouchfactor))) 
-    
-
-    
+    	return
+    	
     def rotateLeft(self):
         self.model.setH(self.model, 1)
     
@@ -121,7 +102,7 @@ class Hector():
         self.model.setH(self.model, -1)
     
     def setupColor(self, r, g, b, a):
-    	gvarrayf = GeomVertexArrayFormat()
+        gvarrayf = GeomVertexArrayFormat()
         gvarrayf.addColumn(InternalName.make('color'), 4, Geom.NTFloat32, Geom.CColor)
         gformat = GeomVertexFormat()
         gformat.addArray(gvarrayf)
@@ -132,6 +113,7 @@ class Hector():
             geomNode = nodePath.node()
             for i in range(geomNode.getNumGeoms()):
                 geom = geomNode.modifyGeom(i)
+                #print geom
                 vdata = geom.modifyVertexData()
                 pre_existing_color = False
                 
@@ -142,8 +124,10 @@ class Hector():
                 vdata.setFormat(new_format)
                 color = GeomVertexWriter(vdata, 'color')
                 vertex = GeomVertexReader(vdata, 'vertex')
+                read_color = GeomVertexReader(vdata, 'color')
                 while not vertex.isAtEnd():
                     v = vertex.getData3f()
+                    #print v
                     if pre_existing_color:
                         color.setData4f(r,g,b,a)
                     else:
