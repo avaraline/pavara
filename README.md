@@ -56,11 +56,13 @@ Maps
 Graphics
 --------
 ###high priority
-*   **walker animations**
-	*   seperate animations for `walk, stand, crouched_walk, crouch, airbourne_walk`
-	*   animation blending based on crouch/walk factor, physics forces, and terrain
+*   **walking animation**
+	*	use `LerpInterval`s to move hector model rigging
+	*	work with colliision character to stop feet on terrain
 
 ###low priority
+*	**multiple hector colors**
+	*	look at geom group naming with `egg-optchar`
 *   **updated assets**
     *   walker(s) (export bobski's model)
 	*   missile/grenade/plasma
@@ -83,7 +85,7 @@ Networking
 Logic
 -----
 *	**player data**
-	*	shield values, energy values, plasma cooldown
+	*	shield/plasma recharge rates based on energy level 
 	*	ammo and boosters
 	*	respawns
 	*	incarnator selection
