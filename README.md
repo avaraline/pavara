@@ -17,7 +17,7 @@ Mac users also need: https://developer.nvidia.com/cg-toolkit
 
 For Ubuntu: http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk
 
-For Ubuntu 12.04, you can install the oneiric version, but it will complain about 2 unmet dependencies. 
+For Ubuntu 12.04, you can install the oneiric version, but it will complain about 2 unmet dependencies.
 
 You can download those dependencies from here: http://packages.ubuntu.com/oneiric/allpackages. Then it will install.
 
@@ -41,18 +41,24 @@ Maps
 	*   add conversion for
 		*   domes
 		*   rounded rects
+		*	fields
+		*	walldoors
+		*	goodies
+		*	teleporters
+		*	etc.
 
 ###low priority
+*	**map loading**
+	*	honor yaw/pitch/roll attributes for all objects, not just blocks
 *   **map syntax**
 	*   need definitions/implementation for
-        *   level description
 		*   per-level logic/scripting
 		*	assign ids to objects for scripting
 		*	assign mass to objects to make freeSolids
 		*   fields/areas
 		*   goodies
 		*   custom shapes
-		
+
 Graphics
 --------
 ###high priority
@@ -61,7 +67,11 @@ Graphics
 	*	work with colliision character to stop feet on terrain
 
 ###low priority
-*	**multiple hector colors**
+*	**multiple colors for models**
+	*	Avara could only allow you to override two colors on a model, using the arc fill and line colors in cw4. No need for this limitation anymore, but how should we assign these multiple color values via the XML?
+		*	Single color attribute, containing multiple colors?
+		*	Multiple color attributes, with an another arbitrary limit on color "slots"?
+		*	What about alpha? Set per color, or per object?
 	*	look at geom group naming with `egg-optchar`
 	*	see https://www.panda3d.org/manual/index.php/Egg_Syntax
 	*	also see https://www.panda3d.org/manual/index.php/Manipulating_a_Piece_of_a_Model
@@ -74,7 +84,8 @@ Graphics
 *   **particle effects**
 	*	explosions
 	*	missle/lazer trails
-	
+	*	environmental, e.g. precipitation?
+
 Networking
 ----------
 ###high priority
@@ -87,13 +98,18 @@ Networking
 Logic
 -----
 *	**player data**
-	*	shield/plasma recharge rates based on energy level 
+	*	shield/plasma recharge rates based on energy level
 	*	ammo and boosters
 	*	respawns
 	*	incarnator selection
+		*	random order, unless order attribute explicitly set on incarnator objects
+		*	if multiple incarnators exist with same order value, select randomly within that subset
+		*	do allow for team masking
+		*	if number of players exceeds the number of incarnators, split players into "batches" and spawn them in ten second waves?
 	*	position, speed, velocity
 *	**game data**: setup, types, start/end conditions
-	
+*	**messages**: triggering and listening for simple events, both in XML and whatever scripting set up we use
+
 Sound
 -----
 ###low priority
@@ -117,14 +133,14 @@ Physics (ODE)
 	*	grenade lobbing
 	*	"smart" missle tracking
 	*	lazers
-	*	damage 
-	
+	*	damage
+
 ###lower priority
 *	**other collidables**
 	*	goodies
 	*	fields/areas
 	*	kinematic map objects
-    
+
 User Interface
 --------------
 ###lowest priority
