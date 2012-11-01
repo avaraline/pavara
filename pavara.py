@@ -17,7 +17,7 @@ class Pavara(ShowBase):
         self.initP3D()
         
         # load level
-        MapLoader.load('Maps/phosphorus.xml', render, self.pm)
+        MapLoader.load('Maps/bodhi.xml', render, self.pm)
         
         #axes = loader.loadModel('models/yup-axis')
         #axes.setScale(10)
