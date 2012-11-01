@@ -1,5 +1,5 @@
 <?xml version="1.0" standalone="yes" ?>
-<map name="Coromoran" author="Ryan Herriman &lt;rherriman@gmail.com&gt;">
+<map name="Coromoran" tagline="A small, open, mountain-like level." author="Malkavian" description="Channeling a Kansas midwife is a refreshing experience for the soul.">
 	<sky color="1,0.99,0.81" horizon="0.05,0.13,0.01" />
 	<ground color="0,0,0" />
 
