@@ -3,32 +3,33 @@ from panda3d.core import *
 from pandac.PandaModules import WindowProperties
 from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
-import MapLoader
-from Hector import Hector
-from PhysicsManager import PhysicsManager
 
-class Pavara(ShowBase):
+from pavara.maps import load_maps
+
+class Pavara (ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
         self.x = None
         self.y = None
-        
+
         # init panda3d crap
         self.initP3D()
-        
-        # load level
-        MapLoader.load('Maps/bodhi.xml', render, self.pm)
-        
+
+        maps = load_maps('Maps/bodhi.xml', self.cam)
+        for map in maps:
+            print map.name, '--', map.author
+        maps[0].show(self.render)
+
         #axes = loader.loadModel('models/yup-axis')
         #axes.setScale(10)
         #axes.reparentTo(render)
-        
-        self.h = Hector(render, 0, 13, 14, 90)
-        self.pm.addHector(self.h)
+
+        #self.h = Hector(render, 0, 13, 14, 90)
+        #self.pm.addHector(self.h)
 
     def initP3D(self):
         self.setupInput()
-        self.pm = PhysicsManager(render)
+        #self.pm = PhysicsManager(render)
         base.setBackgroundColor(0,0,0)
         base.enableParticles()
         base.disableMouse()
@@ -42,11 +43,11 @@ class Pavara(ShowBase):
         self.floater.reparentTo(render)
         self.up = Vec3(0, 1, 0)
         taskMgr.add(self.move, 'move')
-        taskMgr.doMethodLater(0.5, self.pm.stepPhysics, "Physics Simulation")
+        #taskMgr.doMethodLater(0.5, self.pm.stepPhysics, "Physics Simulation")
 
     def setKey(self, key, value):
         self.keyMap[key] = value
-    
+
     def setupInput(self):
         self.keyMap = { 'left': 0
                       , 'right': 0
@@ -74,7 +75,7 @@ class Pavara(ShowBase):
         self.accept('n-up', self.setKey, ['walkForward', 0])
         self.accept('m', self.setKey, ['crouch', 1])
         self.accept('m-up', self.setKey, ['crouch', 0])
-        
+
     def move(self, task):
         dt = globalClock.getDt()
         if base.mouseWatcherNode.hasMouse():
@@ -110,21 +111,20 @@ class Pavara(ShowBase):
             base.camera.setX(base.camera, -25 * dt)
         if (self.keyMap['right']):
             base.camera.setX(base.camera, 25 * dt)
+        """
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
         if (self.keyMap['rotateRight']):
-            self.h.rotateRight()  
-            
+            self.h.rotateRight()
         if (self.keyMap['crouch']):
             self.h.crouch()
-        else: 
+        else:
             self.h.uncrouch()
-               
         if (self.keyMap['walkForward']):
             self.h.walk()
         else:
             self.h.unwalk()
-            
+        """
         return task.cont
 
 if __name__ == '__main__':
