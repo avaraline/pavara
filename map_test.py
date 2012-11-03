@@ -30,15 +30,15 @@ class Pavara (ShowBase):
     def initP3D(self):
         self.setupInput()
         #self.pm = PhysicsManager(render)
-        base.setBackgroundColor(0,0,0)
-        base.enableParticles()
-        base.disableMouse()
+        self.setBackgroundColor(0,0,0)
+        self.enableParticles()
+        self.disableMouse()
         render.setAntialias(AntialiasAttrib.MAuto)
         props = WindowProperties()
         props.setCursorHidden(True)
-        base.win.requestProperties(props)
-        base.camera.setPos(0,20,40)
-        base.camera.setHpr(0,0,0)
+        self.win.requestProperties(props)
+        self.camera.setPos(0,20,40)
+        self.camera.setHpr(0,0,0)
         self.floater = NodePath(PandaNode("floater"))
         self.floater.reparentTo(render)
         self.up = Vec3(0, 1, 0)
@@ -78,39 +78,40 @@ class Pavara (ShowBase):
 
     def move(self, task):
         dt = globalClock.getDt()
-        if base.mouseWatcherNode.hasMouse():
+        if self.mouseWatcherNode.hasMouse():
             oldx = self.x
             oldy = self.y
-            self.x=base.mouseWatcherNode.getMouseX()
-            self.y=base.mouseWatcherNode.getMouseY()
-            centerx = base.win.getProperties().getXSize()/2
-            centery = base.win.getProperties().getYSize()/2
-            base.win.movePointer(0,centerx,centery)
+            md = self.win.getPointer(0)
+            self.x = md.getX()
+            self.y = md.getY()
+            centerx = self.win.getProperties().getXSize()/2
+            centery = self.win.getProperties().getYSize()/2
+            self.win.movePointer(0,centerx,centery)
 
             if (oldx is not None):
-                self.floater.setPos(base.camera, 0, 0, 0)
-                self.floater.setHpr(base.camera, 0, 0, 0)
-                self.floater.setH(self.floater, -self.x * 3000 * dt)
+                self.floater.setPos(self.camera, 0, 0, 0)
+                self.floater.setHpr(self.camera, 0, 0, 0)
+                self.floater.setH(self.floater, (centerx-self.x) * 10 * dt)
                 p = self.floater.getP()
-                self.floater.setP(self.floater, self.y * 3000 * dt)
+                self.floater.setP(self.floater, (centery-self.y) * 10 * dt)
                 self.floater.setZ(self.floater, -1)
-                angle = self.up.angleDeg(self.floater.getPos() - base.camera.getPos())
+                angle = self.up.angleDeg(self.floater.getPos() - self.camera.getPos())
                 if 10 > angle or angle > 170:
-                    self.floater.setPos(base.camera, 0, 0, 0)
+                    self.floater.setPos(self.camera, 0, 0, 0)
                     self.floater.setP(p)
                     self.floater.setZ(self.floater, -1)
-                base.camera.lookAt(self.floater.getPos(), self.up)
+                self.camera.lookAt(self.floater.getPos(), self.up)
         else:
             self.x = None
             self.y = None
         if (self.keyMap['forward']):
-            base.camera.setZ(base.camera, -25 * dt)
+            self.camera.setZ(self.camera, -25 * dt)
         if (self.keyMap['backward']):
-            base.camera.setZ(base.camera, 25 * dt)
+            self.camera.setZ(self.camera, 25 * dt)
         if (self.keyMap['left']):
-            base.camera.setX(base.camera, -25 * dt)
+            self.camera.setX(self.camera, -25 * dt)
         if (self.keyMap['right']):
-            base.camera.setX(base.camera, 25 * dt)
+            self.camera.setX(base.camera, 25 * dt)
         """
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
