@@ -138,7 +138,6 @@ class Map (object):
                 color = (r, g, b, 1 - (1 - phi/math.pi)**6)
                 size = min_size + random.random() * delta_size
                 self.world.add_celestial(theta, phi, color, 0, size, True)
-            has_stars = True
 
         if not has_stars:
             self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 1.0, False)
