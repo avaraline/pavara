@@ -1,9 +1,8 @@
-import sys
+import sys, random
 from panda3d.core import *
 from pandac.PandaModules import WindowProperties
 from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
-
 from pavara.maps import load_maps
 
 class Pavara (ShowBase):
@@ -18,7 +17,14 @@ class Pavara (ShowBase):
         maps = load_maps('Maps/bodhi.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
+
+        from pavara.world import Block
+        for i in range(10):
+            block = maps[0].world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
+            block.move((random.randint(-20, 20), 50, random.randint(-20, 20)))
+
         maps[0].show(self.render)
+        taskMgr.add(maps[0].world.update, 'worldUpdateTask')
 
         #axes = loader.loadModel('models/yup-axis')
         #axes.setScale(10)

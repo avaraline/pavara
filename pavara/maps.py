@@ -54,10 +54,11 @@ class Map (object):
         center = parse_vector(node['center'])
         size = parse_vector(node['size'], (4, 4, 4))
         color = parse_color(node['color'], (1, 1, 1, 1))
+        mass = parse_float(node['mass'])
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        block = self.world.attach(Block(size, color, name=node['id']))
+        block = self.world.attach(Block(size, color, mass, name=node['id']))
         block.move(center)
         block.rotate(yaw, pitch, roll)
 
@@ -67,19 +68,18 @@ class Map (object):
         color = parse_color(node['color'], (1, 1, 1, 1))
         width = parse_float(node['width'], 8)
         thickness = parse_float(node['thickness'])
-        ramp = self.world.attach(Ramp(base, top, width, thickness, color))
-        ramp.orientate()
+        self.world.attach(Ramp(base, top, width, thickness, color, name=node['id']))
 
     def parse_ground(self, node):
         color = parse_color(node['color'], (1, 1, 1, 1))
         radius = parse_float(node['radius'], 1000)
-        self.world.attach(Ground(radius, color))
+        self.world.attach(Ground(radius, color, name=(node['id'] or 'ground')))
 
     def parse_dome(self, node):
         center = parse_vector(node['center'])
         radius = parse_float(node['radius'], 2.5)
         color = parse_color(node['color'], (1, 1, 1, 1))
-        dome = self.world.attach(Dome(radius, color))
+        dome = self.world.attach(Dome(radius, color, name=node['id']))
         dome.move(center)
 
     def parse_sky(self, node):
