@@ -24,11 +24,11 @@ You can download those dependencies from here: http://packages.ubuntu.com/oneiri
 running it
 ==========
 
-Windows: navigate to the source code directory with cmd and run ppython pavara.py
+Windows: navigate to the source code directory with cmd and run ppython map_test.py
 
-Macs: navigate to the source code directory in a terminal and run ppython pavara.py
+Macs: navigate to the source code directory in a terminal and run ppython map_test.py
 
-Linux: navigate to the source code directory in a terminal and run python pavara.py
+Linux: navigate to the source code directory in a terminal and run python map_test.py
 
 * * *
 roadmap
