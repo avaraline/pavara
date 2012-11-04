@@ -30,6 +30,10 @@ def parse_color(s, default=None):
     return v
 
 class Map (object):
+    """
+    Includes meta-information about a map, along with a World object containing all the objects.
+    """
+
     name = None
     author = None
     tagline = None
@@ -48,6 +52,9 @@ class Map (object):
                 getattr(self, func_name)(child)
 
     def show(self, render):
+        """
+        Reparents the root NodePath of this Map's World to the given NodePath.
+        """
         self.world.render.reparent_to(render)
 
     def parse_block(self, node):
@@ -157,6 +164,9 @@ class Map (object):
             self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 1.0, False)
 
 def load_maps(path, camera):
+    """
+    Given a path to an XML file and the camera, returns a list of parsed/populated Map objects.
+    """
     root = drill.parse(path)
     if root.tagname.lower() == 'map':
         return [Map(root, camera)]

@@ -6,8 +6,6 @@ from panda3d.core import CompassEffect, TransparencyAttrib
 import random
 
 class VertexDataWriter(object):
-    """
-    """
 
     def __init__(self, vdata):
         self.vertex = GeomVertexWriter(vdata, 'vertex')
@@ -22,8 +20,6 @@ class VertexDataWriter(object):
         self.texcoord.add_data2f(*texcoord)
 
 class Polygon(object):
-    """
-    """
 
     def __init__(self, points=None):
         self.points = points or []
@@ -41,8 +37,6 @@ class Polygon(object):
         return normal
 
 def make_axis_aligned_square(x1, y1, z1, x2, y2, z2):
-    """
-    """
     p1 = Point3(x1, y1, z1)
     p3 = Point3(x2, y2, z2)
     # make sure we draw the square in the right plane
@@ -55,8 +49,6 @@ def make_axis_aligned_square(x1, y1, z1, x2, y2, z2):
     return Polygon([p1, p2, p3, p4])
 
 def make_square(colorf, x1, y1, z1, x2, y2, z2):
-    """
-    """
     vdata = GeomVertexData('square', GeomVertexFormat.get_v3n3cpt2(), Geom.UHDynamic)
     writer = VertexDataWriter(vdata)
     aasquare = make_axis_aligned_square(x1, y1, z1, x2, y2, z2)

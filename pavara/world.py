@@ -14,6 +14,7 @@ MAP_COLLIDE_CATEGORY = BitMask32(0x00000002)
 
 class WorldObject (object):
     """
+    Base class for anything attached to a World.
     """
 
     world = None
@@ -26,34 +27,57 @@ class WorldObject (object):
             self.name = '%s:%d' % (self.__class__.__name__, WorldObject.last_unique_id)
 
     def attached(self):
+        """
+        Called when this object is actually attached to a World. By this time, self.world will have been set.
+        """
         pass
 
     def detached(self):
+        """
+        """
         pass
 
 class PhysicalObject (WorldObject):
+    """
+    A WorldObject subclass that represents a physical object; i.e. one that is visible and may have an associated
+    solid (OdeGeom) for physics collisions.
+    """
+
     geom = None
     node = None
     solid = None
 
     def create_solid(self, physics, space):
+        """
+        Called by World.attach to create any necessary physics geometry.
+        """
         pass
 
     def rotate(self, yaw, pitch, roll):
+        """
+        Programmatically rotate this object by the given yaw, pitch, and roll.
+        """
         self.node.set_hpr(self.node, yaw, pitch, roll)
         self.sync_physics()
 
     def move(self, center):
+        """
+        Programmatically move this object to be centered at the given coordinates.
+        """
         self.node.set_pos(*center)
         self.sync_physics()
 
     def sync_physics(self):
+        """
+        Updates the location and quaternion of the associated physics solid to match the visible node.
+        """
         if self.solid and self.node:
             self.solid.set_position(self.node.get_pos(self.world.render))
             self.solid.set_quaternion(self.node.get_quat(self.world.render))
 
 class Block (PhysicalObject):
     """
+    A block. Blocks with non-zero mass will be treated as freesolids.
     """
 
     def __init__(self, size, color, mass, name=None):
@@ -74,6 +98,7 @@ class Block (PhysicalObject):
 
 class Dome (PhysicalObject):
     """
+    A dome.
     """
 
     def __init__(self, radius, color, name=None):
@@ -82,6 +107,7 @@ class Dome (PhysicalObject):
 
 class Ground (PhysicalObject):
     """
+    The ground. This is not a visible object, but does create a physical solid.
     """
 
     def __init__(self, radius, color, name=None):
@@ -93,10 +119,12 @@ class Ground (PhysicalObject):
         return OdePlaneGeom(space, Vec4(0, 1, 0, 0))
 
     def attached(self):
+        # We need to tell the sky shader what color we are.
         self.world.sky.set_ground(self.color)
 
 class Ramp (PhysicalObject):
     """
+    A ramp. Basically a block that is rotated, and specified differently in XML. Should maybe be a Block subclass?
     """
 
     def __init__(self, base, top, width, thickness, color, name=None):
@@ -112,6 +140,7 @@ class Ramp (PhysicalObject):
         return OdeBoxGeom(space, self.thickness or 0.001, self.width, self.length)
 
     def attached(self):
+        # Do the block rotation after we've been attached (i.e. have a NodePath), so we can use node.look_at.
         v1 = self.top - self.base
         if self.base.get_x() != self.top.get_x():
             p3 = Point3(self.top.get_x()+100, self.top.get_y(), self.top.get_z())
@@ -125,20 +154,10 @@ class Ramp (PhysicalObject):
         self.node.look_at(self.top, up)
         self.sync_physics()
 
-class Incarnator (WorldObject):
-    """
-    """
-
-    def __init__(self, pos, angle):
-        WorldObject.__init__(self, 'Incarnator')
-        self.pos = pos
-        self.angle = angle
-        self.h = None
-
-    def placeHector(self, render):
-        self.h = Hector(render, self.pos[0], self.pos[1], self.pos[2], self.angle)
-
 class Sky (WorldObject):
+    """
+    The sky is actually just a square re-parented onto the camera, with a shader to handle the coloring and gradient.
+    """
 
     def __init__(self, ground=DEFAULT_GROUND_COLOR, color=DEFAULT_SKY_COLOR, horizon=DEFAULT_HORIZON_COLOR, scale=DEFAULT_HORIZON_SCALE):
         super(Sky, self).__init__('sky')
@@ -183,6 +202,7 @@ class Sky (WorldObject):
 
 class World (object):
     """
+    The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
     """
 
     def __init__(self, camera):
@@ -217,6 +237,7 @@ class World (object):
         if isinstance(obj, PhysicalObject):
             if obj.geom:
                 obj.node = self.render.attach_new_node(obj.geom)
+            # Create the physical solid.
             obj.solid = obj.create_solid(self.physics, self.space)
             if obj.solid:
                 if obj.solid.has_body():
@@ -227,15 +248,23 @@ class World (object):
                     # Otherwise, this is a "static" object.
                     obj.solid.set_collide_bits(MAP_COLLIDE_BIT)
                     obj.solid.set_category_bits(MAP_COLLIDE_CATEGORY)
+                # Update the physics to match the visible node location.
                 obj.sync_physics()
         self.objects[obj.name] = obj
+        # Let the object know it has been attached.
         obj.attached()
         return obj
 
     def set_ambient(self, color):
+        """
+        Sets the ambient light to the given color.
+        """
         self.ambient.node().set_color(VBase4(*color))
 
     def add_celestial(self, azimuth, elevation, color, intensity, radius, visible):
+        """
+        Adds a celestial light source to the scene. If it is a visible celestial, also add a sphere model.
+        """
         location = Vec3(to_cartesian(azimuth, elevation, 1000.0 * 255.0 / 256.0))
         dlight = DirectionalLight('celestial')
         dlight.set_color((color[0]*intensity, color[1]*intensity, color[2]*intensity, 1.0))
@@ -253,10 +282,15 @@ class World (object):
             sphere.set_pos(location)
 
     def update(self, task):
+        """
+        Called every frame to update the physics, etc.
+        """
         dt = globalClock.getDt()
         self.space.auto_collide()
         self.physics.quick_step(dt)
         for name, obj in self.objects.iteritems():
+            # If the object is a freesolid (i.e. has a solid with an attached body), update the visible node to match
+            # the location/rotation from the physics simulation.
             if isinstance(obj, PhysicalObject) and obj.solid and obj.solid.has_body():
                 obj.node.set_pos_quat(self.render, obj.solid.get_position(), Quat(obj.solid.get_quaternion()))
         self.contacts.empty()
