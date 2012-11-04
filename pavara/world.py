@@ -374,8 +374,8 @@ class World (object):
         obj2 = None
         geom1 = entry.get_geom1()
         geom2 = entry.get_geom2()
-        self.collidables.get(geom1.get_id(), None)
-        self.collidables.get(geom2.get_id(), None)
+        obj1 = self.collidables.get(geom1.get_id(), None)
+        obj2 = self.collidables.get(geom2.get_id(), None)
         if obj1 and obj2:
             obj1.collision(obj2)
             obj2.collision(obj1)
