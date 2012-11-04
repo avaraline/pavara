@@ -3,7 +3,9 @@ from panda3d.core import *
 from pandac.PandaModules import WindowProperties
 from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
+
 from pavara.maps import load_maps
+from Hector import Hector
 
 class Pavara (ShowBase):
     def __init__(self):
@@ -24,15 +26,15 @@ class Pavara (ShowBase):
             block = maps[0].world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
             block.move((random.randint(-20, 20), 50, random.randint(-20, 20)))
 
+        # Put the hector in the World's render so the lighting applies correctly.
+        self.h = Hector(maps[0].world.render, 0, 13, 14, 90)
+
         maps[0].show(self.render)
         taskMgr.add(maps[0].world.update, 'worldUpdateTask')
 
         #axes = loader.loadModel('models/yup-axis')
         #axes.setScale(10)
         #axes.reparentTo(render)
-
-        #self.h = Hector(render, 0, 13, 14, 90)
-        #self.pm.addHector(self.h)
 
     def initP3D(self):
         self.setupInput()
@@ -50,7 +52,6 @@ class Pavara (ShowBase):
         self.floater.reparentTo(render)
         self.up = Vec3(0, 1, 0)
         taskMgr.add(self.move, 'move')
-        #taskMgr.doMethodLater(0.5, self.pm.stepPhysics, "Physics Simulation")
 
     def setKey(self, key, value):
         self.keyMap[key] = value
@@ -119,20 +120,22 @@ class Pavara (ShowBase):
             self.camera.setX(self.camera, -25 * dt)
         if (self.keyMap['right']):
             self.camera.setX(base.camera, 25 * dt)
-        """
+
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
         if (self.keyMap['rotateRight']):
             self.h.rotateRight()
+
         if (self.keyMap['crouch']):
             self.h.crouch()
         else:
             self.h.uncrouch()
+
         if (self.keyMap['walkForward']):
             self.h.walk()
         else:
             self.h.unwalk()
-        """
+
         return task.cont
 
 if __name__ == '__main__':
