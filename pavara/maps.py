@@ -93,7 +93,7 @@ class Map (object):
         self.world.sky.set_horizon(horizon)
         self.world.sky.set_scale(scale)
 
-        has_stars = False
+        has_celestials = False
 
         for child in node.children('celestial'):
             azimuth = math.radians(parse_float(child['azimuth'], 30))
@@ -102,7 +102,7 @@ class Map (object):
             intensity = parse_float(child['intensity'], 0.6)
             visible = parse_bool(child['visible'])
             self.world.add_celestial(azimuth, elevation, color, intensity, 1.0, visible)
-            has_stars = True
+            has_celestials = True
 
         for child in node.children('starfield'):
             seed = parse_int(child['seed'])
@@ -111,7 +111,8 @@ class Map (object):
             max_color = parse_color(child['maxColor'], (1, 1, 1, 1))
             min_size = parse_float(child['minSize'], 0.025)
             max_size = parse_float(child['maxSize'], 0.025)
-            monochrome = parse_bool(child['monochrome'])
+            mode = child['mode'] or 'default'
+            mode = mode.strip().lower()
             min_r = min_color[0]
             delta_r = max_color[0] - min_r
             min_g = min_color[1]
@@ -126,7 +127,19 @@ class Map (object):
             for s in range(count):
                 theta = two_pi * random.random()
                 phi = abs(half_pi - math.acos(random.random()))
-                if monochrome:
+                if mode == 'realistic':
+                    star_type = random.randint(0,2)
+                    if star_type == 0: # white star
+                        r = g = b = 1
+                    elif star_type == 1: # orange/yellow
+                        r = 1
+                        g = 0.5 + random.random() * 0.5
+                        b = g / 2
+                    elif star_type == 2: # blue
+                        b = 1
+                        g = b * (1 - random.random() * 0.30)
+                        r = g * (1 - random.random() * 0.30)
+                elif mode == 'monochrome':
                     dice = random.random()
                     r = min_r + dice * delta_r
                     g = min_g + dice * delta_g
@@ -139,7 +152,7 @@ class Map (object):
                 size = min_size + random.random() * delta_size
                 self.world.add_celestial(theta, phi, color, 0, size, True)
 
-        if not has_stars:
+        if not has_celestials:
             self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 1.0, False)
             self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 1.0, False)
 

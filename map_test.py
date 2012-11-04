@@ -18,6 +18,7 @@ class Pavara (ShowBase):
         for map in maps:
             print map.name, '--', map.author
 
+        # SHIT TEST BLOCKS FROM THE SKY
         from pavara.world import Block
         for i in range(10):
             block = maps[0].world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))

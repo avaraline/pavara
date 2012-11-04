@@ -100,12 +100,12 @@ def to_cartesian(azimuth, elevation, length):
     z = -length * cos(azimuth) * cos(elevation)
     return (x, y, z)
 
-def make_dome(colorf, radius, radialSamples, planes):
+def make_dome(colorf, radius, samples, planes):
     vdata = GeomVertexData('square', GeomVertexFormat.get_v3n3cpt2(), Geom.UHDynamic)
     writer = VertexDataWriter(vdata)
     two_pi = pi * 2
     half_pi = pi / 2
-    azimuths = [(two_pi * i) / radialSamples for i in range(radialSamples + 1)]
+    azimuths = [(two_pi * i) / samples for i in range(samples + 1)]
     elevations = [(half_pi * i) / (planes - 1) for i in range(planes)]
     point_id = 0
     tri = GeomTriangles(Geom.UHDynamic)
