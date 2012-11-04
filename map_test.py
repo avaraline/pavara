@@ -1,52 +1,61 @@
-import sys
+import sys, random
 from panda3d.core import *
 from pandac.PandaModules import WindowProperties
 from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
-import MapLoader
-from Hector import Hector
-from PhysicsManager import PhysicsManager
 
-class Pavara(ShowBase):
+from pavara.maps import load_maps
+from Hector import Hector
+
+class Pavara (ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
         self.x = None
         self.y = None
-        
+
         # init panda3d crap
         self.initP3D()
-        
-        # load level
-        MapLoader.load('Maps/bodhi.xml', render, self.pm)
-        
+
+        maps = load_maps('Maps/bodhi.xml', self.cam)
+        for map in maps:
+            print map.name, '--', map.author
+
+        # SHIT TEST BLOCKS FROM THE SKY
+        from pavara.world import Block
+        for i in range(10):
+            block = maps[0].world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
+            block.move((random.randint(-20, 20), 50, random.randint(-20, 20)))
+
+        # Put the hector in the World's render so the lighting applies correctly.
+        self.h = Hector(maps[0].world.render, 0, 13, 14, 90)
+
+        maps[0].show(self.render)
+        taskMgr.add(maps[0].world.update, 'worldUpdateTask')
+
         #axes = loader.loadModel('models/yup-axis')
         #axes.setScale(10)
         #axes.reparentTo(render)
-        
-        self.h = Hector(render, 0, 13, 14, 90)
-        self.pm.addHector(self.h)
 
     def initP3D(self):
         self.setupInput()
-        self.pm = PhysicsManager(render)
-        base.setBackgroundColor(0,0,0)
-        base.enableParticles()
-        base.disableMouse()
+        #self.pm = PhysicsManager(render)
+        self.setBackgroundColor(0,0,0)
+        self.enableParticles()
+        self.disableMouse()
         render.setAntialias(AntialiasAttrib.MAuto)
         props = WindowProperties()
         props.setCursorHidden(True)
-        base.win.requestProperties(props)
-        base.camera.setPos(0,20,40)
-        base.camera.setHpr(0,0,0)
+        self.win.requestProperties(props)
+        self.camera.setPos(0,20,40)
+        self.camera.setHpr(0,0,0)
         self.floater = NodePath(PandaNode("floater"))
         self.floater.reparentTo(render)
         self.up = Vec3(0, 1, 0)
         taskMgr.add(self.move, 'move')
-        taskMgr.doMethodLater(0.5, self.pm.stepPhysics, "Physics Simulation")
 
     def setKey(self, key, value):
         self.keyMap[key] = value
-    
+
     def setupInput(self):
         self.keyMap = { 'left': 0
                       , 'right': 0
@@ -74,57 +83,59 @@ class Pavara(ShowBase):
         self.accept('n-up', self.setKey, ['walkForward', 0])
         self.accept('m', self.setKey, ['crouch', 1])
         self.accept('m-up', self.setKey, ['crouch', 0])
-        
+
     def move(self, task):
         dt = globalClock.getDt()
-        if base.mouseWatcherNode.hasMouse():
+        if self.mouseWatcherNode.hasMouse():
             oldx = self.x
             oldy = self.y
-            self.x=base.mouseWatcherNode.getMouseX()
-            self.y=base.mouseWatcherNode.getMouseY()
-            centerx = base.win.getProperties().getXSize()/2
-            centery = base.win.getProperties().getYSize()/2
-            base.win.movePointer(0,centerx,centery)
+            md = self.win.getPointer(0)
+            self.x = md.getX()
+            self.y = md.getY()
+            centerx = self.win.getProperties().getXSize()/2
+            centery = self.win.getProperties().getYSize()/2
+            self.win.movePointer(0,centerx,centery)
 
             if (oldx is not None):
-                self.floater.setPos(base.camera, 0, 0, 0)
-                self.floater.setHpr(base.camera, 0, 0, 0)
-                self.floater.setH(self.floater, -self.x * 3000 * dt)
+                self.floater.setPos(self.camera, 0, 0, 0)
+                self.floater.setHpr(self.camera, 0, 0, 0)
+                self.floater.setH(self.floater, (centerx-self.x) * 10 * dt)
                 p = self.floater.getP()
-                self.floater.setP(self.floater, self.y * 3000 * dt)
+                self.floater.setP(self.floater, (centery-self.y) * 10 * dt)
                 self.floater.setZ(self.floater, -1)
-                angle = self.up.angleDeg(self.floater.getPos() - base.camera.getPos())
+                angle = self.up.angleDeg(self.floater.getPos() - self.camera.getPos())
                 if 10 > angle or angle > 170:
-                    self.floater.setPos(base.camera, 0, 0, 0)
+                    self.floater.setPos(self.camera, 0, 0, 0)
                     self.floater.setP(p)
                     self.floater.setZ(self.floater, -1)
-                base.camera.lookAt(self.floater.getPos(), self.up)
+                self.camera.lookAt(self.floater.getPos(), self.up)
         else:
             self.x = None
             self.y = None
         if (self.keyMap['forward']):
-            base.camera.setZ(base.camera, -25 * dt)
+            self.camera.setZ(self.camera, -25 * dt)
         if (self.keyMap['backward']):
-            base.camera.setZ(base.camera, 25 * dt)
+            self.camera.setZ(self.camera, 25 * dt)
         if (self.keyMap['left']):
-            base.camera.setX(base.camera, -25 * dt)
+            self.camera.setX(self.camera, -25 * dt)
         if (self.keyMap['right']):
-            base.camera.setX(base.camera, 25 * dt)
+            self.camera.setX(base.camera, 25 * dt)
+
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
         if (self.keyMap['rotateRight']):
-            self.h.rotateRight()  
-            
+            self.h.rotateRight()
+
         if (self.keyMap['crouch']):
             self.h.crouch()
-        else: 
+        else:
             self.h.uncrouch()
-               
+
         if (self.keyMap['walkForward']):
             self.h.walk()
         else:
             self.h.unwalk()
-            
+
         return task.cont
 
 if __name__ == '__main__':
