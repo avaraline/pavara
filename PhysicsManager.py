@@ -1,11 +1,12 @@
 from panda3d.ode import *
-from panda3d.core import BitMask32, Vec4, Quat
+from panda3d.core import BitMask32, Vec4, Quat, Vec3
 from wireGeom import wireGeom
 from random import randint, random
 
 DEBUG_MAP_COLLISION = False
 MAP_COLLIDE_BIT = BitMask32(0x00000001)
 MAP_COLLIDE_CATEGORY = BitMask32(0x00000002)
+HECTOR_BIT = BitMask32(0x00000003)
 
 class PhysicsManager(object):
     def __init__(self, render):
@@ -38,8 +39,62 @@ class PhysicsManager(object):
         M = OdeMass()
         M.setCapsuleTotal(120, 1, .5, 2)
         mainBody.setMass(M)
-        mainBody.setPosition(h.model.getPos())
-        mainBody.setQuaternion(h.model.getQuat(self.render))
+        
+        pos = h.model.getPos()
+        pos.addY(5)
+        
+        rotation = Quat()
+        rotation.setHpr(Vec3(90,0,0))
+		        
+        mainBody.setPosition(pos)
+        mainBody.setQuaternion(rotation)
+        
+        mainGeom = OdeCappedCylinderGeom(self.physSpace, 1, 2.3)
+        mainGeom.setCollideBits(MAP_COLLIDE_CATEGORY)
+        mainGeom.setCategoryBits(HECTOR_BIT)
+        mainGeom.setBody(mainBody)
+        
+        mainDebugShape = None
+        if DEBUG_MAP_COLLISION:
+        	mainDebugShape = wireGeom().generate('capsule', radius=1, length=2.3)
+        	mainDebugShape.reparentTo(self.render)
+        	
+        	mainDebugShape.setPos(pos)
+        	
+        	mainDebugShape.setQuat(rotation)
+        	
+               
+        
+        left_ray_pos = h.model.getPos()
+        left_ray_pos.addX(.4)
+        left_ray_pos.addZ(-1.1)
+        left_ray_pos.addY(.1)
+        
+        left_ray = OdeRayGeom(self.physSpace, .5)
+        left_ray.set(left_ray_pos, Vec3(0, -.5, 0))
+        #left_ray.reparentTo(h.left_bottom_bone)
+        left_ray_geom = wireGeom().generate('ray', length = .5)
+        left_ray_geom.reparentTo(h.left_bottom_bone)
+        
+        left_ray_geom.setPos(left_ray_pos)
+        left_ray_geom.setHpr(Vec3(0,90,0))
+        
+        right_ray_pos = h.model.getPos()
+        right_ray_pos.addX(.4)
+        right_ray_pos.addZ(1.3)
+        right_ray_pos.addY(.1)
+        
+        right_ray = OdeRayGeom(self.physSpace, .5)
+        right_ray.set(right_ray_pos, Vec3(0, -.5, 0))
+        right_ray_geom = wireGeom().generate('ray', length = .5)
+        right_ray_geom.reparentTo(self.render)
+        
+        right_ray_geom.setPos(right_ray_pos)
+        right_ray_geom.setHpr(Vec3(0,90,0))
+        
+        self.hectors.append((h, mainBody, mainDebugShape))
+        
+        
         return
     
     def stepPhysics(self, task):
