@@ -45,7 +45,7 @@ class Map (object):
         self.author = root['author'] or 'Unknown Author'
         self.tagline = root['tagline']
         self.description = root['description'] or 'No description.'
-        self.world = World(camera)
+        self.world = World(camera, debug=parse_bool(root['debug']))
         for child in root.children():
             func_name = 'parse_%s' % child.tagname.lower()
             if hasattr(self, func_name):

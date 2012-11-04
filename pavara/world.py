@@ -1,5 +1,5 @@
 from pandac.PandaModules import *
-from panda3d.ode import *
+from panda3d.bullet import *
 from pavara.utils.geom import make_box, make_dome, to_cartesian, make_square
 from pavara.assets import load_model
 
@@ -31,13 +31,13 @@ class WorldObject (object):
     def __repr__(self):
         return self.name
 
-    def attached(self, world):
+    def attached(self):
         """
         Called when this object is actually attached to a World. By this time, self.world will have been set.
         """
         pass
 
-    def detached(self, world):
+    def detached(self):
         """
         """
         pass
@@ -45,22 +45,21 @@ class WorldObject (object):
 class PhysicalObject (WorldObject):
     """
     A WorldObject subclass that represents a physical object; i.e. one that is visible and may have an associated
-    solid (OdeGeom) for physics collisions.
+    solid for physics collisions.
     """
 
     node = None
     solid = None
-    collidable = False
     collide_bits = HECTOR_COLLIDE_BIT | FREESOLID_COLLIDE_BIT
     collide_category = MAP_COLLIDE_BIT
 
-    def create_node(self, world):
+    def create_node(self):
         """
         Called by World.attach to create a NodePath that will be re-parented to the World's render.
         """
         pass
 
-    def create_solid(self, physics, space):
+    def create_solid(self):
         """
         Called by World.attach to create any necessary physics geometry.
         """
@@ -77,51 +76,29 @@ class PhysicalObject (WorldObject):
         Programmatically rotate this object by the given yaw, pitch, and roll.
         """
         self.node.set_hpr(self.node, yaw, pitch, roll)
-        self.sync_physics()
 
     def move(self, center):
         """
         Programmatically move this object to be centered at the given coordinates.
         """
         self.node.set_pos(*center)
-        self.sync_physics()
-
-    def sync_physics(self):
-        """
-        Updates the location and quaternion of the associated physics solid to match the visible node.
-        """
-        if self.solid and self.node:
-            self.solid.set_position(self.node.get_pos(self.world.render))
-            self.solid.set_quaternion(self.node.get_quat(self.world.render))
-
-    def set_collidable(self, collidable):
-        """
-        Sets this object as being collidable or not (i.e. whether the collision will be called).
-        """
-        if self.collidable:
-            self.world.collidables.remove(self)
-        else:
-            self.world.collidables.append(self)
-        self.collidable = collidable
 
 class Hector (PhysicalObject):
 
-    collidable = True
     collide_bits = MAP_COLLIDE_BIT | GROUND_COLLIDE_BIT | FREESOLID_COLLIDE_BIT
     collide_category = HECTOR_COLLIDE_BIT
 
     def __init__(self):
         super(Hector, self).__init__()
 
-    def create_node(self, world):
+    def create_node(self):
         from direct.actor.Actor import Actor
         actor = Actor('hector.egg')
-        print actor.listJoints()
         #aactor.setScale(3.0)
         return actor
 
-    def create_solid(self, physics, space):
-        return OdeTriMeshGeom(space, OdeTriMeshData(self.node, True))
+#    def create_solid(self, physics, space):
+#        return OdeTriMeshGeom(space, OdeTriMeshData(self.node, True))
 
     def collision(self, other):
         print 'HECTOR HIT BY', other
@@ -137,21 +114,14 @@ class Block (PhysicalObject):
         self.color = color
         self.mass = mass
 
-    def create_node(self, world):
+    def create_node(self):
         return NodePath(make_box(self.color, (0, 0, 0), *self.size))
 
-    def create_solid(self, physics, space):
-        geom = OdeBoxGeom(space, self.size[0], self.size[1], self.size[2])
-        if self.mass > 0.0:
-            self.collidable = True
-            self.collide_bits = MAP_COLLIDE_BIT | GROUND_COLLIDE_BIT | HECTOR_COLLIDE_BIT | FREESOLID_COLLIDE_BIT
-            self.collide_category = FREESOLID_COLLIDE_BIT
-            body = OdeBody(physics)
-            mass = OdeMass()
-            mass.set_box(self.mass, self.size[0], self.size[1], self.size[2])
-            body.set_mass(mass)
-            geom.set_body(body)
-        return geom
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)))
+        node.set_mass(self.mass)
+        return node
 
 class Dome (PhysicalObject):
     """
@@ -163,11 +133,8 @@ class Dome (PhysicalObject):
         self.radius = radius
         self.color = color
 
-    def create_node(self, world):
+    def create_node(self):
         return NodePath(make_dome(self.color, self.radius, 8, 5))
-
-    def create_solid(self, physics, space):
-        return OdeTriMeshGeom(space, OdeTriMeshData(self.node, True))
 
 class Ground (PhysicalObject):
     """
@@ -181,10 +148,13 @@ class Ground (PhysicalObject):
         super(Ground, self).__init__(name)
         self.color = color
 
-    def create_solid(self, physics, space):
-        return OdePlaneGeom(space, Vec4(0, 1, 0, 0))
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        node.add_shape(BulletPlaneShape(Vec3(0, 1, 0), 1))
+        return node
 
-    def attached(self, world):
+    def attached(self):
+        self.move((0, -1.0, 0))
         # We need to tell the sky shader what color we are.
         self.world.sky.set_ground(self.color)
 
@@ -202,13 +172,15 @@ class Ramp (PhysicalObject):
         self.width = width
         self.length = (self.top - self.base).length()
 
-    def create_node(self, world):
+    def create_node(self):
         return NodePath(make_box(self.color, (0, 0, 0), self.thickness, self.width, self.length))
 
-    def create_solid(self, physics, space):
-        return OdeBoxGeom(space, self.thickness or 0.001, self.width, self.length)
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
+        return node
 
-    def attached(self, world):
+    def attached(self):
         # Do the block rotation after we've been attached (i.e. have a NodePath), so we can use node.look_at.
         v1 = self.top - self.base
         if self.base.get_x() != self.top.get_x():
@@ -221,7 +193,6 @@ class Ramp (PhysicalObject):
         midpoint = Point3((self.base + self.top) / 2.0)
         self.node.set_pos(midpoint)
         self.node.look_at(self.top, up)
-        self.sync_physics()
 
 class Sky (WorldObject):
     """
@@ -235,7 +206,7 @@ class Sky (WorldObject):
         self.horizon = horizon
         self.scale = scale
 
-    def attached(self, world):
+    def attached(self):
         geom = GeomNode('sky')
         bounds = self.world.camera.node().get_lens().make_bounds()
         dl = bounds.getMin()
@@ -274,7 +245,7 @@ class World (object):
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
     """
 
-    def __init__(self, camera):
+    def __init__(self, camera, debug=False):
         self.objects = {}
         self.collidables = {}
         self.render = NodePath('world')
@@ -282,19 +253,17 @@ class World (object):
         self.ambient = self._make_ambient()
         self.sky = self.attach(Sky())
         # Set up the physics world. TODO: let maps set gravity.
-        self.physics = OdeWorld()
-        self.physics.set_gravity(0, -9.81, 0)
-        self.physics.init_surface_table(1)
-        self.physics.set_surface_entry(0, 0, 150, 0.0, 9.1, 0.9, 0.00001, 0.0, 0.002)
-        # Set up the physics collision space.
-        self.space = OdeSimpleSpace()
-        self.space.set_auto_collide_world(self.physics)
-        self.space.set_collision_event('space_collision')
-        # Set up the contact joints.
-        self.contacts = OdeJointGroup()
-        self.space.set_auto_collide_joint_group(self.contacts)
-        # Register a collision event handler.
-        base.accept('space_collision', self.handle_collision)
+        self.physics = BulletWorld()
+        self.physics.set_gravity(Vec3(0, -9.81, 0))
+        if debug:
+            debug_node = BulletDebugNode('Debug')
+            debug_node.show_wireframe(True)
+            debug_node.show_constraints(True)
+            debug_node.show_bounding_boxes(False)
+            debug_node.show_normals(False)
+            np = self.render.attach_new_node(debug_node)
+            np.show()
+            self.physics.set_debug_node(debug_node)
 
     def _make_ambient(self):
         alight = AmbientLight('ambient')
@@ -309,23 +278,34 @@ class World (object):
         obj.world = self
         if isinstance(obj, PhysicalObject):
             # Let each object define it's own NodePath, then reparent them.
-            obj.node = obj.create_node(self)
-            if obj.node:
-                obj.node.reparent_to(self.render)
-            # Create the physical solid.
-            obj.solid = obj.create_solid(self.physics, self.space)
+            obj.node = obj.create_node()
+            obj.solid = obj.create_solid()
             if obj.solid:
-                if obj.collidable:
-                    self.collidables[obj.solid.get_id()] = obj
+                if isinstance(obj.solid, BulletRigidBodyNode):
+                    self.physics.attach_rigid_body(obj.solid)
+                elif isinstance(obj.solid, BulletGhostNode):
+                    self.physics.attach_ghost(obj.solid)
+            if obj.node:
+                if obj.solid:
+                    # If this is a solid visible object, create a new physics node and reparent the visual node to that.
+                    phys_node = self.render.attach_new_node(obj.solid)
+                    obj.node.reparent_to(phys_node)
+                    obj.node = phys_node
+                else:
+                    # Otherwise just reparent the visual node to the root.
+                    obj.node.reparent_to(self.render)
+            elif obj.solid:
+                obj.node = self.render.attach_new_node(obj.solid)
+            """
+            if obj.solid:
                 if obj.collide_bits is not None:
                     obj.solid.set_collide_bits(obj.collide_bits)
                 if obj.collide_category is not None:
                     obj.solid.set_category_bits(obj.collide_category)
-                # Update the physics to match the visible node location.
-                obj.sync_physics()
+            """
         self.objects[obj.name] = obj
         # Let the object know it has been attached.
-        obj.attached(self)
+        obj.attached()
         return obj
 
     def set_ambient(self, color):
@@ -359,23 +339,5 @@ class World (object):
         Called every frame to update the physics, etc.
         """
         dt = globalClock.getDt()
-        self.space.auto_collide()
-        self.physics.quick_step(dt)
-        for name, obj in self.objects.iteritems():
-            # If the object is a freesolid (i.e. has a solid with an attached body), update the visible node to match
-            # the location/rotation from the physics simulation.
-            if isinstance(obj, PhysicalObject) and obj.solid and obj.solid.has_body():
-                obj.node.set_pos_quat(self.render, obj.solid.get_position(), Quat(obj.solid.get_quaternion()))
-        self.contacts.empty()
+        self.physics.do_physics(dt)
         return task.cont
-
-    def handle_collision(self, entry):
-        obj1 = None
-        obj2 = None
-        geom1 = entry.get_geom1()
-        geom2 = entry.get_geom2()
-        obj1 = self.collidables.get(geom1.get_id(), None)
-        obj2 = self.collidables.get(geom2.get_id(), None)
-        if obj1 and obj2:
-            obj1.collision(obj2)
-            obj2.collision(obj1)
