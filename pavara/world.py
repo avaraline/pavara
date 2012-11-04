@@ -116,6 +116,7 @@ class Hector (PhysicalObject):
     def create_node(self, world):
         from direct.actor.Actor import Actor
         actor = Actor('hector.egg')
+        print actor.listJoints()
         #aactor.setScale(3.0)
         return actor
 
@@ -275,7 +276,7 @@ class World (object):
 
     def __init__(self, camera):
         self.objects = {}
-        self.collidables = []
+        self.collidables = {}
         self.render = NodePath('world')
         self.camera = camera
         self.ambient = self._make_ambient()
@@ -315,7 +316,7 @@ class World (object):
             obj.solid = obj.create_solid(self.physics, self.space)
             if obj.solid:
                 if obj.collidable:
-                    self.collidables.append(obj)
+                    self.collidables[obj.solid.get_id()] = obj
                 if obj.collide_bits is not None:
                     obj.solid.set_collide_bits(obj.collide_bits)
                 if obj.collide_category is not None:
@@ -373,15 +374,8 @@ class World (object):
         obj2 = None
         geom1 = entry.get_geom1()
         geom2 = entry.get_geom2()
-        # For some reason, the OdeGeoms are not hashable (or are separate instances), and I can't find an appropriate
-        # unique ID to use as a hash. So we do it the slow way, and search a list for the geoms (since == works).
-        for obj in self.collidables:
-            if obj.solid == geom1:
-                obj1 = obj
-            if obj.solid == geom2:
-                obj2 = obj
-            if obj1 and obj2:
-                break
+        self.collidables.get(geom1.get_id(), None)
+        self.collidables.get(geom2.get_id(), None)
         if obj1 and obj2:
             obj1.collision(obj2)
             obj2.collision(obj1)
