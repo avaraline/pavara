@@ -5,7 +5,8 @@ from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
 
 from pavara.maps import load_maps
-from Hector import Hector
+from pavara.world import Block, Hector
+from Hector import Hector as HectorActor
 
 class Pavara (ShowBase):
     def __init__(self):
@@ -19,18 +20,17 @@ class Pavara (ShowBase):
         maps = load_maps('Maps/bodhi.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
+        self.map = maps[0]
 
-        # SHIT TEST BLOCKS FROM THE SKY
-        from pavara.world import Block
-        for i in range(10):
-            block = maps[0].world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
-            block.move((random.randint(-20, 20), 50, random.randint(-20, 20)))
+        # Testing physical hector.
+        ph = self.map.world.attach(Hector())
+        ph.move((0, 10, 0))
 
         # Put the hector in the World's render so the lighting applies correctly.
-        self.h = Hector(maps[0].world.render, 0, 13, 14, 90)
+        self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
 
-        maps[0].show(self.render)
-        taskMgr.add(maps[0].world.update, 'worldUpdateTask')
+        self.map.show(self.render)
+        taskMgr.add(self.map.world.update, 'worldUpdateTask')
 
         #axes = loader.loadModel('models/yup-axis')
         #axes.setScale(10)
@@ -56,6 +56,13 @@ class Pavara (ShowBase):
     def setKey(self, key, value):
         self.keyMap[key] = value
 
+    def drop_blocks(self):
+        block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
+        block.move((0, 40, 0))
+        for i in range(10):
+            block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
+            block.move((random.randint(-25, 25), 40, random.randint(-25, 25)))
+
     def setupInput(self):
         self.keyMap = { 'left': 0
                       , 'right': 0
@@ -67,6 +74,7 @@ class Pavara (ShowBase):
                       , 'crouch': 0
                       }
         self.accept('escape', sys.exit)
+        self.accept('p', self.drop_blocks)
         self.accept('w', self.setKey, ['forward', 1])
         self.accept('w-up', self.setKey, ['forward', 0])
         self.accept('a', self.setKey, ['left', 1])
@@ -121,6 +129,7 @@ class Pavara (ShowBase):
         if (self.keyMap['right']):
             self.camera.setX(base.camera, 25 * dt)
 
+        """
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
         if (self.keyMap['rotateRight']):
@@ -135,6 +144,7 @@ class Pavara (ShowBase):
             self.h.walk()
         else:
             self.h.unwalk()
+        """
 
         return task.cont
 
