@@ -7,6 +7,7 @@ from pandac.PandaModules import GeomVertexArrayFormat, InternalName, GeomVertexF
 from panda3d.ode import *
 from direct.interval.IntervalGlobal import Sequence, Parallel
 import math
+
 class Hector():
     def __init__(self, render, pos_x, pos_y, pos_z, angle):
         self.model = Actor("hector_b2.4-addedcrotch.egg")
@@ -15,7 +16,7 @@ class Hector():
         self.model.setH(self.model, angle)
         self.model.reparentTo(render)
         self.model.setPos(pos_x,pos_y,pos_z)
-        
+
         
         
         #measure = loader.loadModel("models/yup-axis")
@@ -28,12 +29,12 @@ class Hector():
                          "bottom_leg_color": Vec3(.06,.30,.10)})
         
         self.walking = False
-        
+
         #this prints the bones available in the model to the console
         #self.model.listJoints()
-        
+
         #using these prevents animations from being played
-        #if these bones aren't in the list printed out by listJoints it doesn't work 
+        #if these bones aren't in the list printed out by listJoints it doesn't work
         self.head_bone = self.model.controlJoint(None, "modelRoot", "headBone")
         self.left_top_bone = self.model.controlJoint(None, "modelRoot", "leftTopBone")
         self.right_top_bone = self.model.controlJoint(None, "modelRoot", "rightTopBone")
@@ -41,14 +42,14 @@ class Hector():
         self.right_middle_bone = self.model.controlJoint(None, "modelRoot", "rightMidBone")
         self.left_bottom_bone = self.model.controlJoint(None, "modelRoot", "leftBottomBone")
         self.right_bottom_bone = self.model.controlJoint(None, "modelRoot", "rightBottomBone")
-        
+
         self.ltb_rest = self.left_top_bone.getP()
         self.rtb_rest = self.right_top_bone.getP()
         self.lmb_rest = self.left_middle_bone.getP()
         self.rmb_rest = self.right_middle_bone.getP()
         self.lbb_rest = self.left_bottom_bone.getP()
         self.rbb_rest = self.right_bottom_bone.getP()
-        
+       
         self.left_foot_node = self.model.find("**/leftBottom")
         self.right_foot_node = self.model.find("**/rightBottom")
         
@@ -59,15 +60,14 @@ class Hector():
         
         
         walk_int_1 = LerpPosHprInterval(self.left_top_bone, 
-                                        .2, 
                                         pos=self.get_leg_pos(self.left_top_bone),
                                         hpr=self.get_leg_hpr(self.left_top_bone),
                                         startPos = None,
                                         blendType = "easeOut",
                                         bakeInStart = 0
                                     )
-        walk_int_2 = LerpPosHprInterval(self.left_bottom_bone, 
-                                        .2, 
+        walk_int_2 = LerpPosHprInterval(self.left_bottom_bone,
+                                        .2,
                                         pos=self.get_leg_pos(self.left_bottom_bone),
                                         hpr=self.get_leg_hpr(self.left_bottom_bone),
                                         startPos = None,
@@ -75,8 +75,8 @@ class Hector():
                                         bakeInStart = 0
                                     )
         self.walk_seq_1 = Sequence(Parallel(walk_int_1, walk_int_2))
-        
-        
+
+
     def walk(self):
         if not self.walking:
             self.walk_seq_1.start()
@@ -88,31 +88,31 @@ class Hector():
             pos.addY(-.1)
         print pos
         return pos
-        
+
     def get_leg_hpr(self, obj):
         hpr = obj.getHpr()
         hpr.addY(20)
         print hpr
         return hpr
-    
+
     def unwalk(self):
         if self.walking:
             self.walk_seq_1.pause()
             self.walking = False
         return
-    
+
     def crouch(self):
         return
         
     def uncrouch(self):
         return
-        
+
     def rotateLeft(self):
         self.model.setH(self.model, 1)
-    
+
     def rotateRight(self):
         self.model.setH(self.model, -1)
-    
+
     def setupColor(self, colordict):
       
         if colordict.has_key("barrel_color"):
@@ -165,9 +165,4 @@ class Hector():
             right_bottom = self.model.find("**/rightBottom")
             left_bottom.setColor(*color)
             right_bottom.setColor(*color)
-        
-                
-                
-        
         return
-        
