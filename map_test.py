@@ -38,7 +38,6 @@ class Pavara (ShowBase):
 
     def initP3D(self):
         self.setupInput()
-        #self.pm = PhysicsManager(render)
         self.setBackgroundColor(0,0,0)
         self.enableParticles()
         self.disableMouse()
@@ -129,7 +128,6 @@ class Pavara (ShowBase):
         if (self.keyMap['right']):
             self.camera.setX(base.camera, 25 * dt)
 
-        """
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
         if (self.keyMap['rotateRight']):
@@ -144,7 +142,6 @@ class Pavara (ShowBase):
             self.h.walk()
         else:
             self.h.unwalk()
-        """
 
         return task.cont
 
