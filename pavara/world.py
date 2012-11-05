@@ -90,11 +90,20 @@ class Hector (PhysicalObject):
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
-        self.actor.set_scale(3.0)
         return self.actor
 
-#    def create_solid(self):
-#        return OdeTriMeshGeom(space, OdeTriMeshData(self.node, True))
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        hull = BulletConvexHullShape()
+        geom_nodepaths = self.actor.find_all_matches('**/+GeomNode')
+        geom_node = geom_nodepaths[0].node()
+        hector_geom = geom_node.get_geom(0)
+        hull.add_geom(hector_geom)
+        node.add_shape(hull)
+        return node
+    
+    def attached(self):
+        self.node.set_scale(3.0)
 
     def collision(self, other):
         print 'HECTOR HIT BY', other
