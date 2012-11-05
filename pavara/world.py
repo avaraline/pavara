@@ -118,6 +118,7 @@ class Hector (PhysicalObject):
         
         #node.add_shape(self.b_shape_from_node_path(self.visor))
         node.add_shape(self.b_shape_from_node_path(self.hull))
+        #node.add_shape(BulletBoxShape(Vec3(.25,.25,.25)))
         #node.add_shape(self.b_shape_from_node_path(self.crotch))
         #node.add_shape(self.b_shape_from_node_path(self.barrels))
         #node.add_shape(self.b_shape_from_node_path(self.barrel_trim))
@@ -127,6 +128,7 @@ class Hector (PhysicalObject):
         #node.add_shape(self.b_shape_from_node_path(self.left_top))
         #node.add_shape(self.b_shape_from_node_path(self.left_middle))
         #node.add_shape(self.b_shape_from_node_path(self.left_bottom))
+        node.set_mass(.3)
         return node
     
     def b_shape_from_node_path(self, nodepath):
@@ -413,4 +415,7 @@ class World (object):
         """
         dt = globalClock.getDt()
         self.physics.do_physics(dt)
+        for obj in self.objects.values():
+            if isinstance(obj, Hector):
+                obj.update(dt)
         return task.cont
