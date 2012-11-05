@@ -25,8 +25,8 @@ class WorldObject (object):
     def __init__(self, name=None):
         self.name = name
         if not self.name:
-            WorldObject.last_unique_id += 1
-            self.name = '%s:%d' % (self.__class__.__name__, WorldObject.last_unique_id)
+            self.__class__.last_unique_id += 1
+            self.name = '%s:%d' % (self.__class__.__name__, self.__class__.last_unique_id)
 
     def __repr__(self):
         return self.name
@@ -64,9 +64,12 @@ class PhysicalObject (WorldObject):
         """
         pass
 
-    def collision(self, other):
+    def collision(self, other, manifold, first):
         """
         Called when this object is collidable, and collides with another collidable object.
+        :param manifold: The "line" between the colliding objects. See
+                         https://www.panda3d.org/reference/devel/python/classpanda3d.bullet.BulletManifoldPoint.php
+        :param first: Whether this was the "first" (node0) object in the collision.
         """
         pass
 
@@ -101,12 +104,14 @@ class Hector (PhysicalObject):
         hull.add_geom(hector_geom)
         node.add_shape(hull)
         return node
-    
+
     def attached(self):
         self.node.set_scale(3.0)
+        self.world.register_collider(self)
 
-    def collision(self, other):
-        print 'HECTOR HIT BY', other
+    def collision(self, other, manifold, first):
+        world_pt = manifold.get_position_world_on_a() if first else manifold.get_position_world_on_b()
+        print self, 'HIT BY', other, 'AT', world_pt
 
 class Block (PhysicalObject):
     """
@@ -257,7 +262,7 @@ class World (object):
 
     def __init__(self, camera, debug=False):
         self.objects = {}
-        self.collidables = {}
+        self.collidables = set()
         self.render = NodePath('world')
         self.camera = camera
         self.ambient = self._make_ambient()
@@ -339,10 +344,23 @@ class World (object):
             sphere.set_color(*color)
             sphere.set_pos(location)
 
+    def register_collider(self, obj):
+        self.collidables.add(obj)
+
     def update(self, task):
         """
         Called every frame to update the physics, etc.
         """
         dt = globalClock.getDt()
         self.physics.do_physics(dt)
+        for obj in self.collidables:
+            result = self.physics.contact_test(obj.node.node())
+            for contact in result.get_contacts():
+                pt = contact.get_manifold_point()
+                obj1 = self.objects.get(contact.get_node0().get_name())
+                obj2 = self.objects.get(contact.get_node1().get_name())
+                if obj1 in self.collidables:
+                    obj1.collision(obj2, pt, True)
+                if obj2 in self.collidables:
+                    obj2.collision(obj1, pt, False)
         return task.cont
