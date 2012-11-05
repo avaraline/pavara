@@ -86,21 +86,89 @@ class Hector (PhysicalObject):
 
     def __init__(self):
         super(Hector, self).__init__()
-
+        
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
+        self.barrels = self.actor.find("**/barrels")
+        self.barrel_trim = self.actor.find("**/barrelTrim")
+        self.visor = self.actor.find("**/visor")
+        self.hull = self.actor.find("**/hull")
+        self.crotch = self.actor.find("**/crotch")
+        self.head = self.actor.attachNewNode("hector_head_node")
+        self.barrels.reparentTo(self.head)
+        self.barrel_trim.reparentTo(self.head)
+        self.visor.reparentTo(self.head)
+        self.hull.reparentTo(self.head)
+        self.crotch.reparentTo(self.head)
+        self.left_top = self.actor.find("**/leftTop")
+        self.right_top = self.actor.find("**/rightTop")
+    	self.left_middle = self.actor.find("**/leftMiddle")
+    	self.left_middle.reparentTo(self.left_top)
+        self.right_middle = self.actor.find("**/rightMiddle")
+        self.right_middle.reparentTo(self.right_top)
+    	self.left_bottom = self.actor.find("**/leftBottom")
+    	self.left_bottom.reparentTo(self.left_middle)
+        self.right_bottom = self.actor.find("**/rightBottom")
+        self.right_bottom.reparentTo(self.right_middle)
         return self.actor
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
-        hull = BulletConvexHullShape()
-        geom_nodepaths = self.actor.find_all_matches('**/+GeomNode')
-        geom_node = geom_nodepaths[0].node()
-        hector_geom = geom_node.get_geom(0)
-        hull.add_geom(hector_geom)
-        node.add_shape(hull)
+        
+        #node.add_shape(self.b_shape_from_node_path(self.visor))
+        node.add_shape(self.b_shape_from_node_path(self.hull))
+        #node.add_shape(self.b_shape_from_node_path(self.crotch))
+        #node.add_shape(self.b_shape_from_node_path(self.barrels))
+        #node.add_shape(self.b_shape_from_node_path(self.barrel_trim))
+        #node.add_shape(self.b_shape_from_node_path(self.right_top))
+        #node.add_shape(self.b_shape_from_node_path(self.right_middle))
+        #node.add_shape(self.b_shape_from_node_path(self.right_bottom))
+        #node.add_shape(self.b_shape_from_node_path(self.left_top))
+        #node.add_shape(self.b_shape_from_node_path(self.left_middle))
+        #node.add_shape(self.b_shape_from_node_path(self.left_bottom))
         return node
+    
+    def b_shape_from_node_path(self, nodepath):
+    	node = nodepath.node()
+    	geom = node.getGeom(0)
+    	shape = BulletConvexHullShape()
+    	shape.addGeom(geom)
+    	return shape
+    
+    def setupColor(self, colordict):
+        if colordict.has_key("barrel_color"):
+            self.barrels.setColor(*colordict.get("barrel_color"))
+        if colordict.has_key("barrel_trim_color"):
+    		self.barrel_trim.setColor(*colordict.get("barrel_trim_color"))
+        if colordict.has_key("visor_color"):
+            self.visor.setColor(*colordict.get("visor_color"))
+        if colordict.has_key("body_color"):
+            color = colordict.get("body_color")
+            self.hull.setColor(*color)
+            self.crotch.setColor(*color)
+            self.left_top.setColor(*color)
+            self.right_top.setColor(*color)
+            self.left_middle.setColor(*color)
+            self.right_middle.setColor(*color)
+            self.left_bottom.setColor(*color)
+            self.right_bottom.setColor(*color)
+        if colordict.has_key("hull_color"):
+            self.hull.setColor(*colordict.get("hull_color"))
+            self.crotch.setColor(*colordict.get("hull_color"))
+        if colordict.has_key("top_leg_color"):
+            color = colordict.get("top_leg_color")
+            self.left_top.setColor(*color)
+            self.right_top.setColor(*color)
+        if colordict.has_key("middle_leg_color"):
+            color = colordict.get("middle_leg_color")
+            self.left_middle.setColor(*color)
+            self.right_middle.setColor(*color)   
+        if colordict.has_key("bottom_leg_color"):
+            color = colordict.get("bottom_leg_color")
+            self.left_bottom.setColor(*color)
+            self.right_bottom.setColor(*color)
+        return
     
     def attached(self):
         self.node.set_scale(3.0)

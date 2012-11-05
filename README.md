@@ -67,14 +67,6 @@ Graphics
 	*	work with colliision character to stop feet on terrain
 
 ###low priority
-*	**multiple colors for models**
-	*	Avara could only allow you to override two colors on a model, using the arc fill and line colors in cw4. No need for this limitation anymore, but how should we assign these multiple color values via the XML?
-		*	Single color attribute, containing multiple colors?
-		*	Multiple color attributes, with an another arbitrary limit on color "slots"?
-		*	What about alpha? Set per color, or per object?
-	*	look at geom group naming with `egg-optchar`
-	*	see https://www.panda3d.org/manual/index.php/Egg_Syntax
-	*	also see https://www.panda3d.org/manual/index.php/Manipulating_a_Piece_of_a_Model
 *   **updated assets**
     *   walker(s) (export bobski's model)
 	*   missile/grenade/plasma

@@ -6,7 +6,6 @@ from direct.showbase.ShowBase import ShowBase
 
 from pavara.maps import load_maps
 from pavara.world import Block, Hector
-from Hector import Hector as HectorActor
 
 class Pavara (ShowBase):
     def __init__(self):
@@ -23,12 +22,11 @@ class Pavara (ShowBase):
         self.map = maps[0]
 
         # Testing physical hector.
-        ph = self.map.world.attach(Hector())
-        ph.move((0, 10, 0))
-
-        # Put the hector in the World's render so the lighting applies correctly.
-        self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
-
+        self.ph = self.map.world.attach(Hector())
+        self.ph.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6), 
+                         "visor_color": Vec3(.3,.6,1), "body_color":Vec3(.2,.5,.3)})
+        self.ph.move((0, 10, 0))
+        
         self.map.show(self.render)
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
 
@@ -129,20 +127,20 @@ class Pavara (ShowBase):
             self.camera.setX(base.camera, 25 * dt)
 
         if (self.keyMap['rotateLeft']):
-            self.h.rotateLeft()
+            self.ph.rotateLeft()
         if (self.keyMap['rotateRight']):
-            self.h.rotateRight()
-
+            self.ph.rotateRight()
+        """
         if (self.keyMap['crouch']):
-            self.h.crouch()
+            self.ph.crouch()
         else:
-            self.h.uncrouch()
+            self.ph.uncrouch()
 
         if (self.keyMap['walkForward']):
-            self.h.walk()
+            self.ph.walk()
         else:
-            self.h.unwalk()
-
+            self.ph.unwalk()
+		"""
         return task.cont
 
 if __name__ == '__main__':
