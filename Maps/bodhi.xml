@@ -17,16 +17,16 @@
 	<incarnator location="-46,10,-2" angle="90"/>
 
 	<!-- BUBBLE TELEPORTER -->
-	<teleporter location="0,17,0" group="recenter" spin="false" model=""/>
-	<teleporter location="0,-30,0" activeRadius="200" deadRadius="110" destination="recenter" spin="false" model=""/>
+	<teleporter location="0,17,0" group="recenter" disorient="false" model=""/>
+	<teleporter location="0,-30,0" activeRadius="200" deadRadius="110" destination="recenter" disorient="false" model=""/>
 
 	<!-- TELEPORTERS -->
-	<teleporter location="38,17,10" group="pillar" spin="false" model=""/>
-	<teleporter location="-38,17,-10" group="pillar" spin="false" model=""/>
-	<teleporter location="32,0,-38" group="floor" destination="pillar" spin="false" model="floorFrame" scale="0.3"/>
-	<teleporter location="38,0,-22" group="floor" destination="pillar" spin="false" model="floorFrame" scale="0.3"/>
-	<teleporter location="-32,0,38" group="floor" destination="pillar" spin="false" model="floorFrame" scale="0.3"/>
-	<teleporter location="-38,0,22" group="floor" destination="pillar" spin="false" model="floorFrame" scale="0.3"/>
+	<teleporter location="38,17,10" group="pillar" disorient="false" model=""/>
+	<teleporter location="-38,17,-10" group="pillar" disorient="false" model=""/>
+	<teleporter location="32,0,-38" group="floor" destination="pillar" disorient="false" model="Lotus" scale="0.3"/>
+	<teleporter location="38,0,-22" group="floor" destination="pillar" disorient="false" model="Lotus" scale="0.3"/>
+	<teleporter location="-32,0,38" group="floor" destination="pillar" disorient="false" model="Lotus" scale="0.3"/>
+	<teleporter location="-38,0,22" group="floor" destination="pillar" disorient="false" model="Lotus" scale="0.3"/>
 
 	<!-- CENTER -->
 	<block size="12,4,20" center="0,2,0" color="0.231,0.384,0.282"/>
@@ -79,6 +79,17 @@
 	<block size="6,7,6" center="-38,3.5,-10" yaw="45" color="0,0.157,0.051"/>
 	<block size="9,0.5,9" center="-38,7.25,-10" yaw="45" color="0.580,0.725,0.627"/>
 	<block size="10,0.3,10" center="-38,7.65,-10" yaw="45" color="0.173,0.329,0.224"/>
+
+	<!-- GOODIES -->
+	<goody location="0,6,0" grenades="8" missiles="4" respawn="25" model="AvaraA" spin="80,0,0"/>
+	<goody location="38,9.8,10" grenades="4" missiles="2" respawn="18.75" model="AvaraA" spin="80,0,0"/>
+	<goody location="-38,9.8,-10" grenades="4" missiles="2" respawn="18.75" model="AvaraA" spin="80,0,0"/>
+	<goody location="26,8,-30" grenades="8" respawn="15.625" model="Grenade" spin="80,0,0"/>
+	<goody location="-26,8,30" grenades="8" respawn="15.625" model="Grenade" spin="80,0,0"/>
+	<goody location="10,8,14" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="-10,8,-14" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="30,2,46" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+	<goody location="-30,2,-46" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
 
 	<!-- GOODY MARKERS -->
 	<block size="2,0,2" center="0,4.01,0" yaw="45" color="1,1,0.863" hologram="true"/>
