@@ -50,8 +50,7 @@ class PhysicalObject (WorldObject):
 
     node = None
     solid = None
-    collide_bits = HECTOR_COLLIDE_BIT | FREESOLID_COLLIDE_BIT
-    collide_category = MAP_COLLIDE_BIT
+    collide_bits = BitMask32.all_on()
 
     def create_node(self):
         """
@@ -85,19 +84,16 @@ class PhysicalObject (WorldObject):
 
 class Hector (PhysicalObject):
 
-    collide_bits = MAP_COLLIDE_BIT | GROUND_COLLIDE_BIT | FREESOLID_COLLIDE_BIT
-    collide_category = HECTOR_COLLIDE_BIT
-
     def __init__(self):
         super(Hector, self).__init__()
 
     def create_node(self):
         from direct.actor.Actor import Actor
-        actor = Actor('hector.egg')
-        #aactor.setScale(3.0)
-        return actor
+        self.actor = Actor('hector.egg')
+        self.actor.set_scale(3.0)
+        return self.actor
 
-#    def create_solid(self, physics, space):
+#    def create_solid(self):
 #        return OdeTriMeshGeom(space, OdeTriMeshData(self.node, True))
 
     def collision(self, other):
@@ -132,17 +128,22 @@ class Dome (PhysicalObject):
         super(Dome, self).__init__(name)
         self.radius = radius
         self.color = color
+        self.geom = make_dome(self.color, self.radius, 8, 5)
 
     def create_node(self):
-        return NodePath(make_dome(self.color, self.radius, 8, 5))
+        return NodePath(self.geom)
+
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        mesh = BulletTriangleMesh()
+        mesh.add_geom(self.geom.get_geom(0))
+        node.add_shape(BulletTriangleMeshShape(mesh, dynamic=False))
+        return node
 
 class Ground (PhysicalObject):
     """
     The ground. This is not a visible object, but does create a physical solid.
     """
-
-    collide_bits = HECTOR_COLLIDE_BIT | FREESOLID_COLLIDE_BIT
-    collide_category = GROUND_COLLIDE_BIT
 
     def __init__(self, radius, color, name=None):
         super(Ground, self).__init__(name)
@@ -296,13 +297,8 @@ class World (object):
                     obj.node.reparent_to(self.render)
             elif obj.solid:
                 obj.node = self.render.attach_new_node(obj.solid)
-            """
-            if obj.solid:
-                if obj.collide_bits is not None:
-                    obj.solid.set_collide_bits(obj.collide_bits)
-                if obj.collide_category is not None:
-                    obj.solid.set_category_bits(obj.collide_category)
-            """
+            if obj.solid and obj.collide_bits is not None:
+                obj.solid.set_into_collide_mask(obj.collide_bits)
         self.objects[obj.name] = obj
         # Let the object know it has been attached.
         obj.attached()
