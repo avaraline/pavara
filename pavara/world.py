@@ -170,11 +170,16 @@ class Hector (PhysicalObject):
         self.right_bottom_bone = getJoint("rightBottomBone")
         self.left_bottom_bone = getJoint("leftBottomBone")
         self.head_bone = getJoint("headBone")
+        self.torso_rest_y = [self.head_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
         self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_middle_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
 
         def make_return_sequence():
             return_speed = .2
+            y_return_head_int = LerpPosInterval(self.head_bone, return_speed, self.torso_rest_y[0])
+            y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, self.torso_rest_y[1])
+            y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, self.torso_rest_y[2])
+            
             r_top_return_int = LerpHprInterval(self.right_top_bone, return_speed, self.legs_rest_mat[0][0])
             r_mid_return_int = LerpHprInterval(self.right_middle_bone, return_speed, self.legs_rest_mat[0][1])   
             r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, self.legs_rest_mat[0][2])      
@@ -183,20 +188,22 @@ class Hector (PhysicalObject):
             l_mid_return_int = LerpHprInterval(self.left_middle_bone, return_speed, self.legs_rest_mat[1][1])
             l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, self.legs_rest_mat[1][2])
             
-            return Parallel(r_top_return_int, r_mid_return_int, r_bot_return_int, l_top_return_int, l_mid_return_int, l_bot_return_int)         
+            return Parallel(r_top_return_int, r_mid_return_int, r_bot_return_int, 
+            			    l_top_return_int, l_mid_return_int, l_bot_return_int,
+            			    y_return_head_int, y_return_left_int, y_return_right_int)         
             
         self.return_seq = make_return_sequence()
         
         def make_walk_sequence():
             walk_cycle_speed = .8
             
-            y_bob_down_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0, self.head_bone.get_pos() + Vec3(0,-.03,0))
-            y_bob_down_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0, self.left_top_bone.get_pos() + Vec3(0,-.03,0))
-            y_bob_down_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0, self.right_top_bone.get_pos() + Vec3(0,-.03,0))
+            y_bob_down_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0,  self.torso_rest_y[0] + Vec3(0,-.03,0))
+            y_bob_down_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[1] + Vec3(0,-.03,0))
+            y_bob_down_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[2] + Vec3(0,-.03,0))
             
-            y_bob_up_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0, self.head_bone.get_pos() + Vec3(0,.03,0))
-            y_bob_up_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0, self.left_top_bone.get_pos() + Vec3(0,.03,0))
-            y_bob_up_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0, self.right_top_bone.get_pos() + Vec3(0,.03,0))
+            y_bob_up_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0,  self.torso_rest_y[0] + Vec3(0,.03,0))
+            y_bob_up_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[1] + Vec3(0,.03,0))
+            y_bob_up_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[2] + Vec3(0,.03,0))
             
             
             r_top_forward_int_1 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 30, 0))
