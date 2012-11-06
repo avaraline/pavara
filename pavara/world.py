@@ -175,7 +175,7 @@ class Hector (PhysicalObject):
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
 
         def make_return_sequence():
-            return_speed = .2
+            return_speed = .1
             y_return_head_int = LerpPosInterval(self.head_bone, return_speed, self.torso_rest_y[0])
             y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, self.torso_rest_y[1])
             y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, self.torso_rest_y[2])
