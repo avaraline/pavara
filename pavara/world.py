@@ -172,15 +172,6 @@ class Hector (PhysicalObject):
         self.head_bone = getJoint("headBone")
         self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_middle_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
-        self.legs_mat = self.legs_rest_mat
-        
-        y_bob_down_head_int = LerpPosInterval(self.head_bone, .2, self.head_bone.get_pos() + Vec3(0,-.3,0))
-        y_bob_down_left_int = LerpPosInterval(self.left_top_bone, .2, self.left_top_bone.get_pos() + Vec3(0,-.3,0))
-        y_bob_down_right_int = LerpPosInterval(self.right_top_bone, .2, self.right_top_bone.get_pos() + Vec3(0,-.3,0))
-        
-        y_bob_up_head_int = LerpPosInterval(self.head_bone, .2, self.head_bone.get_pos() + Vec3(0,.3,0))
-        y_bob_up_left_int = LerpPosInterval(self.left_top_bone, .2, self.left_top_bone.get_pos() + Vec3(0,.3,0))
-        y_bob_up_right_int = LerpPosInterval(self.right_top_bone, .2, self.right_top_bone.get_pos() + Vec3(0,.3,0))
 
         def make_return_sequence():
             return_speed = .2
@@ -198,6 +189,16 @@ class Hector (PhysicalObject):
         
         def make_walk_sequence():
             walk_cycle_speed = .8
+            
+            y_bob_down_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0, self.head_bone.get_pos() + Vec3(0,-.03,0))
+            y_bob_down_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0, self.left_top_bone.get_pos() + Vec3(0,-.03,0))
+            y_bob_down_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0, self.right_top_bone.get_pos() + Vec3(0,-.03,0))
+            
+            y_bob_up_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0, self.head_bone.get_pos() + Vec3(0,.03,0))
+            y_bob_up_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0, self.left_top_bone.get_pos() + Vec3(0,.03,0))
+            y_bob_up_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0, self.right_top_bone.get_pos() + Vec3(0,.03,0))
+            
+            
             r_top_forward_int_1 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 30, 0))
             r_mid_forward_int_1 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, 4, 0))
             r_bot_forward_int_1 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, 10, 0))
@@ -232,13 +233,17 @@ class Hector (PhysicalObject):
             
             return Sequence(
                             Parallel(r_top_forward_int_1, r_mid_forward_int_1, r_bot_forward_int_1,
-                                    l_top_forward_int_3, l_mid_forward_int_3, l_bot_forward_int_3),
+                                    l_top_forward_int_3, l_mid_forward_int_3, l_bot_forward_int_3,
+                                    y_bob_down_head_int, y_bob_down_left_int, y_bob_down_right_int),
                             Parallel(r_top_forward_int_2, r_mid_forward_int_2, r_bot_forward_int_2,
-                                    l_top_forward_int_4, l_mid_forward_int_4, l_bot_forward_int_4),
+                                    l_top_forward_int_4, l_mid_forward_int_4, l_bot_forward_int_4,
+                                    y_bob_up_head_int, y_bob_up_left_int, y_bob_up_right_int),
                             Parallel(r_top_forward_int_3, r_mid_forward_int_3, r_bot_forward_int_3,
-                                    l_top_forward_int_1, l_mid_forward_int_1, l_bot_forward_int_1),
+                                    l_top_forward_int_1, l_mid_forward_int_1, l_bot_forward_int_1,
+                                    y_bob_down_head_int, y_bob_down_left_int, y_bob_down_right_int),
                             Parallel(r_top_forward_int_4, r_mid_forward_int_4, r_bot_forward_int_4,
-                                    l_top_forward_int_2, l_mid_forward_int_2, l_bot_forward_int_2)
+                                    l_top_forward_int_2, l_mid_forward_int_2, l_bot_forward_int_2,
+                                    y_bob_up_head_int, y_bob_up_left_int, y_bob_up_right_int)
                            )
                            
         self.walk_forward_seq = make_walk_sequence()                    
