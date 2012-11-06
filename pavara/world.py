@@ -111,9 +111,7 @@ class Hector (PhysicalObject):
 
     def __init__(self):
         super(Hector, self).__init__()
-<<<<<<< HEAD
-        
-=======
+
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
         self.factors = {
@@ -131,7 +129,6 @@ class Hector (PhysicalObject):
             'crouch': 0.0,
         }
 
->>>>>>> 2c6dc04973b410b6976e1a6c80b943ca0a314400
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
