@@ -23,11 +23,13 @@ class Pavara (ShowBase):
         self.map = maps[0]
 
         # Testing physical hector.
-        ph = self.map.world.attach(Hector())
-        ph.move((0, 10, 0))
+        self.hector = self.map.world.attach(Hector())
+        self.hector.move((0, 15, 0))
+
+        self.setupInput()
 
         # Put the hector in the World's render so the lighting applies correctly.
-        self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
+        #self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
 
         self.map.show(self.render)
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
@@ -37,7 +39,6 @@ class Pavara (ShowBase):
         #axes.reparentTo(render)
 
     def initP3D(self):
-        self.setupInput()
         self.setBackgroundColor(0,0,0)
         self.enableParticles()
         self.disableMouse()
@@ -82,14 +83,17 @@ class Pavara (ShowBase):
         self.accept('s-up', self.setKey, ['backward', 0])
         self.accept('d', self.setKey, ['right', 1])
         self.accept('d-up', self.setKey, ['right', 0])
-        self.accept('j', self.setKey, ['rotateLeft', 1])
-        self.accept('j-up', self.setKey, ['rotateLeft', 0])
-        self.accept('k', self.setKey, ['rotateRight', 1])
-        self.accept('k-up', self.setKey, ['rotateRight', 0])
-        self.accept('n', self.setKey, ['walkForward', 1])
-        self.accept('n-up', self.setKey, ['walkForward', 0])
-        self.accept('m', self.setKey, ['crouch', 1])
-        self.accept('m-up', self.setKey, ['crouch', 0])
+        # Hector movement.
+        self.accept('i',        self.hector.handle_command, ['forward', True])
+        self.accept('i-up',     self.hector.handle_command, ['forward', False])
+        self.accept('j',        self.hector.handle_command, ['left', True])
+        self.accept('j-up',     self.hector.handle_command, ['left', False])
+        self.accept('k',        self.hector.handle_command, ['backward', True])
+        self.accept('k-up',     self.hector.handle_command, ['backward', False])
+        self.accept('l',        self.hector.handle_command, ['right', True])
+        self.accept('l-up',     self.hector.handle_command, ['right', False])
+        self.accept('shift',    self.hector.handle_command, ['crouch', True])
+        self.accept('shift-up', self.hector.handle_command, ['crouch', False])
 
     def move(self, task):
         dt = globalClock.getDt()
@@ -128,6 +132,7 @@ class Pavara (ShowBase):
         if (self.keyMap['right']):
             self.camera.setX(base.camera, 25 * dt)
 
+        """
         if (self.keyMap['rotateLeft']):
             self.h.rotateLeft()
         if (self.keyMap['rotateRight']):
@@ -142,6 +147,7 @@ class Pavara (ShowBase):
             self.h.walk()
         else:
             self.h.unwalk()
+        """
 
         return task.cont
 

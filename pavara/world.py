@@ -2,6 +2,7 @@ from pandac.PandaModules import *
 from panda3d.bullet import *
 from pavara.utils.geom import make_box, make_dome, to_cartesian, make_square
 from pavara.assets import load_model
+import math
 
 DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
 DEFAULT_GROUND_COLOR =  (0.75, 0.5, 0.25, 1)
@@ -9,10 +10,10 @@ DEFAULT_SKY_COLOR =     (0.7, 0.8, 1, 1)
 DEFAULT_HORIZON_COLOR = (1, 0.8, 0, 1)
 DEFAULT_HORIZON_SCALE = 0.05
 
-MAP_COLLIDE_BIT =       BitMask32.bit(1)
-GROUND_COLLIDE_BIT =    BitMask32.bit(2)
-HECTOR_COLLIDE_BIT =    BitMask32.bit(3)
-FREESOLID_COLLIDE_BIT = BitMask32.bit(4)
+NO_COLLISION_BITS = BitMask32.all_off()
+MAP_COLLIDE_BIT =   BitMask32.bit(0)
+SOLID_COLLIDE_BIT = BitMask32.bit(1)
+GHOST_COLLIDE_BIT = BitMask32.bit(2)
 
 class WorldObject (object):
     """
@@ -21,6 +22,7 @@ class WorldObject (object):
 
     world = None
     last_unique_id = 0
+    collide_bits = NO_COLLISION_BITS
 
     def __init__(self, name=None):
         self.name = name
@@ -42,6 +44,12 @@ class WorldObject (object):
         """
         pass
 
+    def update(self, dt):
+        """
+        Called each frame if the WorldObject has registered itself as updatable.
+        """
+        pass
+
 class PhysicalObject (WorldObject):
     """
     A WorldObject subclass that represents a physical object; i.e. one that is visible and may have an associated
@@ -50,7 +58,7 @@ class PhysicalObject (WorldObject):
 
     node = None
     solid = None
-    collide_bits = BitMask32.all_on()
+    collide_bits = MAP_COLLIDE_BIT
 
     def create_node(self):
         """
@@ -75,6 +83,12 @@ class PhysicalObject (WorldObject):
 
     def rotate(self, yaw, pitch, roll):
         """
+        Programmatically set the yaw, pitch, and roll of this object.
+        """
+        self.node.set_hpr(yaw, pitch, roll)
+
+    def rotate_by(self, yaw, pitch, roll):
+        """
         Programmatically rotate this object by the given yaw, pitch, and roll.
         """
         self.node.set_hpr(self.node, yaw, pitch, roll)
@@ -85,10 +99,34 @@ class PhysicalObject (WorldObject):
         """
         self.node.set_pos(*center)
 
+    def move_by(self, x, y, z):
+        """
+        Programmatically move this object by the given distances in each direction.
+        """
+        self.node.set_pos(self.node, x, y, z)
+
 class Hector (PhysicalObject):
+
+    collide_bits = SOLID_COLLIDE_BIT
 
     def __init__(self):
         super(Hector, self).__init__()
+        self.on_ground = False
+        self.mass = 150.0 # 220.0 for heavy
+        self.factors = {
+            'forward': 0.1,
+            'backward': -0.1,
+            'left': 1.0,
+            'right': -1.0,
+            'crouch': 0.0,
+        }
+        self.movement = {
+            'forward': 0.0,
+            'backward': 0.0,
+            'left': 0.0,
+            'right': 0.0,
+            'crouch': 0.0,
+        }
 
     def create_node(self):
         from direct.actor.Actor import Actor
@@ -108,10 +146,29 @@ class Hector (PhysicalObject):
     def attached(self):
         self.node.set_scale(3.0)
         self.world.register_collider(self)
+        self.world.register_updater(self)
 
     def collision(self, other, manifold, first):
         world_pt = manifold.get_position_world_on_a() if first else manifold.get_position_world_on_b()
         print self, 'HIT BY', other, 'AT', world_pt
+
+    def handle_command(self, cmd, pressed):
+        self.movement[cmd] = self.factors[cmd] if pressed else 0.0
+
+    def update(self, dt):
+        yaw = self.movement['left'] + self.movement['right']
+        self.rotate_by(yaw, 0, 0)
+        walk = self.movement['forward'] + self.movement['backward']
+        self.move_by(0, 0, walk)
+        # Cast a ray from just above our feet to just below them, see if anything hits.
+        pt_from = self.node.get_pos() + Vec3(0, 0.2, 0)
+        pt_to = pt_from + Vec3(0, -0.4, 0)
+        result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        if result.has_hit():
+            self.on_ground = True
+            self.move(result.get_hit_pos())
+        else:
+            self.move_by(0, -0.05, 0)
 
 class Block (PhysicalObject):
     """
@@ -123,6 +180,8 @@ class Block (PhysicalObject):
         self.size = size
         self.color = color
         self.mass = mass
+        if self.mass > 0.0:
+            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
 
     def create_node(self):
         return NodePath(make_box(self.color, (0, 0, 0), *self.size))
@@ -263,6 +322,7 @@ class World (object):
     def __init__(self, camera, debug=False):
         self.objects = {}
         self.collidables = set()
+        self.updatables = set()
         self.render = NodePath('world')
         self.camera = camera
         self.ambient = self._make_ambient()
@@ -345,22 +405,33 @@ class World (object):
             sphere.set_pos(location)
 
     def register_collider(self, obj):
+        assert isinstance(obj, PhysicalObject)
         self.collidables.add(obj)
+
+    def register_updater(self, obj):
+        assert isinstance(obj, WorldObject)
+        self.updatables.add(obj)
 
     def update(self, task):
         """
         Called every frame to update the physics, etc.
         """
         dt = globalClock.getDt()
+        for obj in self.updatables:
+            obj.update(dt)
         self.physics.do_physics(dt)
         for obj in self.collidables:
             result = self.physics.contact_test(obj.node.node())
             for contact in result.get_contacts():
-                pt = contact.get_manifold_point()
                 obj1 = self.objects.get(contact.get_node0().get_name())
                 obj2 = self.objects.get(contact.get_node1().get_name())
-                if obj1 in self.collidables:
-                    obj1.collision(obj2, pt, True)
-                if obj2 in self.collidables:
-                    obj2.collision(obj1, pt, False)
+                if obj1 and obj2:
+                    # Check the collision bits to see if the two objects should collide.
+                    should_collide = obj1.collide_bits & obj2.collide_bits
+                    if not should_collide.is_zero():
+                        pt = contact.get_manifold_point()
+                        if obj1 in self.collidables:
+                            obj1.collision(obj2, pt, True)
+                        if obj2 in self.collidables:
+                            obj2.collision(obj1, pt, False)
         return task.cont
