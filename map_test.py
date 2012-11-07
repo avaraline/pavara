@@ -6,7 +6,6 @@ from direct.showbase.ShowBase import ShowBase
 
 from pavara.maps import load_maps
 from pavara.world import Block, Hector
-from Hector import Hector as HectorActor
 
 class Pavara (ShowBase):
     def __init__(self):
@@ -23,7 +22,11 @@ class Pavara (ShowBase):
         self.map = maps[0]
 
         # Testing physical hector.
+
+        
         self.hector = self.map.world.attach(Hector())
+        self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6), 
+                         "visor_color": Vec3(.3,.6,1), "body_color":Vec3(.2,.5,.3)})
         self.hector.move((0, 15, 0))
 
         self.setupInput()
@@ -131,23 +134,6 @@ class Pavara (ShowBase):
             self.camera.setX(self.camera, -25 * dt)
         if (self.keyMap['right']):
             self.camera.setX(base.camera, 25 * dt)
-
-        """
-        if (self.keyMap['rotateLeft']):
-            self.h.rotateLeft()
-        if (self.keyMap['rotateRight']):
-            self.h.rotateRight()
-
-        if (self.keyMap['crouch']):
-            self.h.crouch()
-        else:
-            self.h.uncrouch()
-
-        if (self.keyMap['walkForward']):
-            self.h.walk()
-        else:
-            self.h.unwalk()
-        """
 
         return task.cont
 

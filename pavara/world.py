@@ -2,6 +2,8 @@ from pandac.PandaModules import *
 from panda3d.bullet import *
 from pavara.utils.geom import make_box, make_dome, to_cartesian, make_square
 from pavara.assets import load_model
+from direct.interval.LerpInterval import *
+from direct.interval.IntervalGlobal import * 
 import math
 
 DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
@@ -111,13 +113,14 @@ class Hector (PhysicalObject):
 
     def __init__(self):
         super(Hector, self).__init__()
+
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
         self.factors = {
             'forward': 0.1,
             'backward': -0.1,
-            'left': 1.0,
-            'right': -1.0,
+            'left': 2.0,
+            'right': -2.0,
             'crouch': 0.0,
         }
         self.movement = {
@@ -127,21 +130,188 @@ class Hector (PhysicalObject):
             'right': 0.0,
             'crouch': 0.0,
         }
+        self.walk_phase = 0
+        self.placing = False
 
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
+        self.actor.listJoints()
+        self.barrels = self.actor.find("**/barrels")
+        self.barrel_trim = self.actor.find("**/barrelTrim")
+        self.visor = self.actor.find("**/visor")
+        self.hull = self.actor.find("**/hull")
+        self.crotch = self.actor.find("**/crotch")
+        self.head = self.actor.attachNewNode("hector_head_node")
+        self.barrels.reparentTo(self.head)
+        self.barrel_trim.reparentTo(self.head)
+        self.visor.reparentTo(self.head)
+        self.hull.reparentTo(self.head)
+        self.crotch.reparentTo(self.head)
+        self.left_top = self.actor.find("**/leftTop")
+        self.right_top = self.actor.find("**/rightTop")
+        self.left_middle = self.actor.find("**/leftMiddle")
+        self.left_middle.reparentTo(self.left_top)
+        self.right_middle = self.actor.find("**/rightMiddle")
+        self.right_middle.reparentTo(self.right_top)
+        self.left_bottom = self.actor.find("**/leftBottom")
+        self.left_bottom.reparentTo(self.left_middle)
+        self.right_bottom = self.actor.find("**/rightBottom")
+        self.right_bottom.reparentTo(self.right_middle)
+        
+        self.walk_playing = False
+        
+        def getJoint(name):
+            return self.actor.controlJoint(None, "modelRoot", name)
+        self.right_top_bone = getJoint("rightTopBone")
+        self.left_top_bone = getJoint("leftTopBone")
+        self.right_middle_bone = getJoint("rightMidBone")
+        self.left_middle_bone = getJoint("leftMidBone")
+        self.right_bottom_bone = getJoint("rightBottomBone")
+        self.left_bottom_bone = getJoint("leftBottomBone")
+        self.head_bone = getJoint("headBone")
+        self.torso_rest_y = [self.head_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
+        self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_middle_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
+                               [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
+
+        def make_return_sequence():
+            return_speed = .1
+            y_return_head_int = LerpPosInterval(self.head_bone, return_speed, self.torso_rest_y[0])
+            y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, self.torso_rest_y[1])
+            y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, self.torso_rest_y[2])
+            
+            r_top_return_int = LerpHprInterval(self.right_top_bone, return_speed, self.legs_rest_mat[0][0])
+            r_mid_return_int = LerpHprInterval(self.right_middle_bone, return_speed, self.legs_rest_mat[0][1])   
+            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, self.legs_rest_mat[0][2])      
+            
+            l_top_return_int = LerpHprInterval(self.left_top_bone, return_speed, self.legs_rest_mat[1][0])
+            l_mid_return_int = LerpHprInterval(self.left_middle_bone, return_speed, self.legs_rest_mat[1][1])
+            l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, self.legs_rest_mat[1][2])
+            
+            return Parallel(r_top_return_int, r_mid_return_int, r_bot_return_int, 
+            			    l_top_return_int, l_mid_return_int, l_bot_return_int,
+            			    y_return_head_int, y_return_left_int, y_return_right_int)         
+            
+        self.return_seq = make_return_sequence()
+        
+        def make_walk_sequence():
+            walk_cycle_speed = .8
+            
+            y_bob_down_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0,  self.torso_rest_y[0] + Vec3(0,-.03,0))
+            y_bob_down_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[1] + Vec3(0,-.03,0))
+            y_bob_down_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[2] + Vec3(0,-.03,0))
+            
+            y_bob_up_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0,  self.torso_rest_y[0] + Vec3(0,.03,0))
+            y_bob_up_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[1] + Vec3(0,.03,0))
+            y_bob_up_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[2] + Vec3(0,.03,0))
+            
+            
+            r_top_forward_int_1 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 30, 0))
+            r_mid_forward_int_1 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, 4, 0))
+            r_bot_forward_int_1 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, 10, 0))
+            
+            r_top_forward_int_2 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 28, 0))
+            r_mid_forward_int_2 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, -10, 0))
+            r_bot_forward_int_2 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -2, 0))
+            
+            r_top_forward_int_3 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, -40, 0))
+            r_mid_forward_int_3 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, -4, 0))
+            r_bot_forward_int_3 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -20, 0))
+            
+            r_top_forward_int_4 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, -5, 0))
+            r_mid_forward_int_4 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, 0, 0))
+            r_bot_forward_int_4 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -10, 0))
+            
+            l_top_forward_int_1 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, 30, 0))
+            l_mid_forward_int_1 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, 4, 0))
+            l_bot_forward_int_1 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, 10, 0))
+            
+            l_top_forward_int_2 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, 28, 0))
+            l_mid_forward_int_2 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, -10, 0))
+            l_bot_forward_int_2 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -2, 0))
+            
+            l_top_forward_int_3 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, -40, 0))
+            l_mid_forward_int_3 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, -4, 0))
+            l_bot_forward_int_3 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -20, 0))
+            
+            l_top_forward_int_4 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, -5, 0))
+            l_mid_forward_int_4 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, 0, 0))
+            l_bot_forward_int_4 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -10, 0))
+            
+            return Sequence(
+                            Parallel(r_top_forward_int_1, r_mid_forward_int_1, r_bot_forward_int_1,
+                                    l_top_forward_int_3, l_mid_forward_int_3, l_bot_forward_int_3,
+                                    y_bob_down_head_int, y_bob_down_left_int, y_bob_down_right_int),
+                            Parallel(r_top_forward_int_2, r_mid_forward_int_2, r_bot_forward_int_2,
+                                    l_top_forward_int_4, l_mid_forward_int_4, l_bot_forward_int_4,
+                                    y_bob_up_head_int, y_bob_up_left_int, y_bob_up_right_int),
+                            Parallel(r_top_forward_int_3, r_mid_forward_int_3, r_bot_forward_int_3,
+                                    l_top_forward_int_1, l_mid_forward_int_1, l_bot_forward_int_1,
+                                    y_bob_down_head_int, y_bob_down_left_int, y_bob_down_right_int),
+                            Parallel(r_top_forward_int_4, r_mid_forward_int_4, r_bot_forward_int_4,
+                                    l_top_forward_int_2, l_mid_forward_int_2, l_bot_forward_int_2,
+                                    y_bob_up_head_int, y_bob_up_left_int, y_bob_up_right_int)
+                           )
+                           
+        self.walk_forward_seq = make_walk_sequence()                    
+
         return self.actor
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
-        hull = BulletConvexHullShape()
-        geom_nodepaths = self.actor.find_all_matches('**/+GeomNode')
-        geom_node = geom_nodepaths[0].node()
-        hector_geom = geom_node.get_geom(0)
-        hull.add_geom(hector_geom)
-        node.add_shape(hull)
+        node.add_shape(self.b_shape_from_node_path(self.visor))
+        node.add_shape(self.b_shape_from_node_path(self.hull))
+        node.add_shape(self.b_shape_from_node_path(self.crotch))
+        node.add_shape(self.b_shape_from_node_path(self.barrels))
+        node.add_shape(self.b_shape_from_node_path(self.barrel_trim))
+        node.add_shape(self.b_shape_from_node_path(self.right_top))
+        node.add_shape(self.b_shape_from_node_path(self.right_middle))
+        node.add_shape(self.b_shape_from_node_path(self.right_bottom))
+        node.add_shape(self.b_shape_from_node_path(self.left_top))
+        node.add_shape(self.b_shape_from_node_path(self.left_middle))
+        node.add_shape(self.b_shape_from_node_path(self.left_bottom))
         return node
+        
+    def b_shape_from_node_path(self, nodepath):
+        node = nodepath.node()
+        geom = node.getGeom(0)
+        shape = BulletConvexHullShape()
+        shape.addGeom(geom)
+        return shape
+    
+    def setupColor(self, colordict):
+        if colordict.has_key("barrel_color"):
+            self.barrels.setColor(*colordict.get("barrel_color"))
+        if colordict.has_key("barrel_trim_color"):
+            self.barrel_trim.setColor(*colordict.get("barrel_trim_color"))
+        if colordict.has_key("visor_color"):
+            self.visor.setColor(*colordict.get("visor_color"))
+        if colordict.has_key("body_color"):
+            color = colordict.get("body_color")
+            self.hull.setColor(*color)
+            self.crotch.setColor(*color)
+            self.left_top.setColor(*color)
+            self.right_top.setColor(*color)
+            self.left_middle.setColor(*color)
+            self.right_middle.setColor(*color)
+            self.left_bottom.setColor(*color)
+            self.right_bottom.setColor(*color)
+        if colordict.has_key("hull_color"):
+            self.hull.setColor(*colordict.get("hull_color"))
+            self.crotch.setColor(*colordict.get("hull_color"))
+        if colordict.has_key("top_leg_color"):
+            color = colordict.get("top_leg_color")
+            self.left_top.setColor(*color)
+            self.right_top.setColor(*color)
+        if colordict.has_key("middle_leg_color"):
+            color = colordict.get("middle_leg_color")
+            self.left_middle.setColor(*color)
+            self.right_middle.setColor(*color)   
+        if colordict.has_key("bottom_leg_color"):
+            color = colordict.get("bottom_leg_color")
+            self.left_bottom.setColor(*color)
+            self.right_bottom.setColor(*color)
+        return
 
     def attached(self):
         self.node.set_scale(3.0)
@@ -164,11 +334,25 @@ class Hector (PhysicalObject):
         pt_from = self.node.get_pos() + Vec3(0, 0.2, 0)
         pt_to = pt_from + Vec3(0, -0.4, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        self.update_legs(walk,dt)
         if result.has_hit():
             self.on_ground = True
             self.move(result.get_hit_pos())
         else:
             self.move_by(0, -0.05, 0)
+    
+    def update_legs(self, walk, dt):
+        if walk != 0:
+            if not self.walk_playing:
+                self.walk_playing = True
+                self.walk_forward_seq.loop()
+        else:
+            if self.walk_playing:
+                self.walk_playing = False
+                self.walk_forward_seq.pause()
+                self.return_seq.start()
+        
+        
 
 class Block (PhysicalObject):
     """
