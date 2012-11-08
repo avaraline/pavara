@@ -23,9 +23,9 @@ class Pavara (ShowBase):
 
         # Testing physical hector.
 
-        
+
         self.hector = self.map.world.attach(Hector())
-        self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6), 
+        self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6),
                          "visor_color": Vec3(.3,.6,1), "body_color":Vec3(.2,.5,.3)})
         self.hector.move((0, 15, 0))
 
@@ -60,10 +60,12 @@ class Pavara (ShowBase):
         self.keyMap[key] = value
 
     def drop_blocks(self):
-        block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
+        block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1)))
+        block.adjust_mass(0.01)
         block.move((0, 40, 0))
         for i in range(10):
-            block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
+            block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1)))
+            block.adjust_mass(0.01)
             block.move((random.randint(-25, 25), 40, random.randint(-25, 25)))
 
     def setupInput(self):
