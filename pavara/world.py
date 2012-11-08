@@ -320,9 +320,9 @@ class Hector (PhysicalObject):
         walk = self.movement['forward'] + self.movement['backward']
         if self.on_ground:
             speed = walk
-            self.xz_velocity = self.node.get_pos()
+            self.xz_velocity = self.position()
             self.move_by(0, 0, speed * dt * 60)
-            self.xz_velocity -= self.node.get_pos() 
+            self.xz_velocity -= self.position() 
             self.xz_velocity *= -1
             self.xz_velocity /= (dt * 60)
         else:
@@ -449,7 +449,7 @@ class Ramp (PhysicalObject):
         up = v1.cross(v2)
         up.normalize()
         midpoint = Point3((self.base + self.top) / 2.0)
-        self.node.set_pos(midpoint)
+        self.move(midpoint)
         self.node.look_at(self.top, up)
 
 class Sky (WorldObject):
