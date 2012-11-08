@@ -107,6 +107,9 @@ class PhysicalObject (WorldObject):
         Programmatically move this object by the given distances in each direction.
         """
         self.node.set_pos(self.node, x, y, z)
+ 
+    def position(self):
+        return self.node.get_pos()
 
     def adjust_mass(self, delta):
         """
@@ -128,6 +131,8 @@ class Hector (PhysicalObject):
 
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
+        self.xz_velocity = Vec3(0, 0, 0)
+        self.y_velocity = 0
         self.factors = {
             'forward': 0.1,
             'backward': -0.1,
@@ -316,24 +321,38 @@ class Hector (PhysicalObject):
         print self, 'HIT BY', other, 'AT', world_pt
 
     def handle_command(self, cmd, pressed):
+        if cmd is 'crouch' and not pressed and self.on_ground:
+            self.y_velocity = 0.025
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def update(self, dt):
+        dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
         yaw = self.movement['left'] + self.movement['right']
-        self.rotate_by(yaw, 0, 0)
+        self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
-        self.move_by(0, 0, walk)
+        if self.on_ground:
+            speed = walk
+            self.xz_velocity = self.node.get_pos()
+            self.move_by(0, 0, speed * dt * 60)
+            self.xz_velocity -= self.node.get_pos() 
+            self.xz_velocity *= -1
+            self.xz_velocity /= (dt * 60)
+        else:
+            self.move(self.position() + self.xz_velocity * dt * 60)
         # Cast a ray from just above our feet to just below them, see if anything hits.
-        pt_from = self.node.get_pos() + Vec3(0, 0.2, 0)
+        pt_from = self.position() + Vec3(0, 0.2, 0)
         pt_to = pt_from + Vec3(0, -0.4, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         self.update_legs(walk,dt)
-        if result.has_hit():
+        if self.y_velocity <= 0 and result.has_hit():
             self.on_ground = True
+            self.y_velocity = 0
             self.move(result.get_hit_pos())
         else:
-            self.move_by(0, -0.05, 0)
-
+            self.on_ground = False
+            self.y_velocity -= 0.05 * dt 
+            self.move_by(0, self.y_velocity, 0)
+    
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
