@@ -307,10 +307,11 @@ class Hector (PhysicalObject):
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def update(self, dt):
+        dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
         yaw = self.movement['left'] + self.movement['right']
-        self.rotate_by(yaw, 0, 0)
+        self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
-        self.move_by(0, 0, walk)
+        self.move_by(0, 0, walk * dt * 60)
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.node.get_pos() + Vec3(0, 0.2, 0)
         pt_to = pt_from + Vec3(0, -0.4, 0)
@@ -320,7 +321,7 @@ class Hector (PhysicalObject):
             self.on_ground = True
             self.move(result.get_hit_pos())
         else:
-            self.move_by(0, -0.05, 0)
+            self.move_by(0, -0.05 * dt * 60, 0)
     
     def update_legs(self, walk, dt):
         if walk != 0:
