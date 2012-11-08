@@ -116,6 +116,8 @@ class Hector (PhysicalObject):
 
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
+        self.xz_velocity = Vec3(0, 0, 0)
+        self.y_velocity = 0
         self.factors = {
             'forward': 0.1,
             'backward': -0.1,
@@ -304,6 +306,8 @@ class Hector (PhysicalObject):
         print self, 'HIT BY', other, 'AT', world_pt
 
     def handle_command(self, cmd, pressed):
+        if cmd is 'crouch' and not pressed:
+            self.y_velocity = 0.025
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def update(self, dt):
@@ -311,17 +315,30 @@ class Hector (PhysicalObject):
         yaw = self.movement['left'] + self.movement['right']
         self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
-        self.move_by(0, 0, walk * dt * 60)
+        if self.on_ground:
+            speed = walk
+            self.xz_velocity = self.node.get_pos()
+            self.move_by(0, 0, speed * dt * 60)
+            self.xz_velocity -= self.node.get_pos() 
+            self.xz_velocity *= -1
+            self.xz_velocity /= (dt * 60)
+        else:
+            print self.xz_velocity
+            self.move(self.node.get_pos() + self.xz_velocity * dt * 60)
+        #self.move(self.xz_velocity)
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.node.get_pos() + Vec3(0, 0.2, 0)
         pt_to = pt_from + Vec3(0, -0.4, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         self.update_legs(walk,dt)
-        if result.has_hit():
+        if self.y_velocity <= 0 and result.has_hit():
             self.on_ground = True
+            self.y_velocity = 0
             self.move(result.get_hit_pos())
         else:
-            self.move_by(0, -0.05 * dt * 60, 0)
+            self.on_ground = False
+            self.y_velocity -= 0.05 * dt 
+            self.move_by(0, self.y_velocity, 0)
     
     def update_legs(self, walk, dt):
         if walk != 0:
