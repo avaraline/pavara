@@ -61,7 +61,6 @@ class PhysicalObject (WorldObject):
     node = None
     solid = None
     collide_bits = MAP_COLLIDE_BIT
-    mass = 0
 
     def create_node(self):
         """
@@ -107,20 +106,9 @@ class PhysicalObject (WorldObject):
         Programmatically move this object by the given distances in each direction.
         """
         self.node.set_pos(self.node, x, y, z)
- 
+
     def position(self):
         return self.node.get_pos()
-
-    def adjust_mass(self, delta):
-        """
-        Programmatically adjust the mass of this object by the given amount.
-        """
-        self.mass += delta
-        if self.mass > 0.0:
-            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
-        if self.solid:
-            self.solid.set_mass(self.mass)
-            self.solid.set_into_collide_mask(self.collide_bits)
 
 class Hector (PhysicalObject):
 
@@ -334,7 +322,7 @@ class Hector (PhysicalObject):
             speed = walk
             self.xz_velocity = self.position()
             self.move_by(0, 0, speed * dt * 60)
-            self.xz_velocity -= self.position() 
+            self.xz_velocity -= self.position()
             self.xz_velocity *= -1
             self.xz_velocity /= (dt * 60)
         else:
@@ -350,9 +338,9 @@ class Hector (PhysicalObject):
             self.move(result.get_hit_pos())
         else:
             self.on_ground = False
-            self.y_velocity -= 0.05 * dt 
+            self.y_velocity -= 0.05 * dt
             self.move_by(0, self.y_velocity, 0)
-    
+
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
@@ -371,10 +359,13 @@ class Block (PhysicalObject):
     A block. Blocks with non-zero mass will be treated as freesolids.
     """
 
-    def __init__(self, size, color, name=None):
+    def __init__(self, size, color, mass, name=None):
         super(Block, self).__init__(name)
         self.size = size
         self.color = color
+        self.mass = mass
+        if self.mass > 0.0:
+            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
 
     def create_node(self):
         return NodePath(make_box(self.color, (0, 0, 0), *self.size))
@@ -382,6 +373,7 @@ class Block (PhysicalObject):
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
         node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)))
+        node.set_mass(self.mass)
         return node
 
 class Dome (PhysicalObject):
@@ -389,10 +381,13 @@ class Dome (PhysicalObject):
     A dome.
     """
 
-    def __init__(self, radius, color, name=None):
+    def __init__(self, radius, color, mass, name=None):
         super(Dome, self).__init__(name)
         self.radius = radius
         self.color = color
+        self.mass = mass
+        if self.mass > 0.0:
+            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.geom = make_dome(self.color, self.radius, 8, 5)
 
     def create_node(self):
@@ -403,6 +398,7 @@ class Dome (PhysicalObject):
         mesh = BulletTriangleMesh()
         mesh.add_geom(self.geom.get_geom(0))
         node.add_shape(BulletTriangleMeshShape(mesh, dynamic=False))
+        node.set_mass(self.mass)
         return node
 
 class Ground (PhysicalObject):
@@ -429,13 +425,16 @@ class Ramp (PhysicalObject):
     A ramp. Basically a block that is rotated, and specified differently in XML. Should maybe be a Block subclass?
     """
 
-    def __init__(self, base, top, width, thickness, color, name=None):
+    def __init__(self, base, top, width, thickness, color, mass, name=None):
         super(Ramp, self).__init__(name)
         self.base = Point3(*base)
         self.top = Point3(*top)
+        self.width = width
         self.thickness = thickness
         self.color = color
-        self.width = width
+        self.mass = mass
+        if self.mass > 0.0:
+            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.length = (self.top - self.base).length()
 
     def create_node(self):
@@ -444,6 +443,7 @@ class Ramp (PhysicalObject):
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
         node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
+        node.set_mass(self.mass)
         return node
 
     def attached(self):

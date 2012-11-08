@@ -60,12 +60,10 @@ class Pavara (ShowBase):
         self.keyMap[key] = value
 
     def drop_blocks(self):
-        block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1)))
-        block.adjust_mass(0.01)
+        block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
         block.move((0, 40, 0))
         for i in range(10):
-            block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1)))
-            block.adjust_mass(0.01)
+            block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
             block.move((random.randint(-25, 25), 40, random.randint(-25, 25)))
 
     def setupInput(self):
