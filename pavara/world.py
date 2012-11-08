@@ -197,60 +197,41 @@ class Hector (PhysicalObject):
         def make_walk_sequence():
             walk_cycle_speed = .8
             
-            y_bob_down_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0,  self.torso_rest_y[0] + Vec3(0,-.03,0))
-            y_bob_down_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[1] + Vec3(0,-.03,0))
-            y_bob_down_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[2] + Vec3(0,-.03,0))
+            upbob = Vec3(0, 0.03, 0)
+            downbob = upbob * -1
+            bob_parts = (self.head_bone, self.left_top_bone, self.right_top_bone)
+
+            down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, rest_pos + downbob) for (bone, rest_pos) in zip(bob_parts, self.torso_rest_y)]
+            up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, rest_pos + upbob) for (bone, rest_pos) in zip(bob_parts, self.torso_rest_y)]
             
-            y_bob_up_head_int = LerpPosInterval(self.head_bone, walk_cycle_speed/4.0,  self.torso_rest_y[0] + Vec3(0,.03,0))
-            y_bob_up_left_int = LerpPosInterval(self.left_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[1] + Vec3(0,.03,0))
-            y_bob_up_right_int = LerpPosInterval(self.right_top_bone, walk_cycle_speed/4.0,  self.torso_rest_y[2] + Vec3(0,.03,0))
+            top_motion = [Vec3(0, p, 0) for p in    [ 30, -5, -40,  28]]
+            mid_motion = [Vec3(0, p, 0) for p in    [ 20,  0,  -4, -10]]
+            bottom_motion = [Vec3(0, p, 0) for p in [-50,  5,  44, -18]]
             
+            right_bones = [self.right_top_bone, self.right_middle_bone, self.right_bottom_bone]
+            left_bones = [self.left_top_bone, self.left_middle_bone, self.left_bottom_bone]
             
-            r_top_forward_int_1 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 30, 0))
-            r_mid_forward_int_1 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, 20, 0))
-            r_bot_forward_int_1 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -50, 0))
-            
-            r_top_forward_int_2 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 28, 0))
-            r_mid_forward_int_2 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, -10, 0))
-            r_bot_forward_int_2 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -18, 0))
-            
-            r_top_forward_int_3 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, -40, 0))
-            r_mid_forward_int_3 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, -4, 0))
-            r_bot_forward_int_3 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, 44, 0))
-            
-            r_top_forward_int_4 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, -5, 0))
-            r_mid_forward_int_4 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, 0, 0))
-            r_bot_forward_int_4 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, 5, 0))
-            
-            l_top_forward_int_1 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, 30, 0))
-            l_mid_forward_int_1 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, 20, 0))
-            l_bot_forward_int_1 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -50, 0))
-            
-            l_top_forward_int_2 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, 28, 0))
-            l_mid_forward_int_2 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, -10, 0))
-            l_bot_forward_int_2 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -18, 0))
-            
-            l_top_forward_int_3 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, -40, 0))
-            l_mid_forward_int_3 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, -4, 0))
-            l_bot_forward_int_3 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, 44, 0))
-            
-            l_top_forward_int_4 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, -5, 0))
-            l_mid_forward_int_4 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, 0, 0))
-            l_bot_forward_int_4 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, 5, 0))
-            
+            right_top_forward = [LerpHprInterval(right_bones[0], walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + motion) for motion in top_motion]
+            right_mid_forward = [LerpHprInterval(right_bones[1], walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + motion) for motion in mid_motion]
+            right_bottom_forward = [LerpHprInterval(right_bones[2], walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + motion) for motion in bottom_motion]
+
+            left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + motion) for motion in top_motion]
+            left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + motion) for motion in mid_motion]
+            left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + motion) for motion in bottom_motion]
+
             return Sequence(
-                            Parallel(r_top_forward_int_1, r_mid_forward_int_1, r_bot_forward_int_1,
-                                    l_top_forward_int_3, l_mid_forward_int_3, l_bot_forward_int_3,
-                                    y_bob_down_head_int, y_bob_down_left_int, y_bob_down_right_int),
-                            Parallel(r_top_forward_int_4, r_mid_forward_int_4, r_bot_forward_int_4,
-                                    l_top_forward_int_2, l_mid_forward_int_2, l_bot_forward_int_2,
-                                    y_bob_up_head_int, y_bob_up_left_int, y_bob_up_right_int),
-                            Parallel(r_top_forward_int_3, r_mid_forward_int_3, r_bot_forward_int_3,
-                                    l_top_forward_int_1, l_mid_forward_int_1, l_bot_forward_int_1,
-                                    y_bob_down_head_int, y_bob_down_left_int, y_bob_down_right_int),
-                            Parallel(r_top_forward_int_2, r_mid_forward_int_2, r_bot_forward_int_2,
-                                    l_top_forward_int_4, l_mid_forward_int_4, l_bot_forward_int_4,
-                                    y_bob_up_head_int, y_bob_up_left_int, y_bob_up_right_int)
+                            Parallel(right_top_forward[0], right_mid_forward[0], right_bottom_forward[0],
+                                    left_top_forward[2], left_mid_forward[2], left_bottom_forward[2],
+                                    down_interval[0], down_interval[1], down_interval[2]),
+                            Parallel(right_top_forward[1], right_mid_forward[1], right_bottom_forward[1],
+                                    left_top_forward[3], left_mid_forward[3], left_bottom_forward[3],
+                                    up_interval[0], up_interval[1], up_interval[2]),
+                            Parallel(right_top_forward[2], right_mid_forward[2], right_bottom_forward[2],
+                                    left_top_forward[0], left_mid_forward[0], left_bottom_forward[0],
+                                    down_interval[0], down_interval[1], down_interval[2]),
+                            Parallel(right_top_forward[3], right_mid_forward[3], right_bottom_forward[3],
+                                    left_top_forward[1], left_mid_forward[1], left_bottom_forward[1],
+                                    up_interval[0], up_interval[1], up_interval[2]),
                            )
                            
         self.walk_forward_seq = make_walk_sequence()                    
