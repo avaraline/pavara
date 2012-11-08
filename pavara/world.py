@@ -310,7 +310,7 @@ class Hector (PhysicalObject):
 
     def handle_command(self, cmd, pressed):
         if cmd is 'crouch' and not pressed and self.on_ground:
-            self.y_velocity = 0.025
+            self.y_velocity = 0.1
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def update(self, dt):
@@ -328,8 +328,8 @@ class Hector (PhysicalObject):
         else:
             self.move(self.position() + self.xz_velocity * dt * 60)
         # Cast a ray from just above our feet to just below them, see if anything hits.
-        pt_from = self.position() + Vec3(0, 0.2, 0)
-        pt_to = pt_from + Vec3(0, -0.4, 0)
+        pt_from = self.position() + Vec3(0, 0.4, 0)
+        pt_to = pt_from + Vec3(0, -0.6, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         self.update_legs(walk,dt)
         if self.y_velocity <= 0 and result.has_hit():
@@ -338,8 +338,8 @@ class Hector (PhysicalObject):
             self.move(result.get_hit_pos())
         else:
             self.on_ground = False
-            self.y_velocity -= 0.05 * dt
-            self.move_by(0, self.y_velocity, 0)
+            self.y_velocity -= 0.20 * dt
+            self.move_by(0, self.y_velocity * dt * 60, 0)
 
     def update_legs(self, walk, dt):
         if walk != 0:
