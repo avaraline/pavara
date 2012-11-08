@@ -106,6 +106,9 @@ class PhysicalObject (WorldObject):
         Programmatically move this object by the given distances in each direction.
         """
         self.node.set_pos(self.node, x, y, z)
+ 
+    def position(self):
+        return self.node.get_pos()
 
 class Hector (PhysicalObject):
 
@@ -306,7 +309,7 @@ class Hector (PhysicalObject):
         print self, 'HIT BY', other, 'AT', world_pt
 
     def handle_command(self, cmd, pressed):
-        if cmd is 'crouch' and not pressed:
+        if cmd is 'crouch' and not pressed and self.on_ground:
             self.y_velocity = 0.025
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
@@ -323,11 +326,9 @@ class Hector (PhysicalObject):
             self.xz_velocity *= -1
             self.xz_velocity /= (dt * 60)
         else:
-            print self.xz_velocity
-            self.move(self.node.get_pos() + self.xz_velocity * dt * 60)
-        #self.move(self.xz_velocity)
+            self.move(self.position() + self.xz_velocity * dt * 60)
         # Cast a ray from just above our feet to just below them, see if anything hits.
-        pt_from = self.node.get_pos() + Vec3(0, 0.2, 0)
+        pt_from = self.position() + Vec3(0, 0.2, 0)
         pt_to = pt_from + Vec3(0, -0.4, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         self.update_legs(walk,dt)
