@@ -208,27 +208,27 @@ class Hector (PhysicalObject):
             
             r_top_forward_int_1 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 30, 0))
             r_mid_forward_int_1 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, 4, 0))
-            r_bot_forward_int_1 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, 10, 0))
+            r_bot_forward_int_1 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -34, 0))
             
             r_top_forward_int_2 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, 28, 0))
             r_mid_forward_int_2 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, -10, 0))
-            r_bot_forward_int_2 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -2, 0))
+            r_bot_forward_int_2 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -18, 0))
             
             r_top_forward_int_3 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, -40, 0))
             r_mid_forward_int_3 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, -4, 0))
-            r_bot_forward_int_3 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -20, 0))
+            r_bot_forward_int_3 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, 44, 0))
             
             r_top_forward_int_4 = LerpHprInterval(self.right_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + Vec3(0, -5, 0))
             r_mid_forward_int_4 = LerpHprInterval(self.right_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + Vec3(0, 0, 0))
-            r_bot_forward_int_4 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, -10, 0))
+            r_bot_forward_int_4 = LerpHprInterval(self.right_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + Vec3(0, 5, 0))
             
             l_top_forward_int_1 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, 30, 0))
             l_mid_forward_int_1 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, 4, 0))
-            l_bot_forward_int_1 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, 10, 0))
+            l_bot_forward_int_1 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -34, 0))
             
             l_top_forward_int_2 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, 28, 0))
             l_mid_forward_int_2 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, -10, 0))
-            l_bot_forward_int_2 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -2, 0))
+            l_bot_forward_int_2 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -18, 0))
             
             l_top_forward_int_3 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, -40, 0))
             l_mid_forward_int_3 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, -4, 0))
@@ -236,7 +236,7 @@ class Hector (PhysicalObject):
             
             l_top_forward_int_4 = LerpHprInterval(self.left_top_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + Vec3(0, -5, 0))
             l_mid_forward_int_4 = LerpHprInterval(self.left_middle_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + Vec3(0, 0, 0))
-            l_bot_forward_int_4 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, -10, 0))
+            l_bot_forward_int_4 = LerpHprInterval(self.left_bottom_bone, walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + Vec3(0, 5, 0))
             
             return Sequence(
                             Parallel(r_top_forward_int_1, r_mid_forward_int_1, r_bot_forward_int_1,
