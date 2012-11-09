@@ -328,8 +328,8 @@ class Hector (PhysicalObject):
         else:
             self.move(self.position() + self.xz_velocity * dt * 60)
         # Cast a ray from just above our feet to just below them, see if anything hits.
-        pt_from = self.position() + Vec3(0, 0.4, 0)
-        pt_to = pt_from + Vec3(0, -0.6, 0)
+        pt_from = self.position() + Vec3(0, 1, 0)
+        pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         self.update_legs(walk,dt)
         if self.y_velocity <= 0 and result.has_hit():
