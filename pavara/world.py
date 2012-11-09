@@ -3,13 +3,13 @@ from panda3d.bullet import *
 from pavara.utils.geom import make_box, make_dome, to_cartesian, make_square
 from pavara.assets import load_model
 from direct.interval.LerpInterval import *
-from direct.interval.IntervalGlobal import * 
+from direct.interval.IntervalGlobal import *
 import math
 
 DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
-DEFAULT_GROUND_COLOR =  (0.75, 0.5, 0.25, 1)
-DEFAULT_SKY_COLOR =     (0.7, 0.8, 1, 1)
-DEFAULT_HORIZON_COLOR = (1, 0.8, 0, 1)
+DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
+DEFAULT_SKY_COLOR =     (0, 0, 0.15, 1)
+DEFAULT_HORIZON_COLOR = (0, 0, 0.8, 1)
 DEFAULT_HORIZON_SCALE = 0.05
 
 NO_COLLISION_BITS = BitMask32.all_off()
@@ -106,7 +106,7 @@ class PhysicalObject (WorldObject):
         Programmatically move this object by the given distances in each direction.
         """
         self.node.set_pos(self.node, x, y, z)
- 
+
     def position(self):
         return self.node.get_pos()
 
@@ -163,9 +163,9 @@ class Hector (PhysicalObject):
         self.left_bottom.reparentTo(self.left_middle)
         self.right_bottom = self.actor.find("**/rightBottom")
         self.right_bottom.reparentTo(self.right_middle)
-        
+
         self.walk_playing = False
-        
+
         def getJoint(name):
             return self.actor.controlJoint(None, "modelRoot", name)
         self.right_top_bone = getJoint("rightTopBone")
@@ -184,24 +184,27 @@ class Hector (PhysicalObject):
             y_return_head_int = LerpPosInterval(self.head_bone, return_speed, self.torso_rest_y[0])
             y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, self.torso_rest_y[1])
             y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, self.torso_rest_y[2])
-            
+
             r_top_return_int = LerpHprInterval(self.right_top_bone, return_speed, self.legs_rest_mat[0][0])
-            r_mid_return_int = LerpHprInterval(self.right_middle_bone, return_speed, self.legs_rest_mat[0][1])   
-            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, self.legs_rest_mat[0][2])      
-            
+            r_mid_return_int = LerpHprInterval(self.right_middle_bone, return_speed, self.legs_rest_mat[0][1])
+            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, self.legs_rest_mat[0][2])
+
             l_top_return_int = LerpHprInterval(self.left_top_bone, return_speed, self.legs_rest_mat[1][0])
             l_mid_return_int = LerpHprInterval(self.left_middle_bone, return_speed, self.legs_rest_mat[1][1])
             l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, self.legs_rest_mat[1][2])
-            
-            return Parallel(r_top_return_int, r_mid_return_int, r_bot_return_int, 
-            			    l_top_return_int, l_mid_return_int, l_bot_return_int,
-            			    y_return_head_int, y_return_left_int, y_return_right_int)         
-            
+
+            return Parallel(r_top_return_int, r_mid_return_int, r_bot_return_int,
+                            l_top_return_int, l_mid_return_int, l_bot_return_int,
+                            y_return_head_int, y_return_left_int, y_return_right_int)
+
         self.return_seq = make_return_sequence()
-        
+
         def make_walk_sequence():
             walk_cycle_speed = .8
+<<<<<<< HEAD
             
+=======
+>>>>>>> b75ac7b2abd56063e1425658ac158424f62cb105
 
             upbob = Vec3(0, 0.03, 0)
             downbob = upbob * -1
@@ -209,14 +212,14 @@ class Hector (PhysicalObject):
 
             down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, rest_pos + downbob) for (bone, rest_pos) in zip(bob_parts, self.torso_rest_y)]
             up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, rest_pos + upbob) for (bone, rest_pos) in zip(bob_parts, self.torso_rest_y)]
-            
+
             top_motion = [Vec3(0, p, 0) for p in    [ 30, -5, -40,  28]]
             mid_motion = [Vec3(0, p, 0) for p in    [ 20,  0,  -4, -10]]
             bottom_motion = [Vec3(0, p, 0) for p in [-50,  5,  44, -18]]
-            
+
             right_bones = [self.right_top_bone, self.right_middle_bone, self.right_bottom_bone]
             left_bones = [self.left_top_bone, self.left_middle_bone, self.left_bottom_bone]
-            
+
             right_top_forward = [LerpHprInterval(right_bones[0], walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + motion) for motion in top_motion]
             right_mid_forward = [LerpHprInterval(right_bones[1], walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + motion) for motion in mid_motion]
             right_bottom_forward = [LerpHprInterval(right_bones[2], walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + motion) for motion in bottom_motion]
@@ -239,8 +242,8 @@ class Hector (PhysicalObject):
                                     left_top_forward[1], left_mid_forward[1], left_bottom_forward[1],
                                     up_interval[0], up_interval[1], up_interval[2]),
                            )
-                           
-        self.walk_forward_seq = make_walk_sequence()                    
+
+        self.walk_forward_seq = make_walk_sequence()
 
         return self.actor
 
@@ -258,14 +261,14 @@ class Hector (PhysicalObject):
         node.add_shape(self.b_shape_from_node_path(self.left_middle))
         node.add_shape(self.b_shape_from_node_path(self.left_bottom))
         return node
-        
+
     def b_shape_from_node_path(self, nodepath):
         node = nodepath.node()
         geom = node.getGeom(0)
         shape = BulletConvexHullShape()
         shape.addGeom(geom)
         return shape
-    
+
     def setupColor(self, colordict):
         if colordict.has_key("barrel_color"):
             self.barrels.setColor(*colordict.get("barrel_color"))
@@ -293,7 +296,7 @@ class Hector (PhysicalObject):
         if colordict.has_key("middle_leg_color"):
             color = colordict.get("middle_leg_color")
             self.left_middle.setColor(*color)
-            self.right_middle.setColor(*color)   
+            self.right_middle.setColor(*color)
         if colordict.has_key("bottom_leg_color"):
             color = colordict.get("bottom_leg_color")
             self.left_bottom.setColor(*color)
@@ -311,7 +314,7 @@ class Hector (PhysicalObject):
 
     def handle_command(self, cmd, pressed):
         if cmd is 'crouch' and not pressed and self.on_ground:
-            self.y_velocity = 0.025
+            self.y_velocity = 0.1
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def update(self, dt):
@@ -323,14 +326,14 @@ class Hector (PhysicalObject):
             speed = walk
             self.xz_velocity = self.position()
             self.move_by(0, 0, speed * dt * 60)
-            self.xz_velocity -= self.position() 
+            self.xz_velocity -= self.position()
             self.xz_velocity *= -1
             self.xz_velocity /= (dt * 60)
         else:
             self.move(self.position() + self.xz_velocity * dt * 60)
         # Cast a ray from just above our feet to just below them, see if anything hits.
-        pt_from = self.position() + Vec3(0, 0.2, 0)
-        pt_to = pt_from + Vec3(0, -0.4, 0)
+        pt_from = self.position() + Vec3(0, 1, 0)
+        pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         self.update_legs(walk,dt)
         if self.y_velocity <= 0 and result.has_hit():
@@ -339,9 +342,9 @@ class Hector (PhysicalObject):
             self.move(result.get_hit_pos())
         else:
             self.on_ground = False
-            self.y_velocity -= 0.05 * dt 
-            self.move_by(0, self.y_velocity, 0)
-    
+            self.y_velocity -= 0.20 * dt
+            self.move_by(0, self.y_velocity * dt * 60, 0)
+
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
@@ -352,8 +355,8 @@ class Hector (PhysicalObject):
                 self.walk_playing = False
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
-        
-        
+
+
 
 class Block (PhysicalObject):
     """
@@ -382,10 +385,13 @@ class Dome (PhysicalObject):
     A dome.
     """
 
-    def __init__(self, radius, color, name=None):
+    def __init__(self, radius, color, mass, name=None):
         super(Dome, self).__init__(name)
         self.radius = radius
         self.color = color
+        self.mass = mass
+        if self.mass > 0.0:
+            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.geom = make_dome(self.color, self.radius, 8, 5)
 
     def create_node(self):
@@ -396,6 +402,7 @@ class Dome (PhysicalObject):
         mesh = BulletTriangleMesh()
         mesh.add_geom(self.geom.get_geom(0))
         node.add_shape(BulletTriangleMeshShape(mesh, dynamic=False))
+        node.set_mass(self.mass)
         return node
 
 class Ground (PhysicalObject):
@@ -422,13 +429,16 @@ class Ramp (PhysicalObject):
     A ramp. Basically a block that is rotated, and specified differently in XML. Should maybe be a Block subclass?
     """
 
-    def __init__(self, base, top, width, thickness, color, name=None):
+    def __init__(self, base, top, width, thickness, color, mass, name=None):
         super(Ramp, self).__init__(name)
         self.base = Point3(*base)
         self.top = Point3(*top)
+        self.width = width
         self.thickness = thickness
         self.color = color
-        self.width = width
+        self.mass = mass
+        if self.mass > 0.0:
+            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.length = (self.top - self.base).length()
 
     def create_node(self):
@@ -437,6 +447,7 @@ class Ramp (PhysicalObject):
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
         node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
+        node.set_mass(self.mass)
         return node
 
     def attached(self):

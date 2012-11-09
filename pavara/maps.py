@@ -39,6 +39,7 @@ class Map (object):
     tagline = None
     description = None
     world = None
+    has_celestials = False
 
     def __init__(self, root, camera):
         self.name = root['name'] or 'Untitled Map'
@@ -50,6 +51,9 @@ class Map (object):
             func_name = 'parse_%s' % child.tagname.lower()
             if hasattr(self, func_name):
                 getattr(self, func_name)(child)
+        if not self.has_celestials:
+            self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 1.0, False)
+            self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 1.0, False)
 
     def show(self, render):
         """
@@ -72,10 +76,15 @@ class Map (object):
     def parse_ramp(self, node):
         base = parse_vector(node['base'])
         top = parse_vector(node['top'], (0, 4, 4))
-        color = parse_color(node['color'], (1, 1, 1, 1))
         width = parse_float(node['width'], 8)
         thickness = parse_float(node['thickness'])
-        self.world.attach(Ramp(base, top, width, thickness, color, name=node['id']))
+        color = parse_color(node['color'], (1, 1, 1, 1))
+        mass = parse_float(node['mass'])
+        yaw = parse_float(node['yaw'])
+        pitch = parse_float(node['pitch'])
+        roll = parse_float(node['roll'])
+        ramp = self.world.attach(Ramp(base, top, width, thickness, color, mass, name=node['id']))
+        ramp.rotate_by(yaw, pitch, roll)
 
     def parse_ground(self, node):
         color = parse_color(node['color'], (1, 1, 1, 1))
@@ -86,8 +95,13 @@ class Map (object):
         center = parse_vector(node['center'])
         radius = parse_float(node['radius'], 2.5)
         color = parse_color(node['color'], (1, 1, 1, 1))
-        dome = self.world.attach(Dome(radius, color, name=node['id']))
+        mass = parse_float(node['mass'])
+        yaw = parse_float(node['yaw'])
+        pitch = parse_float(node['pitch'])
+        roll = parse_float(node['roll'])
+        dome = self.world.attach(Dome(radius, color, mass, name=node['id']))
         dome.move(center)
+        dome.rotate(yaw, pitch, roll)
 
     def parse_sky(self, node):
         color = parse_color(node['color'], DEFAULT_SKY_COLOR)
@@ -100,8 +114,6 @@ class Map (object):
         self.world.sky.set_horizon(horizon)
         self.world.sky.set_scale(scale)
 
-        has_celestials = False
-
         for child in node.children('celestial'):
             azimuth = math.radians(parse_float(child['azimuth'], 30))
             elevation = math.radians(parse_float(child['elevation'], 20))
@@ -109,7 +121,7 @@ class Map (object):
             intensity = parse_float(child['intensity'], 0.6)
             visible = parse_bool(child['visible'])
             self.world.add_celestial(azimuth, elevation, color, intensity, 1.0, visible)
-            has_celestials = True
+            self.has_celestials = True
 
         for child in node.children('starfield'):
             seed = parse_int(child['seed'])
@@ -158,10 +170,6 @@ class Map (object):
                 color = (r, g, b, 1 - (1 - phi/math.pi)**6)
                 size = min_size + random.random() * delta_size
                 self.world.add_celestial(theta, phi, color, 0, size, True)
-
-        if not has_celestials:
-            self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 1.0, False)
-            self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 1.0, False)
 
 def load_maps(path, camera):
     """

@@ -16,6 +16,17 @@ class ConvertSVGLevel():
             self.stroke = stroke
         def __repr__(self):
             return "Rect { x: %s, y: %s, height: %s, width: %s, fill:%s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.fill,self.stroke)
+    class RoundRect():
+    	def __init__(self, pos_x, pos_y, rect_width, rect_height, wa, fill, stroke):
+    		self.x = pos_x
+    		self.y = pos_y
+    		self.height = rect_height
+    		self.width = rect_width
+    		self.wa = wa
+    		self.fill = fill
+    		self.stroke = stroke
+    	def __repr__(self:
+    		return "RoundRect { x: %s, y: %s, height: %s, width: %s, wa: %s, fill: %s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.wa,self.fill,self.stroke)
     
     class Arc():
         def __init__(self, pos_x, pos_y, angle, fill, stroke):    
@@ -44,8 +55,8 @@ class ConvertSVGLevel():
         doc_width = float(root.get('width').strip('px'))
         doc_height = float(root.get('height').strip('px'))
         
-        self.center_x = doc_width / 2
-        self.center_y = doc_height / 2
+        self.center_x = self.pix_to_units(doc_width / 2.0)
+        self.center_y = self.pix_to_units(doc_height / 2.0)
         
         self.el_stack = []
         self.curr_wa = 0
@@ -277,39 +288,6 @@ class ConvertSVGLevel():
             print (loc_x, loc_y)
             return (loc_x,loc_y)
     
-    """def get_rot_from_stroke(self, pathdata):
-        pdata = re.split('([a-zA-Z]{1})',pathdata)
-        c_points = []
-        start_x = start_y = curr_x = curr_y = 0
-        c_angle = 0
-        for idx,inst in enumerate(pdata):
-            if len(inst) < 1:
-                continue
-            if inst == "M":
-                coords = pdata[idx+1]
-                s_coords = coords.split(',')
-                start_x = float(s_coords[0])
-                start_y = float(s_coords[1])
-                curr_x = start_x
-                curr_y = start_y
-                continue
-            if inst == "c":
-                coords = pdata[idx+1]
-                c_points = self.points_list_from_c(coords)
-                for idx,value in enumerate(c_points):
-                    if(idx % 2 > 0):
-                        c_points[idx] += curr_y
-                    else:    
-                        c_points[idx] += curr_x
-                c_points.reverse()
-                c_points.append(curr_y)
-                c_points.append(curr_x)
-                c_points.reverse()
-                c_points = self.chunks(c_points, 2)
-                c_angle = self.get_angle_from_arc_curve(c_points)
-                continue
-        return c_angle
-    """
     
     def points_list_from_c(self, cstring):
         nums = cstring.replace(',',' ').replace('-',' -').split(' ')
@@ -397,7 +375,7 @@ class ConvertSVGLevel():
             elif(words[0] == "end"):
                 in_object = False
                 object_type = ""
-        #end for
+        #end for line in scriptlines
         
         if set_sky_color:
             self.make_sky_element()
