@@ -201,10 +201,6 @@ class Hector (PhysicalObject):
 
         def make_walk_sequence():
             walk_cycle_speed = .8
-<<<<<<< HEAD
-            
-=======
->>>>>>> b75ac7b2abd56063e1425658ac158424f62cb105
 
             upbob = Vec3(0, 0.03, 0)
             downbob = upbob * -1
