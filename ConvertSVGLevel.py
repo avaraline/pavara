@@ -17,16 +17,16 @@ class ConvertSVGLevel():
         def __repr__(self):
             return "Rect { x: %s, y: %s, height: %s, width: %s, fill:%s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.fill,self.stroke)
     class RoundRect():
-    	def __init__(self, pos_x, pos_y, rect_width, rect_height, wa, fill, stroke):
-    		self.x = pos_x
-    		self.y = pos_y
-    		self.height = rect_height
-    		self.width = rect_width
-    		self.wa = wa
-    		self.fill = fill
-    		self.stroke = stroke
-    	def __repr__(self:
-    		return "RoundRect { x: %s, y: %s, height: %s, width: %s, wa: %s, fill: %s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.wa,self.fill,self.stroke)
+        def __init__(self, pos_x, pos_y, rect_width, rect_height, wa, fill, stroke):
+            self.x = pos_x
+            self.y = pos_y
+            self.height = rect_height
+            self.width = rect_width
+            self.wa = wa
+            self.fill = fill
+            self.stroke = stroke
+        def __repr__(self):
+            return "RoundRect { x: %s, y: %s, height: %s, width: %s, wa: %s, fill: %s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.wa,self.fill,self.stroke)
     
     class Arc():
         def __init__(self, pos_x, pos_y, angle, fill, stroke):    
@@ -330,9 +330,16 @@ class ConvertSVGLevel():
         y = 0
         delta_y = 0
         ramp_thickness = 0
+        skip_next = False
         
-        for line in scriptlines:
+        for idx,line in enumerate(scriptlines):
+            if skip_next:
+                skip_next = False
+                continue
             words = [x for x in re.split("\s?=?\s?", line) if x]
+            if len(words) < 2 and words[0] != "end":
+                words += scriptlines[idx+1]
+                skip_next = True
             print "testing on %s, in_object = %s" % (words[0],in_object)
             if(words[0] == "adjust"):
                 if(words[1] == "SkyColor"):
@@ -352,6 +359,9 @@ class ConvertSVGLevel():
                 in_information = True
                 info_text += " ".join(words[1:])
                 info_text += " "
+            elif(words[0][0:4] == "light"):
+                in_information = False
+                print words
             elif(in_information):
                 info_text += " ".join(words)
                 info_text += " "
@@ -384,17 +394,16 @@ class ConvertSVGLevel():
             self.make_ground_element()
         
         if info_text:
-            descel = et.SubElement(self.newtree, "description")
-            descel.text = info_text
-        
-        if has_incarn:
-            self.make_incarn(y)    
+            self.newtree.set("description", info_text)
             
         if (self.block_follows or nonramp) and (has_ramp == False):
             self.make_block_from_rect()
         
         if has_ramp:
             self.make_ramp(y, delta_y, ramp_thickness)
+            
+        if has_incarn:
+            self.make_incarn(y) 
             
         if not has_wa:
             self.curr_wa = 0
@@ -406,7 +415,7 @@ class ConvertSVGLevel():
     def recenter_coordinates(self, coord_tuple):
         x = float(coord_tuple[0])# - self.center_x
         y = float(coord_tuple[1])# - self.center_y 
-        return (self.pix_to_units(x),self.pix_to_units(y))
+        return (self.pix_to_units(x) - self.center_x,self.pix_to_units(y) - self.center_y)
     
     def hex_color_to_rgb(self, color):
         color = color.lstrip("#")
@@ -425,33 +434,39 @@ class ConvertSVGLevel():
         arc = False
         rect = False
         fill = "#FFFFFF"
-        
+        print self.el_stack
         for el in self.el_stack:
             if isinstance(el, self.Arc):
+                if el.fill != "none":
+                    fill = el.fill
                 arc = el
             if isinstance(el, self.Rect):
                 if el.fill == "none":
                     rect = el
                 else:
                     fill = el.fill
-        if arc == False    :
+        if arc == False:
             print "warning no arc found for ramp..."
+            del(self.el_stack[:])
             return
         if rect == False:
             print "warning no rect found for ramp..."
+            del(self.el_stack[:])
             return
         
-        if arc.fill != "#FFFFFF":
+        if fill != "#FFFFFF" or arc.fill == "none":
             arc.fill = fill
+            
+        print arc, fill
         
         print "pointing ramp downhill to %s" % arc.angle
         #angle points to bottom of ramp
-        if(arc.angle == 180 or arc.angle == 135):
+        if(arc.angle == 180 or (-10 < (135 - arc.angle) < 10 )):
             #points to top
             top_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y+rect.height))
             base_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y))
             ramp_width = str(self.pix_to_units(rect.width))
-        elif(arc.angle == 360 or arc.angle == 0 or arc.angle == -45):
+        elif(arc.angle == 360 or arc.angle == 0 or (-10 < (-45 - arc.angle) < 10) or (-10 < (-135 - arc.angle) < 10)): #fuck you
             #points to bottom
             top_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y))
             base_x_z_coords = self.recenter_coordinates(((rect.x+(rect.width/2)), rect.y+rect.height))
@@ -528,13 +543,7 @@ class ConvertSVGLevel():
     
     def make_incarn(self, y):
         for idx, el in enumerate(self.el_stack):
-            if (not isinstance(el, self.Arc) and el.fill != "none"):
-                continue
-            elif(isinstance(el, self.Arc) and el.fill != "none"):
-                #delete fill arc, we need nothing from it
-                del(self.el_stack[idx])
-                continue
-            elif(isinstance(el, self.Arc) and el.fill == "none"):
+            if isinstance(el, self.Arc):
                 new_incarn = et.SubElement(self.newtree, "incarnator")
                 location = (self.pix_to_units(el.x), y, self.pix_to_units(el.y))
                 new_incarn.set("location", "%s,%s,%s" % location)
@@ -544,7 +553,7 @@ class ConvertSVGLevel():
                 else:
                     incarn_angle = el.angle + 360.0
                 new_incarn.set("angle", "%s" % (str(incarn_angle)))
-                print "added incarn - pos: %s,%s,%s angle: %s" % (location, angle)
+                print "added incarn - pos: %s, angle: %s" % (location, incarn_angle)
                 del(self.el_stack[idx])
                 
     def make_sky_element(self):
