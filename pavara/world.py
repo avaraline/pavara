@@ -110,7 +110,7 @@ class PhysicalObject (WorldObject):
     def position(self):
         return self.node.get_pos()
 
-class Hector (PhysicalObject):
+class Hector(PhysicalObject):
 
     collide_bits = SOLID_COLLIDE_BIT
 
@@ -166,32 +166,53 @@ class Hector (PhysicalObject):
 
         self.walk_playing = False
 
-        def getJoint(name):
+        def get_joint_control(name):
             return self.actor.controlJoint(None, "modelRoot", name)
-        self.right_top_bone = getJoint("rightTopBone")
-        self.left_top_bone = getJoint("leftTopBone")
-        self.right_middle_bone = getJoint("rightMidBone")
-        self.left_middle_bone = getJoint("leftMidBone")
-        self.right_bottom_bone = getJoint("rightBottomBone")
-        self.left_bottom_bone = getJoint("leftBottomBone")
-        self.head_bone = getJoint("headBone")
+        self.right_top_bone = get_joint_control("rightTopBone")
+        self.left_top_bone = get_joint_control("leftTopBone")
+        self.right_middle_bone = get_joint_control("rightMidBone")
+        self.left_middle_bone = get_joint_control("leftMidBone")
+        self.right_bottom_bone = get_joint_control("rightBottomBone")
+        self.left_bottom_bone = get_joint_control("leftBottomBone")
+        self.head_bone = get_joint_control("headBone")
+        
+        def get_joint_expose(name):
+            return self.actor.exposeJoint(None, "modelRoot", name)
+        self.right_top_bone_joint = get_joint_expose("rightTopBone")
+        self.left_top_bone_joint = get_joint_expose("leftTopBone")
+        self.right_middle_bone_joint = get_joint_expose("rightMidBone")
+        self.left_middle_bone_joint = get_joint_expose("leftMidBone")
+        self.right_bottom_bone_joint = get_joint_expose("rightBottomBone")
+        self.left_bottom_bone_joint = get_joint_expose("leftBottomBone")
+        self.head_bone_joint = get_joint_expose("headBone")
+        
         self.torso_rest_y = [self.head_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
         self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_middle_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
-
+        
+        """the below two functions will get called when the interval starts, allowing us to set the base
+        	positions for crouching/leg extension etc. currently they return the values without modification."""
+        def get_base_leg_rotation(address1, address2, motion = 0):
+            rest_rot = self.legs_rest_mat[address1][address2]
+            return rest_rot + motion
+        
+        def get_base_torso_y(address, motion = 0):
+            rest_y = self.torso_rest_y[address]
+            return rest_y + motion
+            
         def make_return_sequence():
             return_speed = .1
-            y_return_head_int = LerpPosInterval(self.head_bone, return_speed, self.torso_rest_y[0])
-            y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, self.torso_rest_y[1])
-            y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, self.torso_rest_y[2])
+            y_return_head_int = LerpPosInterval(self.head_bone, return_speed, get_base_torso_y(0))
+            y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, get_base_torso_y(1))
+            y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, get_base_torso_y(2))
 
-            r_top_return_int = LerpHprInterval(self.right_top_bone, return_speed, self.legs_rest_mat[0][0])
-            r_mid_return_int = LerpHprInterval(self.right_middle_bone, return_speed, self.legs_rest_mat[0][1])
-            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, self.legs_rest_mat[0][2])
+            r_top_return_int = LerpHprInterval(self.right_top_bone, return_speed, get_base_leg_rotation(0,0))
+            r_mid_return_int = LerpHprInterval(self.right_middle_bone, return_speed, get_base_leg_rotation(0,1))
+            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, get_base_leg_rotation(0,2))
 
-            l_top_return_int = LerpHprInterval(self.left_top_bone, return_speed, self.legs_rest_mat[1][0])
-            l_mid_return_int = LerpHprInterval(self.left_middle_bone, return_speed, self.legs_rest_mat[1][1])
-            l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, self.legs_rest_mat[1][2])
+            l_top_return_int = LerpHprInterval(self.left_top_bone, return_speed, get_base_leg_rotation(1,0))
+            l_mid_return_int = LerpHprInterval(self.left_middle_bone, return_speed, get_base_leg_rotation(1,1))
+            l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, get_base_leg_rotation(1,2))
 
             return Parallel(r_top_return_int, r_mid_return_int, r_bot_return_int,
                             l_top_return_int, l_mid_return_int, l_bot_return_int,
@@ -206,8 +227,8 @@ class Hector (PhysicalObject):
             downbob = upbob * -1
             bob_parts = (self.head_bone, self.left_top_bone, self.right_top_bone)
 
-            down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, rest_pos + downbob) for (bone, rest_pos) in zip(bob_parts, self.torso_rest_y)]
-            up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, rest_pos + upbob) for (bone, rest_pos) in zip(bob_parts, self.torso_rest_y)]
+            down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, downbob)) for (idx, bone) in enumerate(bob_parts)]
+            up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, upbob)) for (idx, bone) in enumerate(bob_parts)]
 
             top_motion = [Vec3(0, p, 0) for p in    [ 30, -5, -40,  28]]
             mid_motion = [Vec3(0, p, 0) for p in    [ 20,  0,  -4, -10]]
@@ -216,13 +237,13 @@ class Hector (PhysicalObject):
             right_bones = [self.right_top_bone, self.right_middle_bone, self.right_bottom_bone]
             left_bones = [self.left_top_bone, self.left_middle_bone, self.left_bottom_bone]
 
-            right_top_forward = [LerpHprInterval(right_bones[0], walk_cycle_speed/4.0, self.legs_rest_mat[0][0] + motion) for motion in top_motion]
-            right_mid_forward = [LerpHprInterval(right_bones[1], walk_cycle_speed/4.0, self.legs_rest_mat[0][1] + motion) for motion in mid_motion]
-            right_bottom_forward = [LerpHprInterval(right_bones[2], walk_cycle_speed/4.0, self.legs_rest_mat[0][2] + motion) for motion in bottom_motion]
+            right_top_forward = [LerpHprInterval(right_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(0, 0, motion)) for motion in top_motion]
+            right_mid_forward = [LerpHprInterval(right_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(0, 1, motion)) for motion in mid_motion]
+            right_bottom_forward = [LerpHprInterval(right_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(0, 2, motion)) for motion in bottom_motion]
 
-            left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, self.legs_rest_mat[1][0] + motion) for motion in top_motion]
-            left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, self.legs_rest_mat[1][1] + motion) for motion in mid_motion]
-            left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, self.legs_rest_mat[1][2] + motion) for motion in bottom_motion]
+            left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(1, 0, motion)) for motion in top_motion]
+            left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in mid_motion]
+            left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(1, 2, motion)) for motion in bottom_motion]
 
             return Sequence(
                             Parallel(right_top_forward[0], right_mid_forward[0], right_bottom_forward[0],
@@ -244,26 +265,30 @@ class Hector (PhysicalObject):
         return self.actor
 
     def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        node.add_shape(self.b_shape_from_node_path(self.visor))
-        node.add_shape(self.b_shape_from_node_path(self.hull))
-        node.add_shape(self.b_shape_from_node_path(self.crotch))
-        node.add_shape(self.b_shape_from_node_path(self.barrels))
-        node.add_shape(self.b_shape_from_node_path(self.barrel_trim))
-        node.add_shape(self.b_shape_from_node_path(self.right_top))
-        node.add_shape(self.b_shape_from_node_path(self.right_middle))
-        node.add_shape(self.b_shape_from_node_path(self.right_bottom))
-        node.add_shape(self.b_shape_from_node_path(self.left_top))
-        node.add_shape(self.b_shape_from_node_path(self.left_middle))
-        node.add_shape(self.b_shape_from_node_path(self.left_bottom))
-        return node
+        self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
+        self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")      
+        self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
+        self.setup_shape(self.right_top, self.right_top_bone_joint, "_rightTopLeg")
+        self.setup_shape(self.right_middle, self.right_middle_bone_joint, "_rightMiddleLeg")      
+        self.setup_shape(self.right_bottom, self.right_bottom_bone_joint, "_rightBottomLeg")
+        self.setup_shape(self.visor, self.head_bone_joint, "_visor")
+        self.setup_shape(self.barrels, self.head_bone_joint, "_barrels")
+        self.setup_shape(self.barrel_trim, self.head_bone_joint, "_barrel_trim")
+        self.setup_shape(self.crotch, self.head_bone_joint, "_nutsack")
+        self.setup_shape(self.hull, self.head_bone_joint, "_hull")
+        return None
 
-    def b_shape_from_node_path(self, nodepath):
-        node = nodepath.node()
-        geom = node.getGeom(0)
+    def setup_shape(self, gnodepath, bone, pname):
+        gnode = gnodepath.node()
+        geom = gnode.get_geom(0)
         shape = BulletConvexHullShape()
-        shape.addGeom(geom)
-        return shape
+        shape.add_geom(geom)
+        node = BulletRigidBodyNode(self.name + pname)
+        np = self.actor.attach_new_node(node)
+        np.node().add_shape(shape)
+        np.node().set_kinematic(True)
+        np.wrt_reparent_to(bone)
+        self.world.physics.attach_rigid_body(node)
 
     def setupColor(self, colordict):
         if colordict.has_key("barrel_color"):
@@ -300,7 +325,7 @@ class Hector (PhysicalObject):
         return
 
     def attached(self):
-        self.node.set_scale(3.0)
+        #self.node.set_scale(3.0)
         self.world.register_collider(self)
         self.world.register_updater(self)
 
