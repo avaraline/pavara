@@ -191,7 +191,7 @@ class Hector(PhysicalObject):
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
         
         """the below two functions will get called when the interval starts, allowing us to set the base
-        	positions for crouching/leg extension etc. currently they return the values without modification."""
+            positions for crouching/leg extension etc. currently they return the values without modification."""
         def get_base_leg_rotation(address1, address2, motion = 0):
             rest_rot = self.legs_rest_mat[address1][address2]
             return rest_rot + motion
@@ -244,7 +244,7 @@ class Hector(PhysicalObject):
             left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(1, 0, motion)) for motion in top_motion]
             left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in mid_motion]
             left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(1, 2, motion)) for motion in bottom_motion]
-
+            
             return Sequence(
                             Parallel(right_top_forward[0], right_mid_forward[0], right_bottom_forward[0],
                                     left_top_forward[2], left_mid_forward[2], left_bottom_forward[2],
@@ -265,17 +265,20 @@ class Hector(PhysicalObject):
         return self.actor
 
     def create_solid(self):
-        self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
-        self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")      
-        self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
-        self.setup_shape(self.right_top, self.right_top_bone_joint, "_rightTopLeg")
-        self.setup_shape(self.right_middle, self.right_middle_bone_joint, "_rightMiddleLeg")      
-        self.setup_shape(self.right_bottom, self.right_bottom_bone_joint, "_rightBottomLeg")
-        self.setup_shape(self.visor, self.head_bone_joint, "_visor")
-        self.setup_shape(self.barrels, self.head_bone_joint, "_barrels")
-        self.setup_shape(self.barrel_trim, self.head_bone_joint, "_barrel_trim")
-        self.setup_shape(self.crotch, self.head_bone_joint, "_nutsack")
-        self.setup_shape(self.hull, self.head_bone_joint, "_hull")
+        self.left_top_bnp = self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
+        self.left_middle_bnp = self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")      
+        self.left_bottom_bnp = self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
+        self.right_top_bnp = self.setup_shape(self.right_top, self.right_top_bone_joint, "_rightTopLeg")
+        self.right_middle_bnp = self.setup_shape(self.right_middle, self.right_middle_bone_joint, "_rightMiddleLeg")      
+        self.right_bottom_bnp = self.setup_shape(self.right_bottom, self.right_bottom_bone_joint, "_rightBottomLeg")
+        self.visor_bnp = self.setup_shape(self.visor, self.head_bone_joint, "_visor")
+        self.barrels_bnp = self.setup_shape(self.barrels, self.head_bone_joint, "_barrels")
+        self.barrel_trim_bnp = self.setup_shape(self.barrel_trim, self.head_bone_joint, "_barrel_trim")
+        self.crotch_bnp = self.setup_shape(self.crotch, self.head_bone_joint, "_nutsack")
+        self.hull_bnp = self.setup_shape(self.hull, self.head_bone_joint, "_hull")
+        self.body_bullet_nodes = [self.left_top_bnp, self.left_middle_bnp, self.left_bottom_bnp,
+                                  self.right_top_bnp, self.right_middle_bnp, self.right_bottom_bnp, 
+                                  self.visor_bnp, self.barrels_bnp, self.barrel_trim_bnp, self.crotch_bnp, self.hull_bnp]
         return None
 
     def setup_shape(self, gnodepath, bone, pname):
@@ -289,6 +292,7 @@ class Hector(PhysicalObject):
         np.node().set_kinematic(True)
         np.wrt_reparent_to(bone)
         self.world.physics.attach_rigid_body(node)
+        return np
 
     def setupColor(self, colordict):
         if colordict.has_key("barrel_color"):
@@ -343,6 +347,7 @@ class Hector(PhysicalObject):
         yaw = self.movement['left'] + self.movement['right']
         self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
+        speed = 0
         if self.on_ground:
             speed = walk
             self.xz_velocity = self.position()
@@ -365,6 +370,38 @@ class Hector(PhysicalObject):
             self.on_ground = False
             self.y_velocity -= 0.20 * dt
             self.move_by(0, self.y_velocity * dt * 60, 0)
+        
+        for bnp in self.body_bullet_nodes:
+            result = self.world.physics.contact_test(bnp.node())
+            for contact in result.getContacts():
+                node_1 = contact.getNode0()
+                node_2 = contact.getNode1()
+                if "Hector" in (node_1.get_name() and node_2.get_name()):
+                    continue
+                if "ground" in node_1.get_name() or "ground" in node_2.get_name():
+                	continue
+                if "left" in node_1.get_name() or "right" in node_1.get_name():
+                	continue
+                if self.world.debug:
+                	print '\tcontact 1: %s' % node_1
+                	print '\tcontact 2: %s' % node_2
+                mpoint = contact.getManifoldPoint()
+                
+                a = mpoint.getPositionWorldOnA()
+                b = mpoint.getPositionWorldOnB()
+                distance = mpoint.getDistance()
+                if distance < .1:
+                	correction = Vec3(a[0]-b[0], a[1]-b[1], a[2]-b[2]) * -.2
+                	if self.world.debug:
+                		print "a: %s, b: %s, correction: %s" % (a,b,correction)
+                	self.move(self.position() + Vec3(correction[0], 0, correction[2]))
+                if self.world.debug:
+					print "distance: %s" % mpoint.getDistance()
+					print "applied impulse: %s" % mpoint.getAppliedImpulse()
+					print "pos world on a: %s" % a
+					print "pos world on b: %s" % b
+					print "local point on a: %s " % mpoint.getLocalPointA()
+					print "local point on b: %s" % mpoint.getLocalPointB()
 
     def update_legs(self, walk, dt):
         if walk != 0:
@@ -376,7 +413,9 @@ class Hector(PhysicalObject):
                 self.walk_playing = False
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
-
+    #def crouch(self):
+    
+    #def uncrouch(self):
 
 
 class Block (PhysicalObject):
@@ -547,6 +586,7 @@ class World (object):
         # Set up the physics world. TODO: let maps set gravity.
         self.physics = BulletWorld()
         self.physics.set_gravity(Vec3(0, -9.81, 0))
+        self.debug = debug
         if debug:
             debug_node = BulletDebugNode('Debug')
             debug_node.show_wireframe(True)
