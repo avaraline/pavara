@@ -279,13 +279,26 @@ class Hector(PhysicalObject):
         self.body_bullet_nodes = [self.left_top_bnp, self.left_middle_bnp, self.left_bottom_bnp,
                                   self.right_top_bnp, self.right_middle_bnp, self.right_bottom_bnp, 
                                   self.visor_bnp, self.barrels_bnp, self.barrel_trim_bnp, self.crotch_bnp, self.hull_bnp]
+                                  
+        
+        self.hector_capsule = BulletRigidBodyNode(self.name + "_hect_cap")
+        cap_shape = BulletCapsuleShape(.7, .2, YUp)
+        np = self.actor.attach_new_node(self.hector_capsule)
+        np.node().add_shape(cap_shape)
+        np.node().set_kinematic(True)
+        np.set_pos(0,1.5,0)
+        np.wrt_reparent_to(self.actor)
+        self.world.physics.attach_rigid_body(self.hector_capsule)
+        
         return None
 
     def setup_shape(self, gnodepath, bone, pname):
+        shape = BulletConvexHullShape()
+        
         gnode = gnodepath.node()
         geom = gnode.get_geom(0)
-        shape = BulletConvexHullShape()
         shape.add_geom(geom)
+        
         node = BulletRigidBodyNode(self.name + pname)
         np = self.actor.attach_new_node(node)
         np.node().add_shape(shape)
@@ -370,38 +383,24 @@ class Hector(PhysicalObject):
             self.on_ground = False
             self.y_velocity -= 0.20 * dt
             self.move_by(0, self.y_velocity * dt * 60, 0)
-        
-        for bnp in self.body_bullet_nodes:
-            result = self.world.physics.contact_test(bnp.node())
-            for contact in result.getContacts():
-                node_1 = contact.getNode0()
-                node_2 = contact.getNode1()
-                if "Hector" in (node_1.get_name() and node_2.get_name()):
-                    continue
-                if "ground" in node_1.get_name() or "ground" in node_2.get_name():
-                	continue
-                if "left" in node_1.get_name() or "right" in node_1.get_name():
-                	continue
-                if self.world.debug:
-                	print '\tcontact 1: %s' % node_1
-                	print '\tcontact 2: %s' % node_2
-                mpoint = contact.getManifoldPoint()
-                
-                a = mpoint.getPositionWorldOnA()
-                b = mpoint.getPositionWorldOnB()
-                distance = mpoint.getDistance()
-                if distance < .1:
-                	correction = Vec3(a[0]-b[0], a[1]-b[1], a[2]-b[2]) * -.2
-                	if self.world.debug:
-                		print "a: %s, b: %s, correction: %s" % (a,b,correction)
-                	self.move(self.position() + Vec3(correction[0], 0, correction[2]))
-                if self.world.debug:
-					print "distance: %s" % mpoint.getDistance()
-					print "applied impulse: %s" % mpoint.getAppliedImpulse()
-					print "pos world on a: %s" % a
-					print "pos world on b: %s" % b
-					print "local point on a: %s " % mpoint.getLocalPointA()
-					print "local point on b: %s" % mpoint.getLocalPointB()
+        #wall clipping with capsule shape
+        correction = Vec3()
+        result = self.world.physics.contact_test(self.hector_capsule)
+        for contact in result.getContacts():
+            node_1 = contact.getNode0()
+            node_2 = contact.getNode1()
+            if "Hector" in (node_1.get_name() and node_2.get_name()):
+                continue
+            if "ground" in node_1.get_name() or "ground" in node_2.get_name():
+                continue
+            if "left" in node_1.get_name() or "right" in node_1.get_name():
+                continue
+            mpoint = contact.getManifoldPoint()
+            d = mpoint.get_distance()
+            v = mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB()
+            correction += (v * d)
+            correction.y = 0
+        self.move(self.position() + correction)
 
     def update_legs(self, walk, dt):
         if walk != 0:
