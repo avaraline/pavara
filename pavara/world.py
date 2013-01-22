@@ -105,7 +105,7 @@ class PhysicalObject (WorldObject):
         """
         Programmatically move this object by the given distances in each direction.
         """
-        self.node.set_pos(self.node, x, y, z)
+        self.node.set_fluid_pos(self.node, x, y, z)
 
     def position(self):
         return self.node.get_pos()
@@ -137,6 +137,7 @@ class Hector(PhysicalObject):
         }
         self.walk_phase = 0
         self.placing = False
+        
 
     def create_node(self):
         from direct.actor.Actor import Actor
@@ -261,10 +262,10 @@ class Hector(PhysicalObject):
                            )
 
         self.walk_forward_seq = make_walk_sequence()
-
         return self.actor
 
     def create_solid(self):
+        """
         self.left_top_bnp = self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
         self.left_middle_bnp = self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")      
         self.left_bottom_bnp = self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
@@ -279,16 +280,18 @@ class Hector(PhysicalObject):
         self.body_bullet_nodes = [self.left_top_bnp, self.left_middle_bnp, self.left_bottom_bnp,
                                   self.right_top_bnp, self.right_middle_bnp, self.right_bottom_bnp, 
                                   self.visor_bnp, self.barrels_bnp, self.barrel_trim_bnp, self.crotch_bnp, self.hull_bnp]
-                                  
+        """                          
         
-        self.hector_capsule = BulletRigidBodyNode(self.name + "_hect_cap")
-        cap_shape = BulletCapsuleShape(.7, .2, YUp)
+        self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
+        self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
         np = self.actor.attach_new_node(self.hector_capsule)
-        np.node().add_shape(cap_shape)
+        np.node().add_shape(self.hector_capsule_shape)
         np.node().set_kinematic(True)
         np.set_pos(0,1.5,0)
         np.wrt_reparent_to(self.actor)
-        self.world.physics.attach_rigid_body(self.hector_capsule)
+        self.world.physics.attach_ghost(self.hector_capsule)
+        self.touching_wall = False
+        self.wall_planes = []
         
         return None
 
@@ -364,7 +367,36 @@ class Hector(PhysicalObject):
         if self.on_ground:
             speed = walk
             self.xz_velocity = self.position()
-            self.move_by(0, 0, speed * dt * 60)
+            
+            #sweep test for destination of walk
+            #
+            theta = self.actor.get_h()
+            mag = speed * dt * 60
+            cur_pos_ts = TransformState.makePos(self.position())
+            new_pos = (self.position() - Point3(math.cos(theta), 0, math.sin(theta)) * mag)
+            new_pos_ts = TransformState.makePos(new_pos)
+            #print new_pos
+            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+            #print "s_result : %s" % sweep_result
+            if sweep_result.has_hit():
+            	hit_position = sweep_result.get_hit_pos()
+            	normal = sweep_result.get_hit_normal()
+            	print "sweep found object at %s , normal %s" % (hit_position, normal)
+            	
+            	#reflection = new_pos - normal * (2.0 * new_pos.dot(normal)) 
+            	#reflection.normalize()
+            	par_dir = normal * new_pos.dot(normal) 
+            	perp_dir = new_pos - par_dir
+            	perp_dir.normalize()
+            	perp_component = perp_dir * mag
+            	print "new_pos: %s, par_dir: %s, perp_dir: %s, perp_component: %s" %(new_pos,par_dir,perp_dir,perp_component)
+            	#is this even right???
+            	self.move(self.position() - Vec3(perp_component.x, 0, perp_component.z))
+            	#self.move_by(??, 0, ??)
+            else:
+ 	       		self.move_by(0, 0, mag)
+
+            #self.move_by(*move_vector)
             self.xz_velocity -= self.position()
             self.xz_velocity *= -1
             self.xz_velocity /= (dt * 60)
@@ -383,6 +415,8 @@ class Hector(PhysicalObject):
             self.on_ground = False
             self.y_velocity -= 0.20 * dt
             self.move_by(0, self.y_velocity * dt * 60, 0)
+        #the old collision code is below
+        return 
         #wall clipping with capsule shape
         correction = Vec3()
         result = self.world.physics.contact_test(self.hector_capsule)
@@ -398,10 +432,26 @@ class Hector(PhysicalObject):
             mpoint = contact.getManifoldPoint()
             d = mpoint.get_distance()
             v = mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB()
-            correction += (v * d)
-            correction.y = 0
-        self.move(self.position() + correction)
-
+            p = mpoint.getPositionWorldOnB()
+            self.wall_planes.append((v, p))
+            self.is_touching_wall = True
+            #v.normalize()
+            if v.length() > 1:
+                print "WOOPS", v.length(), v, node_1.get_name(), node_2.get_name()
+                import sys
+                #if node_2.get_name() != "Block:1": sys.exit(0)
+            else:
+                print "COLLISION:", v.length(), v, node_1.get_name(), node_2.get_name()
+                
+                if d < 1: correction += (v * d)
+                correction.y = 0
+        #print correction
+        if 0 < correction.x < .1: correction.x = .1
+        if 0 < correction.z < .1: correction.z = .1
+        #self.move(self.position() + correction)
+        
+        
+			
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
@@ -458,9 +508,9 @@ class Dome (PhysicalObject):
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
-        mesh = BulletTriangleMesh()
+        mesh = BulletConvexHullShape()
         mesh.add_geom(self.geom.get_geom(0))
-        node.add_shape(BulletTriangleMeshShape(mesh, dynamic=False))
+        node.add_shape(mesh)
         node.set_mass(self.mass)
         return node
 

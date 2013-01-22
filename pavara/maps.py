@@ -60,7 +60,14 @@ class Map (object):
         Reparents the root NodePath of this Map's World to the given NodePath.
         """
         self.world.render.reparent_to(render)
-
+    
+    def parse_incarnator(self, node):
+        pos = parse_vector(node['location'])
+        angle = parse_float(node['angle'])
+        #incarn = self.world.attach(Incarnator())
+        #incarn.move(pos)
+        #incarn.rotate_by(angle,0,0)
+    
     def parse_block(self, node):
         center = parse_vector(node['center'])
         size = parse_vector(node['size'], (4, 4, 4))
