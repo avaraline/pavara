@@ -284,11 +284,11 @@ class Hector(PhysicalObject):
         
         self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
         self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
-        np = self.actor.attach_new_node(self.hector_capsule)
-        np.node().add_shape(self.hector_capsule_shape)
-        np.node().set_kinematic(True)
-        np.set_pos(0,1.5,0)
-        np.wrt_reparent_to(self.actor)
+        self.hector_bullet_np = self.actor.attach_new_node(self.hector_capsule)
+        self.hector_bullet_np.node().add_shape(self.hector_capsule_shape)
+        self.hector_bullet_np.node().set_kinematic(True)
+        self.hector_bullet_np.set_pos(0,1.5,0)
+        self.hector_bullet_np.wrt_reparent_to(self.actor)
         self.world.physics.attach_ghost(self.hector_capsule)
         self.touching_wall = False
         self.wall_planes = []
@@ -363,45 +363,67 @@ class Hector(PhysicalObject):
         yaw = self.movement['left'] + self.movement['right']
         self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
+        target_pos = self.position()
         speed = 0
         if self.on_ground:
             speed = walk
             self.xz_velocity = self.position()
-            
-            #sweep test for destination of walk
-            #
             theta = self.actor.get_h()
             mag = speed * dt * 60
-            cur_pos_ts = TransformState.makePos(self.position())
-            new_pos = (self.position() - Point3(math.cos(theta), 0, math.sin(theta)) * mag)
-            new_pos_ts = TransformState.makePos(new_pos)
-            #print new_pos
-            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
-            #print "s_result : %s" % sweep_result
-            if sweep_result.has_hit():
-            	hit_position = sweep_result.get_hit_pos()
-            	normal = sweep_result.get_hit_normal()
-            	print "sweep found object at %s , normal %s" % (hit_position, normal)
-            	
-            	#reflection = new_pos - normal * (2.0 * new_pos.dot(normal)) 
-            	#reflection.normalize()
-            	par_dir = normal * new_pos.dot(normal) 
-            	perp_dir = new_pos - par_dir
-            	perp_dir.normalize()
-            	perp_component = perp_dir * mag
-            	print "new_pos: %s, par_dir: %s, perp_dir: %s, perp_component: %s" %(new_pos,par_dir,perp_dir,perp_component)
-            	#is this even right???
-            	self.move(self.position() - Vec3(perp_component.x, 0, perp_component.z))
-            	#self.move_by(??, 0, ??)
-            else:
- 	       		self.move_by(0, 0, mag)
-
-            #self.move_by(*move_vector)
+            
+            obj = self.world.render.attachNewNode('hectorTempDummy')
+            dummyorigin = self.position()
+            dummyorigin.y += 1.5
+            obj.set_pos(dummyorigin)
+            obj.set_hpr(self.actor.get_hpr())
+            obj.set_fluid_pos(obj,0,0,mag)
+            delta_vector = Vec3(dummyorigin - obj.get_pos())
+            
+            #target_pos -= delta_vector
+            #sweep test for destination of walk
+            if mag is not 0:
+                cur_pos = self.position()
+                cur_pos.y += 1.5
+                cur_pos_ts = TransformState.makePos(cur_pos)
+                new_pos = delta_vector
+                new_pos_ts = TransformState.makePos(obj.get_pos())
+                #print new_pos
+                
+                sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+                hits = 0
+                #print "s_result : %s" % sweep_result
+                #print "_____"
+                while sweep_result.has_hit():
+                    if hits > 6:
+                        break
+                    hits += 1
+                    hit_position = sweep_result.get_hit_pos()
+                    normal = sweep_result.get_hit_normal()
+                    #reflection = new_pos - normal * (2.0 * new_pos.dot(normal)) 
+                    #reflection.normalize()
+                    par_dir = normal * new_pos.dot(normal) 
+                    perp_dir = new_pos - par_dir
+                    perp_dir.normalize()
+                    perp_component = perp_dir * abs(mag)
+                    perp_correction = Vec3(perp_component.x, 0, perp_component.z)
+                    frac = sweep_result.get_hit_fraction()
+                    if frac > .1:
+                        print sweep_result.get_node()
+                        #print perp_correction
+                        #print frac
+                        new_pos -= perp_correction
+                        obj.set_fluid_pos(obj,*perp_correction)
+                        new_pos_ts = TransformState.makePos(obj.get_pos())
+                        target_pos -= perp_correction
+                    sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+                if hits is 0:
+                    target_pos -= delta_vector
+               
             self.xz_velocity -= self.position()
             self.xz_velocity *= -1
             self.xz_velocity /= (dt * 60)
         else:
-            self.move(self.position() + self.xz_velocity * dt * 60)
+            target_pos += self.xz_velocity * dt * 60
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
@@ -410,14 +432,18 @@ class Hector(PhysicalObject):
         if self.y_velocity <= 0 and result.has_hit():
             self.on_ground = True
             self.y_velocity = 0
-            self.move(result.get_hit_pos())
+            #self.move(result.get_hit_pos())
+            target_pos.y = result.get_hit_pos().y
         else:
             self.on_ground = False
             self.y_velocity -= 0.20 * dt
-            self.move_by(0, self.y_velocity * dt * 60, 0)
+            target_pos += Vec3(0, self.y_velocity * dt * 60, 0)
+            
         #the old collision code is below
-        return 
-        #wall clipping with capsule shape
+        print target_pos
+        self.move(target_pos)
+        return
+        """#wall clipping with capsule shape
         correction = Vec3()
         result = self.world.physics.contact_test(self.hector_capsule)
         for contact in result.getContacts():
@@ -431,27 +457,28 @@ class Hector(PhysicalObject):
                 continue
             mpoint = contact.getManifoldPoint()
             d = mpoint.get_distance()
-            v = mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB()
+            v = mpoint.getPositionWorldOnB() - mpoint.getPositionWorldOnA()
             p = mpoint.getPositionWorldOnB()
-            self.wall_planes.append((v, p))
-            self.is_touching_wall = True
-            #v.normalize()
-            if v.length() > 1:
+            
+            if v.length() > 2:
                 print "WOOPS", v.length(), v, node_1.get_name(), node_2.get_name()
                 import sys
                 #if node_2.get_name() != "Block:1": sys.exit(0)
             else:
                 print "COLLISION:", v.length(), v, node_1.get_name(), node_2.get_name()
-                
-                if d < 1: correction += (v * d)
+                if d < 0: 
+                    correction -= (v * (d*5))
                 correction.y = 0
+            
         #print correction
-        if 0 < correction.x < .1: correction.x = .1
-        if 0 < correction.z < .1: correction.z = .1
+        #if 0 < correction.x < .1: correction.x = .1
+        #if 0 < correction.z < .1: correction.z = .1
+        #correction.z = 0
         #self.move(self.position() + correction)
-        
-        
-			
+        target_pos += correction
+        self.move(target_pos)
+        """
+            
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
