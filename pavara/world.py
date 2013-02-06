@@ -5,6 +5,7 @@ from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
 import math
+import random
 
 DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
 DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
@@ -142,7 +143,7 @@ class Hector(PhysicalObject):
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
-        self.actor.listJoints()
+        #self.actor.listJoints()
         self.barrels = self.actor.find("**/barrels")
         self.barrel_trim = self.actor.find("**/barrelTrim")
         self.visor = self.actor.find("**/visor")
@@ -220,6 +221,7 @@ class Hector(PhysicalObject):
                             y_return_head_int, y_return_left_int, y_return_right_int)
 
         self.return_seq = make_return_sequence()
+        
 
         def make_walk_sequence():
             walk_cycle_speed = .8
@@ -365,12 +367,11 @@ class Hector(PhysicalObject):
         walk = self.movement['forward'] + self.movement['backward']
         target_pos = self.position()
         speed = 0
+        mag = speed * dt * 60
         if self.on_ground:
             speed = walk
             self.xz_velocity = self.position()
-            theta = self.actor.get_h()
             mag = speed * dt * 60
-            
             obj = self.world.render.attachNewNode('hectorTempDummy')
             dummyorigin = self.position()
             dummyorigin.y += 1.5
@@ -378,52 +379,57 @@ class Hector(PhysicalObject):
             obj.set_hpr(self.actor.get_hpr())
             obj.set_fluid_pos(obj,0,0,mag)
             delta_vector = Vec3(dummyorigin - obj.get_pos())
-            
-            #target_pos -= delta_vector
-            #sweep test for destination of walk
+                
+            self.xz_velocity -= self.position()
+            self.xz_velocity *= -1
+            self.xz_velocity /= (dt * 60)
             if mag is not 0:
                 cur_pos = self.position()
                 cur_pos.y += 1.5
                 cur_pos_ts = TransformState.makePos(cur_pos)
                 new_pos = delta_vector
                 new_pos_ts = TransformState.makePos(obj.get_pos())
-                #print new_pos
                 
                 sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
                 hits = 0
-                #print "s_result : %s" % sweep_result
-                #print "_____"
                 while sweep_result.has_hit():
                     if hits > 6:
                         break
                     hits += 1
                     hit_position = sweep_result.get_hit_pos()
                     normal = sweep_result.get_hit_normal()
+                    node = sweep_result.get_node()
+                    if "Goody" in node.get_name():
+                        hits = 0
+                        break
                     #reflection = new_pos - normal * (2.0 * new_pos.dot(normal)) 
                     #reflection.normalize()
                     par_dir = normal * new_pos.dot(normal) 
                     perp_dir = new_pos - par_dir
                     perp_dir.normalize()
+                    frac = sweep_result.get_hit_fraction()
                     perp_component = perp_dir * abs(mag)
                     perp_correction = Vec3(perp_component.x, 0, perp_component.z)
-                    frac = sweep_result.get_hit_fraction()
-                    if frac > .1:
-                        print sweep_result.get_node()
-                        #print perp_correction
-                        #print frac
+                    
+                    if frac > 0:
+                        #this is a wall
                         new_pos -= perp_correction
                         obj.set_fluid_pos(obj,*perp_correction)
                         new_pos_ts = TransformState.makePos(obj.get_pos())
                         target_pos -= perp_correction
+                    else:
+                        #this happens in corners?
+                        stop_correction = (normal * frac)
+                        new_pos -= stop_correction
+                        obj.set_fluid_pos(obj,*perp_correction)
+                        new_pos_ts = TransformState.makePos(obj.get_pos())
+                        target_pos -= stop_correction
                     sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+                    
                 if hits is 0:
-                    target_pos -= delta_vector
-               
-            self.xz_velocity -= self.position()
-            self.xz_velocity *= -1
-            self.xz_velocity /= (dt * 60)
+                    target_pos -= delta_vector 
         else:
-            target_pos += self.xz_velocity * dt * 60
+            target_pos -= (self.xz_velocity * dt * 60)
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
@@ -438,13 +444,10 @@ class Hector(PhysicalObject):
             self.on_ground = False
             self.y_velocity -= 0.20 * dt
             target_pos += Vec3(0, self.y_velocity * dt * 60, 0)
-            
-        #the old collision code is below
-        print target_pos
         self.move(target_pos)
         return
-        """#wall clipping with capsule shape
-        correction = Vec3()
+        #wall clipping with capsule shape
+        """correction = Vec3(0,0,0)
         result = self.world.physics.contact_test(self.hector_capsule)
         for contact in result.getContacts():
             node_1 = contact.getNode0()
@@ -457,7 +460,7 @@ class Hector(PhysicalObject):
                 continue
             mpoint = contact.getManifoldPoint()
             d = mpoint.get_distance()
-            v = mpoint.getPositionWorldOnB() - mpoint.getPositionWorldOnA()
+            v = mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB()
             p = mpoint.getPositionWorldOnB()
             
             if v.length() > 2:
@@ -465,17 +468,12 @@ class Hector(PhysicalObject):
                 import sys
                 #if node_2.get_name() != "Block:1": sys.exit(0)
             else:
-                print "COLLISION:", v.length(), v, node_1.get_name(), node_2.get_name()
-                if d < 0: 
-                    correction -= (v * (d*5))
+                print "COLLISION:", d, v.length(), v, node_1.get_name(), node_2.get_name()
+                if d < 1: 
+                    correction += (v )
                 correction.y = 0
-            
-        #print correction
-        #if 0 < correction.x < .1: correction.x = .1
-        #if 0 < correction.z < .1: correction.z = .1
-        #correction.z = 0
-        #self.move(self.position() + correction)
-        target_pos += correction
+                
+        target_pos -= correction
         self.move(target_pos)
         """
             
@@ -645,7 +643,64 @@ class Sky (WorldObject):
     def set_scale(self, height):
         self.scale = height
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
+        
+class Incarnator (WorldObject):
+    def __init__(self, angle, pos, name=None):
+        super(Incarnator, self).__init__(name)
+        self.pos = pos
+        self.angle = angle
 
+class Goody (PhysicalObject):
+    def __init__(self, pos, model, items, respawn, spin, name=None):
+        super(Goody, self).__init__(name)
+        self.pos = Vec3(*pos)
+        self.grenades = items[0]
+        self.missles = items[1]
+        self.boosters = items[2]
+        self.model = model
+        self.respawn = float(respawn)
+        self.spin = spin
+        self.geom = None
+        self.active = True
+        self.timeout = 0
+    
+    def create_node(self):
+        m = load_model('misc/rgbCube')
+        m.set_scale(.5)
+        m.set_hpr(45,45,45)
+        return m
+            
+    def create_solid(self):
+        node = BulletGhostNode(self.name)
+        node_shape = BulletSphereShape(.5)
+        node.add_shape(node_shape)
+        node.set_kinematic(True)
+        return node
+    
+    def attached(self):
+        self.node.set_pos(self.pos)
+        self.world.register_updater(self)
+        self.world.register_collider(self)
+    
+    def update(self, dt):
+        if not self.active:
+            self.timeout += dt 
+            if self.timeout > self.respawn:
+                self.active = True
+                self.node.show()
+            return
+
+        self.rotate_by(*[x * dt for x in self.spin])
+        result = self.world.physics.contact_test(self.solid)
+        for contact in result.getContacts():
+            node_1 = contact.getNode0()
+            node_2 = contact.getNode1()
+            if "Hector" in node_2.get_name():
+               self.active = False
+               self.node.hide()
+            
+        
+        
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
@@ -653,6 +708,7 @@ class World (object):
 
     def __init__(self, camera, debug=False):
         self.objects = {}
+        self.incarnators = []
         self.collidables = set()
         self.updatables = set()
         self.render = NodePath('world')
@@ -684,6 +740,8 @@ class World (object):
         assert isinstance(obj, WorldObject)
         assert obj.name not in self.objects
         obj.world = self
+        if isinstance(obj, Incarnator):
+            self.incarnators.append(obj)
         if isinstance(obj, PhysicalObject):
             # Let each object define it's own NodePath, then reparent them.
             obj.node = obj.create_node()
@@ -710,6 +768,9 @@ class World (object):
         # Let the object know it has been attached.
         obj.attached()
         return obj
+    
+    def get_incarn(self):
+        return random.choice(self.incarnators)
 
     def set_ambient(self, color):
         """
