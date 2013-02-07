@@ -605,7 +605,6 @@ class Goody (PhysicalObject):
         for contact in result.getContacts():
             node_1 = contact.getNode0()
             node_2 = contact.getNode1()
-            print "Contact: ", node_1, node_2
             if "Hector" in node_2.get_name():
                self.active = False
                self.node.hide()
