@@ -139,7 +139,8 @@ class Hector(PhysicalObject):
         self.walk_phase = 0
         self.placing = False
         self.head_height = Vec3(0, 1.5, 0)
-
+        self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
+        
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
@@ -267,7 +268,15 @@ class Hector(PhysicalObject):
         return self.actor
 
     def create_solid(self):
+        self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
         self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
+        self.hector_bullet_np = self.actor.attach_new_node(self.hector_capsule)
+        self.hector_bullet_np.node().add_shape(self.hector_capsule_shape)
+        self.hector_bullet_np.node().set_kinematic(True)
+        self.hector_bullet_np.set_pos(0,1.5,0)
+        self.hector_bullet_np.wrt_reparent_to(self.actor)
+        self.world.physics.attach_ghost(self.hector_capsule)
+        self.hector_bullet_np.node().setIntoCollideMask(GHOST_COLLIDE_BIT)
         return None
 
     def setup_shape(self, gnodepath, bone, pname):
@@ -367,14 +376,14 @@ class Hector(PhysicalObject):
         adj_dist = abs((start - goal).length())
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
 
-        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
         while sweep_result.has_hit():
             moveby = sweep_result.get_hit_normal()
             moveby.normalize()
             moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
             self.move(self.position() + moveby)
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
-            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
 
             
     def update_legs(self, walk, dt):
@@ -581,6 +590,7 @@ class Goody (PhysicalObject):
         self.node.set_pos(self.pos)
         self.world.register_updater(self)
         self.world.register_collider(self)
+        self.solid.setIntoCollideMask(GHOST_COLLIDE_BIT)
     
     def update(self, dt):
         if not self.active:
@@ -595,6 +605,7 @@ class Goody (PhysicalObject):
         for contact in result.getContacts():
             node_1 = contact.getNode0()
             node_2 = contact.getNode1()
+            print "Contact: ", node_1, node_2
             if "Hector" in node_2.get_name():
                self.active = False
                self.node.hide()
