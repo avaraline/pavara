@@ -359,14 +359,14 @@ class Hector(PhysicalObject):
             self.y_velocity -= 0.20 * dt
             self.move_by(0, self.y_velocity * dt * 60, 0)
         goal = self.position()
-        adj_dist = abs((start - goal).length()) / 10
+        adj_dist = abs((start - goal).length())
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
 
         sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
         while sweep_result.has_hit():
             moveby = sweep_result.get_hit_normal()
             moveby.normalize()
-            moveby *= adj_dist
+            moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
             self.move(self.position() + moveby)
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
             sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
