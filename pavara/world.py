@@ -370,7 +370,6 @@ class Hector(PhysicalObject):
         mag = speed * dt * 60
         if self.on_ground:
             speed = walk
-            self.xz_velocity = self.position()
             mag = speed * dt * 60
             obj = self.world.render.attachNewNode('hectorTempDummy')
             dummyorigin = self.position()
@@ -380,9 +379,7 @@ class Hector(PhysicalObject):
             obj.set_fluid_pos(obj,0,0,mag)
             delta_vector = Vec3(dummyorigin - obj.get_pos())
                 
-            self.xz_velocity -= self.position()
-            self.xz_velocity *= -1
-            self.xz_velocity /= (dt * 60)
+            
             if mag is not 0:
                 cur_pos = self.position()
                 cur_pos.y += 1.5
@@ -392,6 +389,7 @@ class Hector(PhysicalObject):
                 
                 sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
                 hits = 0
+                unique_nodes = set()
                 while sweep_result.has_hit():
                     if hits > 6:
                         break
@@ -399,6 +397,8 @@ class Hector(PhysicalObject):
                     hit_position = sweep_result.get_hit_pos()
                     normal = sweep_result.get_hit_normal()
                     node = sweep_result.get_node()
+                    if node not in unique_nodes:
+                    	unique_nodes.add(node)
                     if "Goody" in node.get_name():
                         hits = 0
                         break
@@ -409,27 +409,37 @@ class Hector(PhysicalObject):
                     perp_dir.normalize()
                     frac = sweep_result.get_hit_fraction()
                     perp_component = perp_dir * abs(mag)
-                    perp_correction = Vec3(perp_component.x, 0, perp_component.z)
+                    perp_correction = perp_component#Vec3(perp_component.x, 0, perp_component.z)
+                    
                     
                     if frac > 0:
-                        #this is a wall
                         new_pos -= perp_correction
                         obj.set_fluid_pos(obj,*perp_correction)
                         new_pos_ts = TransformState.makePos(obj.get_pos())
                         target_pos -= perp_correction
+                        print "added correction!"
                     else:
-                        #this happens in corners?
-                        stop_correction = (normal * frac)
-                        new_pos -= stop_correction
-                        obj.set_fluid_pos(obj,*perp_correction)
-                        new_pos_ts = TransformState.makePos(obj.get_pos())
-                        target_pos -= stop_correction
+						if len(unique_nodes) > 1:
+							print "stopping!"
+							stop_correction = (normal * frac)
+							new_pos -= stop_correction
+							obj.set_fluid_pos(obj,*perp_correction)
+							new_pos_ts = TransformState.makePos(obj.get_pos())
+							target_pos -= stop_correction
+						else:
+							print "would have stopped but not enough nodes!"
+							hits = 0 
+							break
                     sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
                     
                 if hits is 0:
                     target_pos -= delta_vector 
+                
+                self.xz_velocity = self.position() - target_pos
+                self.xz_velocity.y = 0
+            
         else:
-            target_pos -= (self.xz_velocity * dt * 60)
+            target_pos -= (self.xz_velocity)
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
