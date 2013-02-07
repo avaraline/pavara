@@ -370,12 +370,10 @@ class Hector(PhysicalObject):
         sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
         hits = 0
         while sweep_result.has_hit():
-            if hits > 6:
-                break
             hits += 1
             moveby = sweep_result.get_hit_normal()
             moveby.normalize()
-            moveby *= (sweep_result.get_to_pos() - sweep_result.get_from_pos()).length()
+            moveby *= 0.02
             self.move(self.position() + moveby)
             new_pos_ts = TransformState.make_pos(self.position())
             sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
