@@ -175,7 +175,7 @@ class Hector(PhysicalObject):
         self.right_bottom_bone = get_joint_control("rightBottomBone")
         self.left_bottom_bone = get_joint_control("leftBottomBone")
         self.head_bone = get_joint_control("headBone")
-        
+
         def get_joint_expose(name):
             return self.actor.exposeJoint(None, "modelRoot", name)
         self.right_top_bone_joint = get_joint_expose("rightTopBone")
@@ -185,21 +185,21 @@ class Hector(PhysicalObject):
         self.right_bottom_bone_joint = get_joint_expose("rightBottomBone")
         self.left_bottom_bone_joint = get_joint_expose("leftBottomBone")
         self.head_bone_joint = get_joint_expose("headBone")
-        
+
         self.torso_rest_y = [self.head_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
         self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_middle_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
-        
+
         """the below two functions will get called when the interval starts, allowing us to set the base
         	positions for crouching/leg extension etc. currently they return the values without modification."""
         def get_base_leg_rotation(address1, address2, motion = 0):
             rest_rot = self.legs_rest_mat[address1][address2]
             return rest_rot + motion
-        
+
         def get_base_torso_y(address, motion = 0):
             rest_y = self.torso_rest_y[address]
             return rest_y + motion
-            
+
         def make_return_sequence():
             return_speed = .1
             y_return_head_int = LerpPosInterval(self.head_bone, return_speed, get_base_torso_y(0))
@@ -265,18 +265,31 @@ class Hector(PhysicalObject):
         return self.actor
 
     def create_solid(self):
-        self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
-        self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")      
-        self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
-        self.setup_shape(self.right_top, self.right_top_bone_joint, "_rightTopLeg")
-        self.setup_shape(self.right_middle, self.right_middle_bone_joint, "_rightMiddleLeg")      
-        self.setup_shape(self.right_bottom, self.right_bottom_bone_joint, "_rightBottomLeg")
-        self.setup_shape(self.visor, self.head_bone_joint, "_visor")
-        self.setup_shape(self.barrels, self.head_bone_joint, "_barrels")
-        self.setup_shape(self.barrel_trim, self.head_bone_joint, "_barrel_trim")
-        self.setup_shape(self.crotch, self.head_bone_joint, "_nutsack")
-        self.setup_shape(self.hull, self.head_bone_joint, "_hull")
+        self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
+        self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
+        self.hector_bullet_np = self.actor.attach_new_node(self.hector_capsule)
+        self.hector_bullet_np.node().add_shape(self.hector_capsule_shape)
+        self.hector_bullet_np.node().set_kinematic(True)
+        self.hector_bullet_np.set_pos(0,1.5,0)
+        self.hector_bullet_np.wrt_reparent_to(self.actor)
+        self.world.physics.attach_ghost(self.hector_capsule)
+        self.touching_wall = False
+        self.wall_planes = []
+
         return None
+
+#        self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
+#        self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")
+#        self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
+#        self.setup_shape(self.right_top, self.right_top_bone_joint, "_rightTopLeg")
+#        self.setup_shape(self.right_middle, self.right_middle_bone_joint, "_rightMiddleLeg")
+#        self.setup_shape(self.right_bottom, self.right_bottom_bone_joint, "_rightBottomLeg")
+#        self.setup_shape(self.visor, self.head_bone_joint, "_visor")
+#        self.setup_shape(self.barrels, self.head_bone_joint, "_barrels")
+#        self.setup_shape(self.barrel_trim, self.head_bone_joint, "_barrel_trim")
+#        self.setup_shape(self.crotch, self.head_bone_joint, "_nutsack")
+#        self.setup_shape(self.hull, self.head_bone_joint, "_hull")
+#        return None
 
     def setup_shape(self, gnodepath, bone, pname):
         gnode = gnodepath.node()
@@ -343,6 +356,7 @@ class Hector(PhysicalObject):
         yaw = self.movement['left'] + self.movement['right']
         self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
+        cur_pos_ts = TransformState.make_pos(self.position())
         if self.on_ground:
             speed = walk
             self.xz_velocity = self.position()
@@ -352,6 +366,19 @@ class Hector(PhysicalObject):
             self.xz_velocity /= (dt * 60)
         else:
             self.move(self.position() + self.xz_velocity * dt * 60)
+        new_pos_ts = TransformState.make_pos(self.position())
+        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+        hits = 0
+        while sweep_result.has_hit():
+            if hits > 6:
+                break
+            hits += 1
+            moveby = sweep_result.get_hit_normal()
+            moveby.normalize()
+            moveby *= (sweep_result.get_to_pos() - sweep_result.get_from_pos()).length()
+            self.move(self.position() + moveby)
+            new_pos_ts = TransformState.make_pos(self.position())
+            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
