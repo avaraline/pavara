@@ -27,7 +27,9 @@ class Pavara (ShowBase):
         self.hector = self.map.world.attach(Hector())
         self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6),
                          "visor_color": Vec3(.3,.6,1), "body_color":Vec3(.2,.5,.3)})
-        self.hector.move((0, 15, 0))
+        incarn = self.map.world.get_incarn()
+        self.hector.move(incarn.pos)
+        self.hector.actor.set_h(incarn.angle)
 
         self.setupInput()
 

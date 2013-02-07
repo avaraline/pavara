@@ -17,16 +17,16 @@ class ConvertSVGLevel():
         def __repr__(self):
             return "Rect { x: %s, y: %s, height: %s, width: %s, fill:%s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.fill,self.stroke)
     class RoundRect():
-        def __init__(self, pos_x, pos_y, rect_width, rect_height, wa, fill, stroke):
+        def __init__(self, pos_x, pos_y, rect_width, rect_height, radius, fill, stroke):
             self.x = pos_x
             self.y = pos_y
             self.height = rect_height
             self.width = rect_width
-            self.wa = wa
+            self.radius = radius
             self.fill = fill
             self.stroke = stroke
         def __repr__(self):
-            return "RoundRect { x: %s, y: %s, height: %s, width: %s, wa: %s, fill: %s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.wa,self.fill,self.stroke)
+            return "RoundRect { x: %s, y: %s, height: %s, width: %s, radius: %s, fill: %s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.radius,self.fill,self.stroke)
     
     class Arc():
         def __init__(self, pos_x, pos_y, angle, fill, stroke):    
