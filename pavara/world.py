@@ -334,6 +334,7 @@ class Hector(PhysicalObject):
         yaw = self.movement['left'] + self.movement['right']
         self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
+        start = self.position()
         cur_pos_ts = TransformState.make_pos(self.position() + self.head_height)
         if self.on_ground:
             speed = walk
@@ -357,12 +358,15 @@ class Hector(PhysicalObject):
             self.on_ground = False
             self.y_velocity -= 0.20 * dt
             self.move_by(0, self.y_velocity * dt * 60, 0)
+        goal = self.position()
+        adj_dist = abs((start - goal).length()) / 10
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
+
         sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
         while sweep_result.has_hit():
             moveby = sweep_result.get_hit_normal()
             moveby.normalize()
-            moveby *= 0.02
+            moveby *= adj_dist
             self.move(self.position() + moveby)
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
             sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
