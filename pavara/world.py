@@ -177,7 +177,7 @@ class Hector(PhysicalObject):
         self.right_bottom_bone = get_joint_control("rightBottomBone")
         self.left_bottom_bone = get_joint_control("leftBottomBone")
         self.head_bone = get_joint_control("headBone")
-        
+
         def get_joint_expose(name):
             return self.actor.exposeJoint(None, "modelRoot", name)
         self.right_top_bone_joint = get_joint_expose("rightTopBone")
@@ -187,21 +187,21 @@ class Hector(PhysicalObject):
         self.right_bottom_bone_joint = get_joint_expose("rightBottomBone")
         self.left_bottom_bone_joint = get_joint_expose("leftBottomBone")
         self.head_bone_joint = get_joint_expose("headBone")
-        
+
         self.torso_rest_y = [self.head_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
         self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_middle_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
-        
+
         """the below two functions will get called when the interval starts, allowing us to set the base
             positions for crouching/leg extension etc. currently they return the values without modification."""
         def get_base_leg_rotation(address1, address2, motion = 0):
             rest_rot = self.legs_rest_mat[address1][address2]
             return rest_rot + motion
-        
+
         def get_base_torso_y(address, motion = 0):
             rest_y = self.torso_rest_y[address]
             return rest_y + motion
-            
+
         def make_return_sequence():
             return_speed = .1
             y_return_head_int = LerpPosInterval(self.head_bone, return_speed, get_base_torso_y(0))
@@ -267,23 +267,6 @@ class Hector(PhysicalObject):
         return self.actor
 
     def create_solid(self):
-        """
-        self.left_top_bnp = self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
-        self.left_middle_bnp = self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")      
-        self.left_bottom_bnp = self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
-        self.right_top_bnp = self.setup_shape(self.right_top, self.right_top_bone_joint, "_rightTopLeg")
-        self.right_middle_bnp = self.setup_shape(self.right_middle, self.right_middle_bone_joint, "_rightMiddleLeg")      
-        self.right_bottom_bnp = self.setup_shape(self.right_bottom, self.right_bottom_bone_joint, "_rightBottomLeg")
-        self.visor_bnp = self.setup_shape(self.visor, self.head_bone_joint, "_visor")
-        self.barrels_bnp = self.setup_shape(self.barrels, self.head_bone_joint, "_barrels")
-        self.barrel_trim_bnp = self.setup_shape(self.barrel_trim, self.head_bone_joint, "_barrel_trim")
-        self.crotch_bnp = self.setup_shape(self.crotch, self.head_bone_joint, "_nutsack")
-        self.hull_bnp = self.setup_shape(self.hull, self.head_bone_joint, "_hull")
-        self.body_bullet_nodes = [self.left_top_bnp, self.left_middle_bnp, self.left_bottom_bnp,
-                                  self.right_top_bnp, self.right_middle_bnp, self.right_bottom_bnp, 
-                                  self.visor_bnp, self.barrels_bnp, self.barrel_trim_bnp, self.crotch_bnp, self.hull_bnp]
-        """                          
-        
         self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
         self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
         self.hector_bullet_np = self.actor.attach_new_node(self.hector_capsule)
@@ -294,8 +277,20 @@ class Hector(PhysicalObject):
         self.world.physics.attach_ghost(self.hector_capsule)
         self.touching_wall = False
         self.wall_planes = []
-        
         return None
+
+#        self.setup_shape(self.left_top, self.left_top_bone_joint, "_leftTopLeg")
+#        self.setup_shape(self.left_middle, self.left_middle_bone_joint, "_leftMiddleLeg")
+#        self.setup_shape(self.left_bottom, self.left_bottom_bone_joint, "_leftBottomLeg")
+#        self.setup_shape(self.right_top, self.right_top_bone_joint, "_rightTopLeg")
+#        self.setup_shape(self.right_middle, self.right_middle_bone_joint, "_rightMiddleLeg")
+#        self.setup_shape(self.right_bottom, self.right_bottom_bone_joint, "_rightBottomLeg")
+#        self.setup_shape(self.visor, self.head_bone_joint, "_visor")
+#        self.setup_shape(self.barrels, self.head_bone_joint, "_barrels")
+#        self.setup_shape(self.barrel_trim, self.head_bone_joint, "_barrel_trim")
+#        self.setup_shape(self.crotch, self.head_bone_joint, "_nutsack")
+#        self.setup_shape(self.hull, self.head_bone_joint, "_hull")
+#        return None
 
     def setup_shape(self, gnodepath, bone, pname):
         shape = BulletConvexHullShape()
@@ -365,81 +360,29 @@ class Hector(PhysicalObject):
         yaw = self.movement['left'] + self.movement['right']
         self.rotate_by(yaw * dt * 60, 0, 0)
         walk = self.movement['forward'] + self.movement['backward']
-        target_pos = self.position()
-        speed = 0
-        mag = speed * dt * 60
+        cur_pos_ts = TransformState.make_pos(self.position())
         if self.on_ground:
             speed = walk
-            mag = speed * dt * 60
-            obj = self.world.render.attachNewNode('hectorTempDummy')
-            dummyorigin = self.position()
-            dummyorigin.y += 1.5
-            obj.set_pos(dummyorigin)
-            obj.set_hpr(self.actor.get_hpr())
-            obj.set_fluid_pos(obj,0,0,mag)
-            delta_vector = Vec3(dummyorigin - obj.get_pos())
-                
-            
-            if mag is not 0:
-                cur_pos = self.position()
-                cur_pos.y += 1.5
-                cur_pos_ts = TransformState.makePos(cur_pos)
-                new_pos = delta_vector
-                new_pos_ts = TransformState.makePos(obj.get_pos())
-                
-                sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
-                hits = 0
-                unique_nodes = set()
-                while sweep_result.has_hit():
-                    if hits > 6:
-                        break
-                    hits += 1
-                    hit_position = sweep_result.get_hit_pos()
-                    normal = sweep_result.get_hit_normal()
-                    node = sweep_result.get_node()
-                    if node not in unique_nodes:
-                    	unique_nodes.add(node)
-                    if "Goody" in node.get_name():
-                        hits = 0
-                        break
-                    #reflection = new_pos - normal * (2.0 * new_pos.dot(normal)) 
-                    #reflection.normalize()
-                    par_dir = normal * new_pos.dot(normal) 
-                    perp_dir = new_pos - par_dir
-                    perp_dir.normalize()
-                    frac = sweep_result.get_hit_fraction()
-                    perp_component = perp_dir * abs(mag)
-                    perp_correction = perp_component#Vec3(perp_component.x, 0, perp_component.z)
-                    
-                    
-                    if frac > 0:
-                        new_pos -= perp_correction
-                        obj.set_fluid_pos(obj,*perp_correction)
-                        new_pos_ts = TransformState.makePos(obj.get_pos())
-                        target_pos -= perp_correction
-                        print "added correction!"
-                    else:
-						if len(unique_nodes) > 1:
-							print "stopping!"
-							stop_correction = (normal * frac)
-							new_pos -= stop_correction
-							obj.set_fluid_pos(obj,*perp_correction)
-							new_pos_ts = TransformState.makePos(obj.get_pos())
-							target_pos -= stop_correction
-						else:
-							print "would have stopped but not enough nodes!"
-							hits = 0 
-							break
-                    sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
-                    
-                if hits is 0:
-                    target_pos -= delta_vector 
-                
-                self.xz_velocity = self.position() - target_pos
-                self.xz_velocity.y = 0
-            
+            self.xz_velocity = self.position()
+            self.move_by(0, 0, speed * dt * 60)
+            self.xz_velocity -= self.position()
+            self.xz_velocity *= -1
+            self.xz_velocity /= (dt * 60)
         else:
-            target_pos -= (self.xz_velocity)
+            self.move(self.position() + self.xz_velocity * dt * 60)
+        new_pos_ts = TransformState.make_pos(self.position())
+        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+        hits = 0
+        while sweep_result.has_hit():
+            if hits > 6:
+                break
+            hits += 1
+            moveby = sweep_result.get_hit_normal()
+            moveby.normalize()
+            moveby *= (sweep_result.get_to_pos() - sweep_result.get_from_pos()).length()
+            self.move(self.position() + moveby)
+            new_pos_ts = TransformState.make_pos(self.position())
+            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
@@ -448,44 +391,12 @@ class Hector(PhysicalObject):
         if self.y_velocity <= 0 and result.has_hit():
             self.on_ground = True
             self.y_velocity = 0
-            #self.move(result.get_hit_pos())
-            target_pos.y = result.get_hit_pos().y
+            self.move(result.get_hit_pos())
         else:
             self.on_ground = False
             self.y_velocity -= 0.20 * dt
-            target_pos += Vec3(0, self.y_velocity * dt * 60, 0)
-        self.move(target_pos)
-        return
-        #wall clipping with capsule shape
-        """correction = Vec3(0,0,0)
-        result = self.world.physics.contact_test(self.hector_capsule)
-        for contact in result.getContacts():
-            node_1 = contact.getNode0()
-            node_2 = contact.getNode1()
-            if "Hector" in (node_1.get_name() and node_2.get_name()):
-                continue
-            if "ground" in node_1.get_name() or "ground" in node_2.get_name():
-                continue
-            if "left" in node_1.get_name() or "right" in node_1.get_name():
-                continue
-            mpoint = contact.getManifoldPoint()
-            d = mpoint.get_distance()
-            v = mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB()
-            p = mpoint.getPositionWorldOnB()
-            
-            if v.length() > 2:
-                print "WOOPS", v.length(), v, node_1.get_name(), node_2.get_name()
-                import sys
-                #if node_2.get_name() != "Block:1": sys.exit(0)
-            else:
-                print "COLLISION:", d, v.length(), v, node_1.get_name(), node_2.get_name()
-                if d < 1: 
-                    correction += (v )
-                correction.y = 0
-                
-        target_pos -= correction
-        self.move(target_pos)
-        """
+            self.move_by(0, self.y_velocity * dt * 60, 0)
+
             
     def update_legs(self, walk, dt):
         if walk != 0:
