@@ -5,6 +5,7 @@ from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
 import math
+import random
 
 DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
 DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
@@ -105,7 +106,7 @@ class PhysicalObject (WorldObject):
         """
         Programmatically move this object by the given distances in each direction.
         """
-        self.node.set_pos(self.node, x, y, z)
+        self.node.set_fluid_pos(self.node, x, y, z)
 
     def position(self):
         return self.node.get_pos()
@@ -138,11 +139,12 @@ class Hector(PhysicalObject):
         self.walk_phase = 0
         self.placing = False
         self.head_height = Vec3(0, 1.5, 0)
-
+        self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
+        
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
-        self.actor.listJoints()
+        #self.actor.listJoints()
         self.barrels = self.actor.find("**/barrels")
         self.barrel_trim = self.actor.find("**/barrelTrim")
         self.visor = self.actor.find("**/visor")
@@ -192,7 +194,7 @@ class Hector(PhysicalObject):
                                [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
 
         """the below two functions will get called when the interval starts, allowing us to set the base
-        	positions for crouching/leg extension etc. currently they return the values without modification."""
+            positions for crouching/leg extension etc. currently they return the values without modification."""
         def get_base_leg_rotation(address1, address2, motion = 0):
             rest_rot = self.legs_rest_mat[address1][address2]
             return rest_rot + motion
@@ -220,6 +222,7 @@ class Hector(PhysicalObject):
                             y_return_head_int, y_return_left_int, y_return_right_int)
 
         self.return_seq = make_return_sequence()
+        
 
         def make_walk_sequence():
             walk_cycle_speed = .8
@@ -245,7 +248,7 @@ class Hector(PhysicalObject):
             left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(1, 0, motion)) for motion in top_motion]
             left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in mid_motion]
             left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(1, 2, motion)) for motion in bottom_motion]
-
+            
             return Sequence(
                             Parallel(right_top_forward[0], right_mid_forward[0], right_bottom_forward[0],
                                     left_top_forward[2], left_mid_forward[2], left_bottom_forward[2],
@@ -262,24 +265,34 @@ class Hector(PhysicalObject):
                            )
 
         self.walk_forward_seq = make_walk_sequence()
-
         return self.actor
 
     def create_solid(self):
+        self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
         self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
+        self.hector_bullet_np = self.actor.attach_new_node(self.hector_capsule)
+        self.hector_bullet_np.node().add_shape(self.hector_capsule_shape)
+        self.hector_bullet_np.node().set_kinematic(True)
+        self.hector_bullet_np.set_pos(0,1.5,0)
+        self.hector_bullet_np.wrt_reparent_to(self.actor)
+        self.world.physics.attach_ghost(self.hector_capsule)
+        self.hector_bullet_np.node().setIntoCollideMask(GHOST_COLLIDE_BIT)
         return None
 
     def setup_shape(self, gnodepath, bone, pname):
+        shape = BulletConvexHullShape()
+        
         gnode = gnodepath.node()
         geom = gnode.get_geom(0)
-        shape = BulletConvexHullShape()
         shape.add_geom(geom)
+        
         node = BulletRigidBodyNode(self.name + pname)
         np = self.actor.attach_new_node(node)
         np.node().add_shape(shape)
         np.node().set_kinematic(True)
         np.wrt_reparent_to(bone)
         self.world.physics.attach_rigid_body(node)
+        return np
 
     def setupColor(self, colordict):
         if colordict.has_key("barrel_color"):
@@ -345,6 +358,7 @@ class Hector(PhysicalObject):
             self.xz_velocity /= (dt * 60)
         else:
             self.move(self.position() + self.xz_velocity * dt * 60)
+
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
@@ -362,15 +376,16 @@ class Hector(PhysicalObject):
         adj_dist = abs((start - goal).length())
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
 
-        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
         while sweep_result.has_hit():
             moveby = sweep_result.get_hit_normal()
             moveby.normalize()
             moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
             self.move(self.position() + moveby)
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
-            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, BitMask32.all_on(), 0)
+            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
 
+            
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
@@ -381,7 +396,9 @@ class Hector(PhysicalObject):
                 self.walk_playing = False
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
-
+    #def crouch(self):
+    
+    #def uncrouch(self):
 
 
 class Block (PhysicalObject):
@@ -425,9 +442,9 @@ class Dome (PhysicalObject):
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
-        mesh = BulletTriangleMesh()
+        mesh = BulletConvexHullShape()
         mesh.add_geom(self.geom.get_geom(0))
-        node.add_shape(BulletTriangleMeshShape(mesh, dynamic=False))
+        node.add_shape(mesh)
         node.set_mass(self.mass)
         return node
 
@@ -535,7 +552,65 @@ class Sky (WorldObject):
     def set_scale(self, height):
         self.scale = height
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
+        
+class Incarnator (WorldObject):
+    def __init__(self, angle, pos, name=None):
+        super(Incarnator, self).__init__(name)
+        self.pos = pos
+        self.angle = angle
 
+class Goody (PhysicalObject):
+    def __init__(self, pos, model, items, respawn, spin, name=None):
+        super(Goody, self).__init__(name)
+        self.pos = Vec3(*pos)
+        self.grenades = items[0]
+        self.missles = items[1]
+        self.boosters = items[2]
+        self.model = model
+        self.respawn = float(respawn)
+        self.spin = spin
+        self.geom = None
+        self.active = True
+        self.timeout = 0
+    
+    def create_node(self):
+        m = load_model('misc/rgbCube')
+        m.set_scale(.5)
+        m.set_hpr(45,45,45)
+        return m
+            
+    def create_solid(self):
+        node = BulletGhostNode(self.name)
+        node_shape = BulletSphereShape(.5)
+        node.add_shape(node_shape)
+        node.set_kinematic(True)
+        return node
+    
+    def attached(self):
+        self.node.set_pos(self.pos)
+        self.world.register_updater(self)
+        self.world.register_collider(self)
+        self.solid.setIntoCollideMask(GHOST_COLLIDE_BIT)
+    
+    def update(self, dt):
+        if not self.active:
+            self.timeout += dt 
+            if self.timeout > self.respawn:
+                self.active = True
+                self.node.show()
+            return
+
+        self.rotate_by(*[x * dt for x in self.spin])
+        result = self.world.physics.contact_test(self.solid)
+        for contact in result.getContacts():
+            node_1 = contact.getNode0()
+            node_2 = contact.getNode1()
+            if "Hector" in node_2.get_name():
+               self.active = False
+               self.node.hide()
+            
+        
+        
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
@@ -543,6 +618,7 @@ class World (object):
 
     def __init__(self, camera, debug=False):
         self.objects = {}
+        self.incarnators = []
         self.collidables = set()
         self.updatables = set()
         self.render = NodePath('world')
@@ -552,6 +628,7 @@ class World (object):
         # Set up the physics world. TODO: let maps set gravity.
         self.physics = BulletWorld()
         self.physics.set_gravity(Vec3(0, -9.81, 0))
+        self.debug = debug
         if debug:
             debug_node = BulletDebugNode('Debug')
             debug_node.show_wireframe(True)
@@ -573,6 +650,8 @@ class World (object):
         assert isinstance(obj, WorldObject)
         assert obj.name not in self.objects
         obj.world = self
+        if isinstance(obj, Incarnator):
+            self.incarnators.append(obj)
         if isinstance(obj, PhysicalObject):
             # Let each object define it's own NodePath, then reparent them.
             obj.node = obj.create_node()
@@ -599,6 +678,9 @@ class World (object):
         # Let the object know it has been attached.
         obj.attached()
         return obj
+    
+    def get_incarn(self):
+        return random.choice(self.incarnators)
 
     def set_ambient(self, color):
         """
