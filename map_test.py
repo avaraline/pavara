@@ -6,10 +6,15 @@ from direct.showbase.ShowBase import ShowBase
 
 from pavara.maps import load_maps
 from pavara.world import Block, Hector
+from pavara.network import Server, Client
+from pavara.constants import TCP_PORT
 
 class Pavara (ShowBase):
-    def __init__(self):
+    def __init__(self, *args):
         ShowBase.__init__(self)
+
+        print args
+
         self.x = None
         self.y = None
 
@@ -22,16 +27,12 @@ class Pavara (ShowBase):
         self.map = maps[0]
 
         # Testing physical hector.
-
-
-        self.hector = self.map.world.attach(Hector())
-        self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6),
-                         "visor_color": Vec3(.3,.6,1), "body_color":Vec3(.2,.5,.3)})
-        incarn = self.map.world.get_incarn()
-        self.hector.move(incarn.pos)
-        self.hector.actor.set_h(incarn.angle)
-
-        self.setupInput()
+        #self.hector = self.map.world.attach(Hector())
+        #self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6),
+        #                 "visor_color": Vec3(.3,.6,1), "body_color":Vec3(.2,.5,.3)})
+        #incarn = self.map.world.get_incarn()
+        #self.hector.move(incarn.pos)
+        #self.hector.actor.set_h(incarn.angle)
 
         # Put the hector in the World's render so the lighting applies correctly.
         #self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
@@ -42,6 +43,16 @@ class Pavara (ShowBase):
         #axes = loader.loadModel('models/yup-axis')
         #axes.setScale(10)
         #axes.reparentTo(render)
+
+        if args:
+            print 'CONNECTING TO', args
+            self.client = Client(self.map.world, args[0], TCP_PORT)
+        else:
+            print 'CONNECTING TO localhost'
+            self.server = Server(TCP_PORT)
+            self.client = Client(self.map.world, 'localhost', TCP_PORT)
+
+        self.setupInput()
 
     def initP3D(self):
         self.setBackgroundColor(0,0,0)
@@ -88,17 +99,18 @@ class Pavara (ShowBase):
         self.accept('s-up', self.setKey, ['backward', 0])
         self.accept('d', self.setKey, ['right', 1])
         self.accept('d-up', self.setKey, ['right', 0])
+
         # Hector movement.
-        self.accept('i',        self.hector.handle_command, ['forward', True])
-        self.accept('i-up',     self.hector.handle_command, ['forward', False])
-        self.accept('j',        self.hector.handle_command, ['left', True])
-        self.accept('j-up',     self.hector.handle_command, ['left', False])
-        self.accept('k',        self.hector.handle_command, ['backward', True])
-        self.accept('k-up',     self.hector.handle_command, ['backward', False])
-        self.accept('l',        self.hector.handle_command, ['right', True])
-        self.accept('l-up',     self.hector.handle_command, ['right', False])
-        self.accept('shift',    self.hector.handle_command, ['crouch', True])
-        self.accept('shift-up', self.hector.handle_command, ['crouch', False])
+        self.accept('i',        self.client.send, ['forward', True])
+        self.accept('i-up',     self.client.send, ['forward', False])
+        self.accept('j',        self.client.send, ['left', True])
+        self.accept('j-up',     self.client.send, ['left', False])
+        self.accept('k',        self.client.send, ['backward', True])
+        self.accept('k-up',     self.client.send, ['backward', False])
+        self.accept('l',        self.client.send, ['right', True])
+        self.accept('l-up',     self.client.send, ['right', False])
+        self.accept('shift',    self.client.send, ['crouch', True])
+        self.accept('shift-up', self.client.send, ['crouch', False])
 
     def move(self, task):
         dt = globalClock.getDt()
@@ -141,5 +153,5 @@ class Pavara (ShowBase):
 
 if __name__ == '__main__':
     loadPrcFile('pavara.prc')
-    p = Pavara()
+    p = Pavara(*sys.argv[1:])
     p.run()
