@@ -34,7 +34,7 @@ class Server (object):
         self.last_pid = 0
         sock = self.manager.openTCPServerRendezvous(port, 1000)
         self.listener.addConnection(sock)
-        taskMgr.doMethodLater(0.1, self.server_task, 'serverManagementTask')
+        taskMgr.doMethodLater(0.05, self.server_task, 'serverManagementTask')
 
     def server_task(self, task):
         if self.listener.newConnectionAvailable():
@@ -44,6 +44,7 @@ class Server (object):
             if self.listener.getNewConnection(rendezvous, netAddress, newConnection):
                 print 'GOT CONNECTION FROM', netAddress
                 newConnection = newConnection.p()
+                newConnection.setNoDelay(True)
                 self.connections.append(newConnection)
                 self.reader.addConnection(newConnection)
                 self.last_pid += 1
@@ -85,6 +86,7 @@ class Client (object):
         self.writer = ConnectionWriter(self.manager, 0)
         self.connection = self.manager.openTCPClientConnection(host, port, timeout)
         if self.connection:
+            self.connection.setNoDelay(True)
             self.reader.addConnection(self.connection)
             self.connected = True
         self.players = {}
