@@ -44,13 +44,9 @@ class Pavara (ShowBase):
         #axes.setScale(10)
         #axes.reparentTo(render)
 
-        if args:
-            print 'CONNECTING TO', args
-            self.client = Client(self.map.world, args[0], TCP_PORT)
-        else:
-            print 'CONNECTING TO localhost'
-            self.server = Server(TCP_PORT)
-            self.client = Client(self.map.world, 'localhost', TCP_PORT)
+        host = args[0] if args else 'localhost'
+        print 'CONNECTING TO', host
+        self.client = Client(self.map.world, host, TCP_PORT)
 
         self.setupInput()
 

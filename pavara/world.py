@@ -62,6 +62,7 @@ class PhysicalObject (WorldObject):
     node = None
     solid = None
     collide_bits = MAP_COLLIDE_BIT
+    moved = False
 
     def create_node(self):
         """
@@ -101,22 +102,38 @@ class PhysicalObject (WorldObject):
         Programmatically move this object to be centered at the given coordinates.
         """
         self.node.set_pos(*center)
+        self.moved = True
 
     def move_by(self, x, y, z):
         """
         Programmatically move this object by the given distances in each direction.
         """
         self.node.set_fluid_pos(self.node, x, y, z)
+        self.moved = True
 
     def position(self):
         return self.node.get_pos()
 
-class Hector(PhysicalObject):
+    def add_update(self, datagram):
+        if not self.moved:
+            return
+        pos = self.position()
+        hpr = self.node.get_hpr()
+        datagram.addString(self.name)
+        datagram.addFloat32(pos.x)
+        datagram.addFloat32(pos.y)
+        datagram.addFloat32(pos.z)
+        datagram.addFloat32(hpr.x)
+        datagram.addFloat32(hpr.y)
+        datagram.addFloat32(hpr.z)
+        self.moved = False
+
+class Hector (PhysicalObject):
 
     collide_bits = SOLID_COLLIDE_BIT
 
-    def __init__(self):
-        super(Hector, self).__init__()
+    def __init__(self, name=None):
+        super(Hector, self).__init__(name=name)
 
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
@@ -140,7 +157,7 @@ class Hector(PhysicalObject):
         self.placing = False
         self.head_height = Vec3(0, 1.5, 0)
         self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
-        
+
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
@@ -222,7 +239,7 @@ class Hector(PhysicalObject):
                             y_return_head_int, y_return_left_int, y_return_right_int)
 
         self.return_seq = make_return_sequence()
-        
+
 
         def make_walk_sequence():
             walk_cycle_speed = .8
@@ -248,7 +265,7 @@ class Hector(PhysicalObject):
             left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(1, 0, motion)) for motion in top_motion]
             left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in mid_motion]
             left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(1, 2, motion)) for motion in bottom_motion]
-            
+
             return Sequence(
                             Parallel(right_top_forward[0], right_mid_forward[0], right_bottom_forward[0],
                                     left_top_forward[2], left_mid_forward[2], left_bottom_forward[2],
@@ -281,11 +298,11 @@ class Hector(PhysicalObject):
 
     def setup_shape(self, gnodepath, bone, pname):
         shape = BulletConvexHullShape()
-        
+
         gnode = gnodepath.node()
         geom = gnode.get_geom(0)
         shape.add_geom(geom)
-        
+
         node = BulletRigidBodyNode(self.name + pname)
         np = self.actor.attach_new_node(node)
         np.node().add_shape(shape)
@@ -385,7 +402,7 @@ class Hector(PhysicalObject):
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
             sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
 
-            
+
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
@@ -397,7 +414,7 @@ class Hector(PhysicalObject):
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
     #def crouch(self):
-    
+
     #def uncrouch(self):
 
 
@@ -520,6 +537,9 @@ class Sky (WorldObject):
         self.scale = scale
 
     def attached(self):
+        if not self.world.camera:
+            self.node = self.world.render.attach_new_node('sky')
+            return
         geom = GeomNode('sky')
         bounds = self.world.camera.node().get_lens().make_bounds()
         dl = bounds.getMin()
@@ -552,7 +572,7 @@ class Sky (WorldObject):
     def set_scale(self, height):
         self.scale = height
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
-        
+
 class Incarnator (WorldObject):
     def __init__(self, angle, pos, name=None):
         super(Incarnator, self).__init__(name)
@@ -572,29 +592,29 @@ class Goody (PhysicalObject):
         self.geom = None
         self.active = True
         self.timeout = 0
-    
+
     def create_node(self):
         m = load_model('misc/rgbCube')
         m.set_scale(.5)
         m.set_hpr(45,45,45)
         return m
-            
+
     def create_solid(self):
         node = BulletGhostNode(self.name)
         node_shape = BulletSphereShape(.5)
         node.add_shape(node_shape)
         node.set_kinematic(True)
         return node
-    
+
     def attached(self):
         self.node.set_pos(self.pos)
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(GHOST_COLLIDE_BIT)
-    
+
     def update(self, dt):
         if not self.active:
-            self.timeout += dt 
+            self.timeout += dt
             if self.timeout > self.respawn:
                 self.active = True
                 self.node.show()
@@ -608,15 +628,13 @@ class Goody (PhysicalObject):
             if "Hector" in node_2.get_name():
                self.active = False
                self.node.hide()
-            
-        
-        
+
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
     """
 
-    def __init__(self, camera, debug=False):
+    def __init__(self, camera, debug=False, client=None, server=None):
         self.objects = {}
         self.incarnators = []
         self.collidables = set()
@@ -629,6 +647,8 @@ class World (object):
         self.physics = BulletWorld()
         self.physics.set_gravity(Vec3(0, -9.81, 0))
         self.debug = debug
+        self.client = client
+        self.server = server
         if debug:
             debug_node = BulletDebugNode('Debug')
             debug_node.show_wireframe(True)
@@ -678,9 +698,15 @@ class World (object):
         # Let the object know it has been attached.
         obj.attached()
         return obj
-    
+
     def get_incarn(self):
         return random.choice(self.incarnators)
+
+    def create_hector(self, name=None):
+        # TODO: get random incarn, start there
+        h = self.attach(Hector(name))
+        h.move((0, 15, 0))
+        return h
 
     def set_ambient(self, color):
         """
@@ -692,6 +718,8 @@ class World (object):
         """
         Adds a celestial light source to the scene. If it is a visible celestial, also add a sphere model.
         """
+        if not self.camera:
+            return
         location = Vec3(to_cartesian(azimuth, elevation, 1000.0 * 255.0 / 256.0))
         dlight = DirectionalLight('celestial')
         dlight.set_color((color[0]*intensity, color[1]*intensity, color[2]*intensity, 1.0))

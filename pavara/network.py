@@ -23,7 +23,8 @@ class Player (object):
         self.hector.handle_command(direction, pressed)
 
 class Server (object):
-    def __init__(self, port):
+    def __init__(self, world, port):
+        self.world = world
         self.manager = QueuedConnectionManager()
         self.listener = QueuedConnectionListener(self.manager, 0)
         self.reader = QueuedConnectionReader(self.manager, 0)
@@ -33,7 +34,7 @@ class Server (object):
         self.last_pid = 0
         sock = self.manager.openTCPServerRendezvous(port, 1000)
         self.listener.addConnection(sock)
-        taskMgr.add(self.server_task, 'serverManagementTask')
+        taskMgr.doMethodLater(0.1, self.server_task, 'serverManagementTask')
 
     def server_task(self, task):
         if self.listener.newConnectionAvailable():
@@ -46,7 +47,7 @@ class Server (object):
                 self.connections.append(newConnection)
                 self.reader.addConnection(newConnection)
                 self.last_pid += 1
-                self.players[netAddress.getIpString()] = self.last_pid
+                self.players[netAddress.getIpString()] = Player(self.last_pid, self.world.create_hector())
         while self.manager.resetConnectionAvailable():
             connPointer = PointerToConnection()
             self.manager.getResetConnection(connPointer)
@@ -58,7 +59,7 @@ class Server (object):
             # and remove it from our activeConnections list
             for idx in range(0, len(self.connections)):
                 if self.connections[idx] == connection:
-                    del self.connections[c]
+                    del self.connections[idx]
                     break
         while self.reader.dataAvailable():
             datagram = NetDatagram()
@@ -66,17 +67,15 @@ class Server (object):
                 conn = datagram.getConnection()
                 dataIter = PyDatagramIterator(datagram)
                 addr = conn.getAddress()
-                pid = self.players[addr.getIpString()]
-                self.broadcast(pid, dataIter.getString(), dataIter.getBool())
-        return task.cont
-
-    def broadcast(self, pid, cmd, onoff):
-        datagram = PyDatagram()
-        datagram.addInt8(pid)
-        datagram.addString(cmd)
-        datagram.addBool(onoff)
+                player = self.players[addr.getIpString()]
+                player.handle_command(dataIter.getString(), dataIter.getBool())
+        update = PyDatagram()
+        update.addInt8(len([o for o in self.world.updatables if o.moved]))
+        for obj in self.world.updatables:
+            obj.add_update(update)
         for conn in self.connections:
-            self.writer.send(datagram, conn)
+            self.writer.send(update, conn)
+        return task.again
 
 class Client (object):
     def __init__(self, world, host, port, timeout=3000):
@@ -102,14 +101,20 @@ class Client (object):
         while self.reader.dataAvailable():
             datagram = NetDatagram()
             if self.reader.getData(datagram):
-                dataIter = PyDatagramIterator(datagram)
-                pid = dataIter.getInt8()
-                cmd = dataIter.getString()
-                onoff = dataIter.getBool()
-                if pid not in self.players:
-                    print 'NEW PLAYER', pid
-                    hector = self.world.attach(Hector())
-                    hector.move((0, 15, 0))
-                    self.players[pid] = Player(pid, hector)
-                self.players[pid].handle_command(cmd, onoff)
+                update = PyDatagramIterator(datagram)
+                num_objects = update.getInt8()
+                for i in range(num_objects):
+                    name = update.getString()
+                    x = update.getFloat32()
+                    y = update.getFloat32()
+                    z = update.getFloat32()
+                    h = update.getFloat32()
+                    p = update.getFloat32()
+                    r = update.getFloat32()
+                    if name.startswith('Hector') and name not in self.world.objects:
+                        self.world.create_hector(name)
+                    obj = self.world.objects.get(name)
+                    if obj:
+                        obj.move((x, y, z))
+                        obj.rotate(h, p, r)
         return task.cont

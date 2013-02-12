@@ -60,13 +60,13 @@ class Map (object):
         Reparents the root NodePath of this Map's World to the given NodePath.
         """
         self.world.render.reparent_to(render)
-    
+
     def parse_incarnator(self, node):
         pos = parse_vector(node['location'])
         angle = parse_float(node['angle'])
         incarn = Incarnator(angle, pos, name=node['id'])
         self.world.attach(incarn)
-    
+
     def parse_block(self, node):
         center = parse_vector(node['center'])
         size = parse_vector(node['size'], (4, 4, 4))
@@ -96,17 +96,17 @@ class Map (object):
         color = parse_color(node['color'], (1, 1, 1, 1))
         radius = parse_float(node['radius'], 1000)
         self.world.attach(Ground(radius, color, name=(node['id'] or 'ground')))
-    
+
     def parse_goody(self, node):
         model = node["model"]
         pos = parse_vector(node["location"])
         grenades = node["grenades"] or 0
         missles = node["missles"] or 0
         boosters = node["boosters"] or 0
-        respawn = node["respawn"] or 8 #default spawn time 
+        respawn = node["respawn"] or 8 #default spawn time
         spin = parse_vector(node['spin']) or Vec3(60,0,0)
-        goody = self.world.attach(Goody(pos, model, (grenades, missles, boosters), respawn, spin))    
-    
+        goody = self.world.attach(Goody(pos, model, (grenades, missles, boosters), respawn, spin))
+
     def parse_dome(self, node):
         center = parse_vector(node['center'])
         radius = parse_float(node['radius'], 2.5)
@@ -187,7 +187,7 @@ class Map (object):
                 size = min_size + random.random() * delta_size
                 self.world.add_celestial(theta, phi, color, 0, size, True)
 
-def load_maps(path, camera):
+def load_maps(path, camera=None):
     """
     Given a path to an XML file and the camera, returns a list of parsed/populated Map objects.
     """
