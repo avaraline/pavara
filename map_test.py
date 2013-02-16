@@ -20,6 +20,7 @@ class Pavara (ShowBase):
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
+        self.map.world.render.flatten_strong()
 
         # Testing physical hector.
 
