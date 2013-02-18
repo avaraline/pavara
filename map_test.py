@@ -12,15 +12,15 @@ class Pavara (ShowBase):
         ShowBase.__init__(self)
         self.x = None
         self.y = None
-
+        
+        base.camLens.setFov(50)
         # init panda3d crap
         self.initP3D()
-
         maps = load_maps('Maps/bodhi.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
-
+        self.map.world.render.flattenStrong()
         # Testing physical hector.
 
 
@@ -30,6 +30,8 @@ class Pavara (ShowBase):
         incarn = self.map.world.get_incarn()
         self.hector.move(incarn.pos)
         self.hector.actor.set_h(incarn.angle)
+        
+        self.map.world.render.analyze()
 
         self.setupInput()
 
