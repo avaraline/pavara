@@ -1,0 +1,255 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Stratocaster" tagline="Musical." author="ryan &apos;silverfox&apos; herriman" description="Pick me up and finger me.">
+	<sky color="0,0.235,0.231" horizon="0.937,0.953,0.953" horizonScale="0.65"/>
+	<ground color="0,0.235,0.231"/>
+
+	<!-- INCARNATORS -->
+	<incarnator location="-16,20,-16" angle="135"/>
+	<incarnator location="16,20,16" angle="315"/>
+	<incarnator location="16,20,-16" angle="225"/>
+	<incarnator location="-16,20,16" angle="45"/>
+	<incarnator location="2,20,-27" angle="180"/>
+	<incarnator location="-2,20,27" angle="0"/>
+	<incarnator location="27,20,2" angle="270"/>
+	<incarnator location="-27,20,-2" angle="90"/>
+
+	<!-- BUBBLE TELEPORTER -->
+	<teleporter location="0,20,0" group="recenter" disorient="false" model=""/>
+	<teleporter location="0,-30,0" activeRadius="150" deadRadius="115" destination="recenter" disorient="false" model=""/>
+
+	<!-- TELEPORTERS -->
+
+	<!-- CENTER -->
+	<block size="16,4,16" center="0,2,0" color="1,1,1"/>
+	<block size="8,4,12" center="-8,2,-14" color="0.267,0.439,0.439"/>
+	<block size="12,4,8" center="14,2,-8" color="0.267,0.439,0.439"/>
+	<block size="8,4,12" center="8,2,14" color="0.267,0.439,0.439"/>
+	<block size="12,4,8" center="-14,2,8" color="0.267,0.439,0.439"/>
+	<block size="5,0,5" center="-8,4.01,-14" yaw="45" color="1,1,1"/>
+	<block size="5,0,5" center="14,4.01,-8" yaw="45" color="1,1,1"/>
+	<block size="5,0,5" center="8,4.01,14" yaw="45" color="1,1,1"/>
+	<block size="5,0,5" center="-14,4.01,8" yaw="45" color="1,1,1"/>
+
+	<!-- CENTER PILLAR THINGS -->
+	<block size="4,10,4" center="-6,5,-22" color="0.537,0.647,0.643"/>
+	<block size="4,12,4" center="-10,6,-22" color="0.134,0.337,0.334"/>
+
+	<block size="4,10,4" center="22,5,-6" color="0.537,0.647,0.643"/>
+	<block size="4,12,4" center="22,6,-10" color="0.134,0.337,0.334"/>
+
+	<block size="4,10,4" center="6,5,22" color="0.537,0.647,0.643"/>
+	<block size="4,12,4" center="10,6,22" color="0.134,0.337,0.334"/>
+
+	<block size="4,10,4" center="-22,5,6" color="0.537,0.647,0.643"/>
+	<block size="4,12,4" center="-22,6,10" color="0.134,0.337,0.334"/>
+
+	<!-- RAMPS (LEVEL 1) -->
+	<ramp base="-1.25,2,-16" top="-1.25,4,-8" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="3.5,2,-16" top="3.5,4,-8" width="4" color="1,1,1"/>
+	<ramp base="6.75,2,-16" top="6.75,4,-8" width="2.5" color="0.804,0.851,0.851"/>
+	<ramp base="-1.25,2,-16" top="-1.25,6,-24" width="5.5" color="0.871,0.902,0.902"/>
+	<ramp base="3.5,2,-16" top="3.5,6,-24" width="4" color="1,1,1"/>
+	<ramp base="6.75,2,-16" top="6.75,2.75,-17.5" width="2.5" color="0.871,0.902,0.902"/>
+	<ramp base="6.75,2.75,-17.5" top="6.75,4.75,-21.5" width="2.5" color="1,1,1"/>
+	<ramp base="6.75,4.75,-21.5" top="6.75,6,-24" width="2.5" color="0.871,0.902,0.902"/>
+
+	<ramp base="16,2,-1.25" top="8,4,-1.25" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="16,2,3.5" top="8,4,3.5" width="4" color="1,1,1"/>
+	<ramp base="16,2,6.75" top="8,4,6.75" width="2.5" color="0.804,0.851,0.851"/>
+	<ramp base="16,2,-1.25" top="24,6,-1.25" width="5.5" color="0.871,0.902,0.902"/>
+	<ramp base="16,2,3.5" top="24,6,3.5" width="4" color="1,1,1"/>
+	<ramp base="16,2,6.75" top="17.5,2.75,6.75" width="2.5" color="0.871,0.902,0.902"/>
+	<ramp base="17.5,2.75,6.75" top="21.5,4.75,6.75" width="2.5" color="1,1,1"/>
+	<ramp base="21.5,4.75,6.75" top="24,6,6.75" width="2.5" color="0.871,0.902,0.902"/>
+
+	<ramp base="1.25,2,16" top="1.25,4,8" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="-3.5,2,16" top="-3.5,4,8" width="4" color="1,1,1"/>
+	<ramp base="-6.75,2,16" top="-6.75,4,8" width="2.5" color="0.804,0.851,0.851"/>
+	<ramp base="1.25,2,16" top="1.25,6,24" width="5.5" color="0.871,0.902,0.902"/>
+	<ramp base="-3.5,2,16" top="-3.5,6,24" width="4" color="1,1,1"/>
+	<ramp base="-6.75,2,16" top="-6.75,2.75,17.5" width="2.5" color="0.871,0.902,0.902"/>
+	<ramp base="-6.75,2.75,17.5" top="-6.75,4.75,21.5" width="2.5" color="1,1,1"/>
+	<ramp base="-6.75,4.75,21.5" top="-6.75,6,24" width="2.5" color="0.871,0.902,0.902"/>
+
+	<ramp base="-16,2,1.25" top="-8,4,1.25" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="-16,2,-3.5" top="-8,4,-3.5" width="4" color="1,1,1"/>
+	<ramp base="-16,2,-6.75" top="-8,4,-6.75" width="2.5" color="0.804,0.851,0.851"/>
+	<ramp base="-16,2,1.25" top="-24,6,1.25" width="5.5" color="0.871,0.902,0.902"/>
+	<ramp base="-16,2,-3.5" top="-24,6,-3.5" width="4" color="1,1,1"/>
+	<ramp base="-16,2,-6.75" top="-17.5,2.75,-6.75" width="2.5" color="0.871,0.902,0.902"/>
+	<ramp base="-17.5,2.75,-6.75" top="-21.5,4.75,-6.75" width="2.5" color="1,1,1"/>
+	<ramp base="-21.5,4.75,-6.75" top="-24,6,-6.75" width="2.5" color="0.871,0.902,0.902"/>
+
+	<!-- LEVEL 1 MESA -->
+	<block size="5.5,6,5.5" center="-1.25,3,-26.75" color="0.4,0.541,0.541"/>
+	<block size="2.5,6,12" center="6.75,3,-30" color="0.4,0.541,0.541"/>
+	<block size="9.5,6,2.5" center="0.75,3,-34.75" color="0.4,0.541,0.541"/>
+	<block size="4,6,5.5" center="3.5,3,-26.75" color="1,1,1"/>
+	<block size="9.5,6,4" center="0.75,3,-31.5" color="1,1,1"/>
+
+	<block size="5.5,6,5.5" center="26.75,3,-1.25" color="0.4,0.541,0.541"/>
+	<block size="12,6,2.5" center="30,3,6.75" color="0.4,0.541,0.541"/>
+	<block size="2.5,6,9.5" center="34.75,3,0.75" color="0.4,0.541,0.541"/>
+	<block size="5.5,6,4" center="26.75,3,3.5" color="1,1,1"/>
+	<block size="4,6,9.5" center="31.5,3,0.75" color="1,1,1"/>
+
+	<block size="5.5,6,5.5" center="1.25,3,26.75" color="0.4,0.541,0.541"/>
+	<block size="2.5,6,12" center="-6.75,3,30" color="0.4,0.541,0.541"/>
+	<block size="9.5,6,2.5" center="-0.75,3,34.75" color="0.4,0.541,0.541"/>
+	<block size="4,6,5.5" center="-3.5,3,26.75" color="1,1,1"/>
+	<block size="9.5,6,4" center="-0.75,3,31.5" color="1,1,1"/>
+
+	<block size="5.5,6,5.5" center="-26.75,3,1.25" color="0.4,0.541,0.541"/>
+	<block size="12,6,2.5" center="-30,3,-6.75" color="0.4,0.541,0.541"/>
+	<block size="2.5,6,9.5" center="-34.75,3,-0.75" color="0.4,0.541,0.541"/>
+	<block size="5.5,6,4" center="-26.75,3,-3.5" color="1,1,1"/>
+	<block size="4,6,9.5" center="-31.5,3,-0.75" color="1,1,1"/>
+
+	<!-- RAMPS (LEVEL 2) -->
+	<ramp base="-4,6,-26.75" top="-12,10,-26.75" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="-4,6,-31.5" top="-12,10,-31.5" width="4" color="1,1,1"/>
+	<ramp base="-4,6,-34.75" top="-12,10,-34.75" width="2.5" color="0.804,0.851,0.851"/>
+
+	<ramp base="26.75,6,-4" top="26.75,10,-12" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="31.5,6,-4" top="31.5,10,-12" width="4" color="1,1,1"/>
+	<ramp base="34.75,6,-4" top="34.75,10,-12" width="2.5" color="0.804,0.851,0.851"/>
+
+	<ramp base="4,6,26.75" top="12,10,26.75" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="4,6,31.5" top="12,10,31.5" width="4" color="1,1,1"/>
+	<ramp base="4,6,34.75" top="12,10,34.75" width="2.5" color="0.804,0.851,0.851"/>
+
+	<ramp base="-26.75,6,4" top="-26.75,10,12" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="-31.5,6,4" top="-31.5,10,12" width="4" color="1,1,1"/>
+	<ramp base="-34.75,6,4" top="-34.75,10,12" width="2.5" color="0.804,0.851,0.851"/>
+
+	<!-- LEVEL 2 MESA -->
+	<block size="5.5,10,5.5" center="-14.75,5,-26.75" color="0.537,0.647,0.643"/>
+	<block size="12,10,2.5" center="-18,5,-34.75" color="0.537,0.647,0.643"/>
+	<block size="2.5,10,9.5" center="-22.75,5,-28.75" color="0.537,0.647,0.643"/>
+	<block size="5.5,10,4" center="-14.75,5,-31.5" color="1,1,1"/>
+	<block size="4,10,9.5" center="-19.5,5,-28.75" color="1,1,1"/>
+
+	<block size="5.5,10,5.5" center="26.75,5,-14.75" color="0.537,0.647,0.643"/>
+	<block size="2.5,10,12" center="34.75,5,-18" color="0.537,0.647,0.643"/>
+	<block size="9.5,10,2.5" center="28.75,5,-22.75" color="0.537,0.647,0.643"/>
+	<block size="4,10,5.5" center="31.5,5,-14.75" color="1,1,1"/>
+	<block size="9.5,10,4" center="28.75,5,-19.5" color="1,1,1"/>
+
+	<block size="5.5,10,5.5" center="14.75,5,26.75" color="0.537,0.647,0.643"/>
+	<block size="12,10,2.5" center="18,5,34.75" color="0.537,0.647,0.643"/>
+	<block size="2.5,10,9.5" center="22.75,5,28.75" color="0.537,0.647,0.643"/>
+	<block size="5.5,10,4" center="14.75,5,31.5" color="1,1,1"/>
+	<block size="4,10,9.5" center="19.5,5,28.75" color="1,1,1"/>
+
+	<block size="5.5,10,5.5" center="-26.75,5,14.75" color="0.537,0.647,0.643"/>
+	<block size="2.5,10,12" center="-34.75,5,18" color="0.537,0.647,0.643"/>
+	<block size="9.5,10,2.5" center="-28.75,5,22.75" color="0.537,0.647,0.643"/>
+	<block size="4,10,5.5" center="-31.5,5,14.75" color="1,1,1"/>
+	<block size="9.5,10,4" center="-28.75,5,19.5" color="1,1,1"/>
+
+	<!-- RAMPS (LEVEL 3) -->
+	<ramp base="-14.75,10,-24" top="-14.75,12,-20" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="-19.5,10,-24" top="-19.5,12,-20" width="4" color="1,1,1"/>
+	<ramp base="-22.75,10,-24" top="-22.75,12,-20" width="2.5" color="0.804,0.851,0.851"/>
+
+	<ramp base="24,10,-14.75" top="20,12,-14.75" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="24,10,-19.5" top="20,12,-19.5" width="4" color="1,1,1"/>
+	<ramp base="24,10,-22.75" top="20,12,-22.75" width="2.5" color="0.804,0.851,0.851"/>
+
+	<ramp base="14.75,10,24" top="14.75,12,20" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="19.5,10,24" top="19.5,12,20" width="4" color="1,1,1"/>
+	<ramp base="22.75,10,24" top="22.75,12,20" width="2.5" color="0.804,0.851,0.851"/>
+
+	<ramp base="-24,10,14.75" top="-20,12,14.75" width="5.5" color="0.804,0.851,0.851"/>
+	<ramp base="-24,10,19.5" top="-20,12,19.5" width="4" color="1,1,1"/>
+	<ramp base="-24,10,22.75" top="-20,12,22.75" width="2.5" color="0.804,0.851,0.851"/>
+
+	<!-- LEVEL 3 MESA -->
+	<block size="5.5,12,8" center="-14.75,6,-16" color="0.134,0.337,0.334"/>
+	<block size="4,12,8" center="-19.5,6,-16" color="1,1,1"/>
+	<block size="2.5,12,8" center="-22.75,6,-16" color="0.134,0.337,0.334"/>
+	<block size="5.5,14,4" center="-14.75,7,-10" color="0.533,0.643,0.639"/>
+	<block size="4,14,4" center="-19.5,7,-10" color="1,1,1"/>
+	<block size="2.5,14,4" center="-22.75,7,-10" color="0.533,0.643,0.639"/>
+
+	<block size="8,12,5.5" center="16,6,-14.75" color="0.134,0.337,0.334"/>
+	<block size="8,12,4" center="16,6,-19.5" color="1,1,1"/>
+	<block size="8,12,2.5" center="16,6,-22.75" color="0.134,0.337,0.334"/>
+	<block size="4,14,5.5" center="10,7,-14.75" color="0.533,0.643,0.639"/>
+	<block size="4,14,4" center="10,7,-19.5" color="1,1,1"/>
+	<block size="4,14,2.5" center="10,7,-22.75" color="0.533,0.643,0.639"/>
+
+	<block size="-5.5,12,-8" center="14.75,6,16" color="0.134,0.337,0.334"/>
+	<block size="-4,12,-8" center="19.5,6,16" color="1,1,1"/>
+	<block size="-2.5,12,-8" center="22.75,6,16" color="0.134,0.337,0.334"/>
+	<block size="-5.5,14,-4" center="14.75,7,10" color="0.533,0.643,0.639"/>
+	<block size="-4,14,-4" center="19.5,7,10" color="1,1,1"/>
+	<block size="-2.5,14,-4" center="22.75,7,10" color="0.533,0.643,0.639"/>
+
+	<block size="-8,12,-5.5" center="-16,6,14.75" color="0.134,0.337,0.334"/>
+	<block size="-8,12,-4" center="-16,6,19.5" color="1,1,1"/>
+	<block size="-8,12,-2.5" center="-16,6,22.75" color="0.134,0.337,0.334"/>
+	<block size="-4,14,-5.5" center="-10,7,14.75" color="0.533,0.643,0.639"/>
+	<block size="-4,14,-4" center="-10,7,19.5" color="1,1,1"/>
+	<block size="-4,14,-2.5" center="-10,7,22.75" color="0.533,0.643,0.639"/>
+
+	<!-- OUTER WALLS -->
+	<block size="32,20,4" center="-12,10,-38" color="0.737,0.8,0.8"/>
+	<block size="8,6,4" center="8,3,-38" color="1,1,1"/>
+	<block size="8,10,4" center="8,15,-38" color="0.737,0.8,0.8"/>
+	<block size="8,4,0.5" center="8,8,-39.75" color="1,1,1"/>
+	<block size="0.5,4,7.5" center="11.75,8,-35.75" color="1,1,1"/>
+	<block size="4,6,4" center="10,3,-34" color="1,1,1"/>
+	<block size="4,10,4" center="10,15,-34" color="0.737,0.8,0.8"/>
+	<block size="4,20,8" center="10,10,-28" color="0.737,0.8,0.8"/>
+	<block size="24,20,4" center="24,10,-26" color="0.737,0.8,0.8"/>
+
+	<block size="4,20,32" center="38,10,-12" color="0.737,0.8,0.8"/>
+	<block size="4,6,8" center="38,3,8" color="1,1,1"/>
+	<block size="4,10,8" center="38,15,8" color="0.737,0.8,0.8"/>
+	<block size="0.5,4,8" center="39.75,8,8" color="1,1,1"/>
+	<block size="7.5,4,0.5" center="35.75,8,11.75" color="1,1,1"/>
+	<block size="4,6,4" center="34,3,10" color="1,1,1"/>
+	<block size="4,10,4" center="34,15,10" color="0.737,0.8,0.8"/>
+	<block size="8,20,4" center="28,10,10" color="0.737,0.8,0.8"/>
+	<block size="4,20,24" center="26,10,24" color="0.737,0.8,0.8"/>
+
+	<block size="32,20,4" center="12,10,38" color="0.737,0.8,0.8"/>
+	<block size="8,6,4" center="-8,3,38" color="1,1,1"/>
+	<block size="8,10,4" center="-8,15,38" color="0.737,0.8,0.8"/>
+	<block size="8,4,0.5" center="-8,8,39.75" color="1,1,1"/>
+	<block size="0.5,4,7.5" center="-11.75,8,35.75" color="1,1,1"/>
+	<block size="4,6,4" center="-10,3,34" color="1,1,1"/>
+	<block size="4,10,4" center="-10,15,34" color="0.737,0.8,0.8"/>
+	<block size="4,20,8" center="-10,10,28" color="0.737,0.8,0.8"/>
+	<block size="24,20,4" center="-24,10,26" color="0.737,0.8,0.8"/>
+
+	<block size="4,20,32" center="-38,10,12" color="0.737,0.8,0.8"/>
+	<block size="4,6,8" center="-38,3,-8" color="1,1,1"/>
+	<block size="4,10,8" center="-38,15,-8" color="0.737,0.8,0.8"/>
+	<block size="0.5,4,8" center="-39.75,8,-8" color="1,1,1"/>
+	<block size="7.5,4,0.5" center="-35.75,8,-11.75" color="1,1,1"/>
+	<block size="4,6,4" center="-34,3,-10" color="1,1,1"/>
+	<block size="4,10,4" center="-34,15,-10" color="0.737,0.8,0.8"/>
+	<block size="8,20,4" center="-28,10,-10" color="0.737,0.8,0.8"/>
+	<block size="4,20,24" center="-26,10,-24" color="0.737,0.8,0.8"/>
+
+	<!-- OUTER WALL OVERHANG -->
+	<block size="0.25,0.75,0.25" center="8.75,20.375,-24.25" color="0.737,0.8,0.8"/>
+	<block size="0.25,0.75,0.25" center="20.25,20.375,-24.25" color="0.737,0.8,0.8"/>
+	<ramp base="14.5,20.25,-24.375" top="14.5,21.75,-20.375" width="12" color="0.533,0.643,0.639"/>
+
+	<block size="0.25,0.75,0.25" center="24.25,20.375,8.75" color="0.737,0.8,0.8"/>
+	<block size="0.25,0.75,0.25" center="24.25,20.375,20.25" color="0.737,0.8,0.8"/>
+	<ramp base="24.375,20.25,14.5" top="20.375,21.75,14.5" width="12" color="0.533,0.643,0.639"/>
+
+	<block size="0.25,0.75,0.25" center="-8.75,20.375,24.25" color="0.737,0.8,0.8"/>
+	<block size="0.25,0.75,0.25" center="-20.25,20.375,24.25" color="0.737,0.8,0.8"/>
+	<ramp base="-14.5,20.25,24.375" top="-14.5,21.75,20.375" width="12" color="0.533,0.643,0.639"/>
+
+	<block size="0.25,0.75,0.25" center="-24.25,20.375,-8.75" color="0.737,0.8,0.8"/>
+	<block size="0.25,0.75,0.25" center="-24.25,20.375,-20.25" color="0.737,0.8,0.8"/>
+	<ramp base="-24.375,20.25,-14.5" top="-20.375,21.75,-14.5" width="12" color="0.533,0.643,0.639"/>
+
+	<!-- GOODIES -->
+</map>
