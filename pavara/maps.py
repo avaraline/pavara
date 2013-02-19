@@ -40,6 +40,7 @@ class Map (object):
     description = None
     world = None
     has_celestials = False
+    effects = []
 
     def __init__(self, root, camera):
         self.name = root['name'] or 'Untitled Map'
@@ -47,10 +48,7 @@ class Map (object):
         self.tagline = root['tagline']
         self.description = root['description'] or 'No description.'
         self.world = World(camera, debug=parse_bool(root['debug']))
-        for child in root.children():
-            func_name = 'parse_%s' % child.tagname.lower()
-            if hasattr(self, func_name):
-                getattr(self, func_name)(child)
+        self.process_children(root)
         if not self.has_celestials:
             self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 1.0, False)
             self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 1.0, False)
@@ -60,13 +58,35 @@ class Map (object):
         Reparents the root NodePath of this Map's World to the given NodePath.
         """
         self.world.render.reparent_to(render)
-    
+
+    def process_children(self, node):
+        for child in node.children():
+            func_name = 'parse_%s' % child.tagname.lower()
+            if hasattr(self, func_name):
+                getattr(self, func_name)(child)
+
+    def parse_freesolid(self, node):
+        mass = parse_float(node['mass'])
+        self.effects.append(lambda effected: FreeSolid(effected, mass))
+        self.process_children(node)
+        self.effects.pop()
+
+    def parse_hologram(self, node):
+        self.effects.append(Hologram)
+        self.process_children(node)
+        self.effects.pop()
+
+    def wrap_object(self, obj):
+        for effect in reversed(self.effects):
+            obj = effect(obj)
+        return obj
+
     def parse_incarnator(self, node):
         pos = parse_vector(node['location'])
         angle = parse_float(node['angle'])
-        incarn = Incarnator(angle, pos, name=node['id'])
+        incarn = self.wrap_object(Incarnator(angle, pos, name=node['id']))
         self.world.attach(incarn)
-    
+
     def parse_block(self, node):
         center = parse_vector(node['center'])
         size = parse_vector(node['size'], (4, 4, 4))
@@ -75,7 +95,7 @@ class Map (object):
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        block = self.world.attach(Block(size, color, mass, name=node['id']))
+        block = self.world.attach(self.wrap_object(Block(size, color, mass, name=node['id'])))
         block.move(center)
         block.rotate(yaw, pitch, roll)
 
@@ -89,24 +109,24 @@ class Map (object):
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        ramp = self.world.attach(Ramp(base, top, width, thickness, color, mass, name=node['id']))
+        ramp = self.world.attach(self.wrap_object(Ramp(base, top, width, thickness, color, mass, name=node['id'])))
         ramp.rotate_by(yaw, pitch, roll)
 
     def parse_ground(self, node):
         color = parse_color(node['color'], (1, 1, 1, 1))
         radius = parse_float(node['radius'], 1000)
-        self.world.attach(Ground(radius, color, name=(node['id'] or 'ground')))
-    
+        self.world.attach(self.wrap_object(Ground(radius, color, name=(node['id'] or 'ground'))))
+
     def parse_goody(self, node):
         model = node["model"]
         pos = parse_vector(node["location"])
         grenades = node["grenades"] or 0
         missles = node["missles"] or 0
         boosters = node["boosters"] or 0
-        respawn = node["respawn"] or 8 #default spawn time 
+        respawn = node["respawn"] or 8 #default spawn time
         spin = parse_vector(node['spin']) or Vec3(60,0,0)
-        goody = self.world.attach(Goody(pos, model, (grenades, missles, boosters), respawn, spin))    
-    
+        goody = self.world.attach(self.wrap_object(Goody(pos, model, (grenades, missles, boosters), respawn, spin)))
+
     def parse_dome(self, node):
         center = parse_vector(node['center'])
         radius = parse_float(node['radius'], 2.5)
@@ -115,7 +135,7 @@ class Map (object):
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        dome = self.world.attach(Dome(radius, color, mass, name=node['id']))
+        dome = self.world.attach(self.wrap_object(Dome(radius, color, mass, name=node['id'])))
         dome.move(center)
         dome.rotate(yaw, pitch, roll)
 

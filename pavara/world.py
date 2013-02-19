@@ -18,7 +18,18 @@ MAP_COLLIDE_BIT =   BitMask32.bit(0)
 SOLID_COLLIDE_BIT = BitMask32.bit(1)
 GHOST_COLLIDE_BIT = BitMask32.bit(2)
 
+
+class MetaWorldObject(type):
+    def __instancecheck__(self, cls):
+        if type.__instancecheck__(self, cls):
+            return True
+        elif hasattr(cls, 'effected'):
+            return isinstance(cls.effected, self)
+        return False
+
+
 class WorldObject (object):
+    __metaclass__ = MetaWorldObject
     """
     Base class for anything attached to a World.
     """
@@ -28,6 +39,7 @@ class WorldObject (object):
     collide_bits = NO_COLLISION_BITS
 
     def __init__(self, name=None):
+        self.__metaclass__.cls = type(self)
         self.name = name
         if not self.name:
             self.__class__.last_unique_id += 1
@@ -111,6 +123,40 @@ class PhysicalObject (WorldObject):
     def position(self):
         return self.node.get_pos()
 
+class Effect(object):
+    #__metaclass__ = MetaWorldObject
+
+    def __init__(self, effected):
+        self.effected = effected
+
+    def __setattr__(self, name, value):
+        if name in ['node']:
+            setattr(self.effected, name, value)
+        else:
+            object.__setattr__(self, name, value)
+
+    def __getattr__(self, name):
+        return getattr(self.effected, name)
+
+
+class Hologram(Effect):
+    collide_bits = NO_COLLISION_BITS
+
+class FreeSolid(Effect):
+
+    def __init__(self, effected, mass):
+        if mass > 0:
+            self.mass = mass
+        Effect.__init__(self, effected)
+        self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
+
+    def create_solid(self):
+        node = self.effected.create_solid()
+        node.set_mass(self.mass if self.mass > 0 else 1)
+        return node
+
+
+
 class Hector(PhysicalObject):
 
     collide_bits = SOLID_COLLIDE_BIT
@@ -140,7 +186,7 @@ class Hector(PhysicalObject):
         self.placing = False
         self.head_height = Vec3(0, 1.5, 0)
         self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
-        
+
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
@@ -222,7 +268,7 @@ class Hector(PhysicalObject):
                             y_return_head_int, y_return_left_int, y_return_right_int)
 
         self.return_seq = make_return_sequence()
-        
+
 
         def make_walk_sequence():
             walk_cycle_speed = .8
@@ -248,7 +294,7 @@ class Hector(PhysicalObject):
             left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(1, 0, motion)) for motion in top_motion]
             left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in mid_motion]
             left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(1, 2, motion)) for motion in bottom_motion]
-            
+
             return Sequence(
                             Parallel(right_top_forward[0], right_mid_forward[0], right_bottom_forward[0],
                                     left_top_forward[2], left_mid_forward[2], left_bottom_forward[2],
@@ -281,11 +327,11 @@ class Hector(PhysicalObject):
 
     def setup_shape(self, gnodepath, bone, pname):
         shape = BulletConvexHullShape()
-        
+
         gnode = gnodepath.node()
         geom = gnode.get_geom(0)
         shape.add_geom(geom)
-        
+
         node = BulletRigidBodyNode(self.name + pname)
         np = self.actor.attach_new_node(node)
         np.node().add_shape(shape)
@@ -385,7 +431,7 @@ class Hector(PhysicalObject):
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
             sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
 
-            
+
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
@@ -397,7 +443,7 @@ class Hector(PhysicalObject):
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
     #def crouch(self):
-    
+
     #def uncrouch(self):
 
 
@@ -411,8 +457,6 @@ class Block (PhysicalObject):
         self.size = size
         self.color = color
         self.mass = mass
-        if self.mass > 0.0:
-            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
 
     def create_node(self):
         return NodePath(make_box(self.color, (0, 0, 0), *self.size))
@@ -420,7 +464,6 @@ class Block (PhysicalObject):
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
         node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)))
-        node.set_mass(self.mass)
         return node
 
 class Dome (PhysicalObject):
@@ -432,10 +475,8 @@ class Dome (PhysicalObject):
         super(Dome, self).__init__(name)
         self.radius = radius
         self.color = color
-        self.mass = mass
-        if self.mass > 0.0:
-            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.geom = make_dome(self.color, self.radius, 8, 5)
+        self.mass = mass
 
     def create_node(self):
         return NodePath(self.geom)
@@ -445,7 +486,6 @@ class Dome (PhysicalObject):
         mesh = BulletConvexHullShape()
         mesh.add_geom(self.geom.get_geom(0))
         node.add_shape(mesh)
-        node.set_mass(self.mass)
         return node
 
 class Ground (PhysicalObject):
@@ -479,10 +519,8 @@ class Ramp (PhysicalObject):
         self.width = width
         self.thickness = thickness
         self.color = color
-        self.mass = mass
-        if self.mass > 0.0:
-            self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.length = (self.top - self.base).length()
+        self.mass = mass
 
     def create_node(self):
         return NodePath(make_box(self.color, (0, 0, 0), self.thickness, self.width, self.length))
@@ -490,7 +528,6 @@ class Ramp (PhysicalObject):
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
         node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
-        node.set_mass(self.mass)
         return node
 
     def attached(self):
@@ -552,7 +589,7 @@ class Sky (WorldObject):
     def set_scale(self, height):
         self.scale = height
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
-        
+
 class Incarnator (WorldObject):
     def __init__(self, angle, pos, name=None):
         super(Incarnator, self).__init__(name)
@@ -572,29 +609,29 @@ class Goody (PhysicalObject):
         self.geom = None
         self.active = True
         self.timeout = 0
-    
+
     def create_node(self):
         m = load_model('misc/rgbCube')
         m.set_scale(.5)
         m.set_hpr(45,45,45)
         return m
-            
+
     def create_solid(self):
         node = BulletGhostNode(self.name)
         node_shape = BulletSphereShape(.5)
         node.add_shape(node_shape)
         node.set_kinematic(True)
         return node
-    
+
     def attached(self):
         self.node.set_pos(self.pos)
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(GHOST_COLLIDE_BIT)
-    
+
     def update(self, dt):
         if not self.active:
-            self.timeout += dt 
+            self.timeout += dt
             if self.timeout > self.respawn:
                 self.active = True
                 self.node.show()
@@ -608,9 +645,9 @@ class Goody (PhysicalObject):
             if "Hector" in node_2.get_name():
                self.active = False
                self.node.hide()
-            
-        
-        
+
+
+
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
@@ -678,7 +715,7 @@ class World (object):
         # Let the object know it has been attached.
         obj.attached()
         return obj
-    
+
     def get_incarn(self):
         return random.choice(self.incarnators)
 
