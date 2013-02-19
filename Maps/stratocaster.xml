@@ -255,6 +255,31 @@
 	<block size="0.25,0.75,0.25" center="-24.25,20.375,-20.25" color="0.737,0.8,0.8"/>
 	<ramp base="-24.375,20.25,-14.5" top="-20.375,21.75,-14.5" width="12" color="0.533,0.643,0.639"/>
 
+	<!-- OUTER WALL ALCOVE REFINEMENTS -->
+	<block size="4,10,5.657" center="7.415,15,-35.415" yaw="45" color="0.737,0.8,0.8"/>
+	<block size="4,0,5.657" center="7.415,9.999,-35.415" yaw="45" color="1,1,1"/>
+	<block size="6,0,6" center="9,9.999,-37" color="1,1,1"/>
+	<block size="0,4,5.657" center="6,8,-38" yaw="-45" color="1,1,1"/>
+	<block size="0,4,5.657" center="10,8,-34" yaw="-45" color="1,1,1"/>
+
+	<block size="5.657,10,4" center="35.415,15,7.415" yaw="45" color="0.737,0.8,0.8"/>
+	<block size="5.657,0,4" center="35.415,9.999,7.415" yaw="45" color="1,1,1"/>
+	<block size="6,0,6" center="37,9.999,9" color="1,1,1"/>
+	<block size="5.657,4,0" center="38,8,6" yaw="-45" color="1,1,1"/>
+	<block size="5.657,4,0" center="34,8,10" yaw="-45" color="1,1,1"/>
+
+	<block size="4,10,5.657" center="-7.415,15,35.415" yaw="45" color="0.737,0.8,0.8"/>
+	<block size="4,0,5.657" center="-7.415,9.999,35.415" yaw="45" color="1,1,1"/>
+	<block size="6,0,6" center="-9,9.999,37" color="1,1,1"/>
+	<block size="0,4,5.657" center="-6,8,38" yaw="-45" color="1,1,1"/>
+	<block size="0,4,5.657" center="-10,8,34" yaw="-45" color="1,1,1"/>
+
+	<block size="5.657,10,4" center="-35.415,15,-7.415" yaw="45" color="0.737,0.8,0.8"/>
+	<block size="5.657,0,4" center="-35.415,9.999,-7.415" yaw="45" color="1,1,1"/>
+	<block size="6,0,6" center="-37,9.999,-9" color="1,1,1"/>
+	<block size="5.657,4,0" center="-38,8,-6" yaw="-45" color="1,1,1"/>
+	<block size="5.657,4,0" center="-34,8,-10" yaw="-45" color="1,1,1"/>
+
 	<!-- GOODIES -->
 	<goody location="0,6,0" grenades="8" missiles="4" respawn="21.875" model="AvaraA" spin="80,0,0"/>
 	<goody location="-8,6,-14" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
