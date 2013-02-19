@@ -17,7 +17,11 @@
 	<teleporter location="0,20,0" group="recenter" disorient="false" model=""/>
 	<teleporter location="0,-30,0" activeRadius="150" deadRadius="115" destination="recenter" disorient="false" model=""/>
 
-	<!-- TELEPORTERS -->
+	<!-- ALCOVE TELEPORTERS -->
+	<teleporter location="5.5,6.01,-37.5" group="alcove" destination="recenter" disorient="false" model="Lotus" scale="0.3"/>
+	<teleporter location="37.5,6.01,5.5" group="alcove" destination="recenter" disorient="false" model="Lotus" scale="0.3"/>
+	<teleporter location="-5.5,6.01,37.5" group="alcove" destination="recenter" disorient="false" model="Lotus" scale="0.3"/>
+	<teleporter location="-37.5,6.01,-5.5" group="alcove" destination="recenter" disorient="false" model="Lotus" scale="0.3"/>
 
 	<!-- CENTER -->
 	<block size="16,4,16" center="0,2,0" color="1,1,1"/>
@@ -234,7 +238,7 @@
 	<block size="8,20,4" center="-28,10,-10" color="0.737,0.8,0.8"/>
 	<block size="4,20,24" center="-26,10,-24" color="0.737,0.8,0.8"/>
 
-	<!-- OUTER WALL OVERHANG -->
+	<!-- OUTER WALL OVERHANGS -->
 	<block size="0.25,0.75,0.25" center="8.75,20.375,-24.25" color="0.737,0.8,0.8"/>
 	<block size="0.25,0.75,0.25" center="20.25,20.375,-24.25" color="0.737,0.8,0.8"/>
 	<ramp base="14.5,20.25,-24.375" top="14.5,21.75,-20.375" width="12" color="0.533,0.643,0.639"/>
@@ -252,4 +256,13 @@
 	<ramp base="-24.375,20.25,-14.5" top="-20.375,21.75,-14.5" width="12" color="0.533,0.643,0.639"/>
 
 	<!-- GOODIES -->
+	<goody location="0,6,0" grenades="8" missiles="4" respawn="21.875" model="AvaraA" spin="80,0,0"/>
+	<goody location="-8,6,-14" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="14,6,-8" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="8,6,14" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="-14,6,8" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="-19.5,16,-10" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+	<goody location="10,16,-19.5" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+	<goody location="19.5,16,10" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+	<goody location="-10,16,19.5" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
 </map>
