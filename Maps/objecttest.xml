@@ -1,0 +1,49 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="objecttest" debug="false" tagline="Testing for holograms and stuff like that" author="jdawg" description="">
+	<sky color="0.812,0.953,0.859" horizon="0.780,0.780,0.635">
+		<celestial azimuth="10" elevation="20" color="1,1,1" intensity="0.8" visible="true"/>
+		<celestial azimuth="200" elevation="20" color="1,1,1" intensity="0.3" visible="false"/>
+	</sky>
+	<ground color="0.231,0.384,0.282"/>
+
+	<!-- INCARNATORS -->
+	<incarnator location="2,20,-42" angle="180"/>
+	<incarnator location="-2,20,42" angle="0"/>
+	<incarnator location="42,20,-30" angle="225"/>
+	<incarnator location="-42,20,30" angle="45"/>
+	<incarnator location="34,20,30" angle="315"/>
+	<incarnator location="-34,20,-30" angle="135"/>
+	<incarnator location="46,20,2" angle="270"/>
+	<incarnator location="-46,10,-2" angle="90"/>
+
+	<!-- BUBBLE TELEPORTER -->
+	<teleporter location="0,17,0" group="recenter" disorient="false" model=""/>
+	<teleporter location="0,-30,0" activeRadius="200" deadRadius="110" destination="recenter" disorient="false" model=""/>
+
+	<!-- TELEPORTERS -->
+	<teleporter location="38,17,10" group="pillar" disorient="false" model=""/>
+	<teleporter location="-38,17,-10" group="pillar" disorient="false" model=""/>
+
+	<block size="12,4,20" center="0,2,0" color="0.231,0.384,0.282"/>
+    <ramp base="0,0,-40" top="0,25,-15" width="12" color="1,1,0.863"/>
+	<hologram>
+        <ramp base="0,0,-42" top="0,25,-17" width="12" color="1,1,0.863"/>
+        <block size="12,4,20" center="16,2,0" color="0.231,0.384,0.282"/>
+        <dome center="-16,0,0" radius="8" color="0.812,0.953,0.859" />
+    	<block size="2,2,2" center="0,20,-30" color="0.231,0.384,0.282"/>
+    </hologram>
+	<freesolid mass="1">
+        <ramp base="0,0,-30" top="0,25,-15" width="12" color="1,1,0.863"/>
+    	<block size="2,2,2" center="0,30,-30" color="0.231,0.384,0.282"/>
+    	<block size="2,2,2" center="0,20,0" color="0.231,0.384,0.282"/>
+        <block size="2,4,2" center="16,20,0" color="0.231,0.384,0.282"/>
+        <dome center="-11,20,0" radius="6" color="0.812,0.953,0.859" />
+    </freesolid>
+    <!-- lawl -->
+	<hologram><freesolid mass="2">
+        <ramp base="0,0,-44" top="0,40,-18" width="12" color="1,1,0.863"/>
+    	<block size="2,2,2" center="3,50,-30" color="0.231,0.384,0.282"/>
+    	<block size="2,2,2" center="3,20,0" color="0.231,0.384,0.282"/>
+    	<block size="2,2,2" center="0,20,20" color="0.231,0.384,0.282"/>
+    </freesolid></hologram>
+</map>

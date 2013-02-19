@@ -16,7 +16,7 @@ class Pavara (ShowBase):
         base.camLens.setFov(50)
         # init panda3d crap
         self.initP3D()
-        maps = load_maps('Maps/stratocaster.xml', self.cam)
+        maps = load_maps('Maps/objecttest.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
