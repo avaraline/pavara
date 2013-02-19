@@ -65,6 +65,12 @@ class Map (object):
             if hasattr(self, func_name):
                 getattr(self, func_name)(child)
 
+    def parse_transparent(self, node):
+        alpha = parse_float(node['alpha'])
+        self.effects.append(lambda effected: Transparent(effected, alpha))
+        self.process_children(node)
+        self.effects.pop()
+
     def parse_freesolid(self, node):
         mass = parse_float(node['mass'])
         self.effects.append(lambda effected: FreeSolid(effected, mass))
