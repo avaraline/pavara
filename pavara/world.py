@@ -686,7 +686,7 @@ class World (object):
         return node
 
     def attach(self, obj):
-        assert isinstance(obj, WorldObject)
+        #assert isinstance(obj, WorldObject)
         assert obj.name not in self.objects
         obj.world = self
         if isinstance(obj, Incarnator):
