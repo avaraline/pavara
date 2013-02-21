@@ -39,7 +39,6 @@ class WorldObject (object):
     collide_bits = NO_COLLISION_BITS
 
     def __init__(self, name=None):
-        self.__metaclass__.cls = type(self)
         self.name = name
         if not self.name:
             self.__class__.last_unique_id += 1
@@ -124,7 +123,7 @@ class PhysicalObject (WorldObject):
         return self.node.get_pos()
 
 class Effect(object):
-    #__metaclass__ = MetaWorldObject
+    __metaclass__ = MetaWorldObject
 
     def __init__(self, effected):
         self.effected = effected
