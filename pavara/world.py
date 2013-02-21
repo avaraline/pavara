@@ -113,17 +113,36 @@ class PhysicalObject (WorldObject):
         return self.node.get_pos()
 
 class Effect(object):
-
+    """Effects wrap objects like boxes and ramps and other effects and change
+       behavior of the wrapped object. Subclasses of this class automatically
+       delegate anything not implemented in the effect to the object being
+       wrapped."""
     def __init__(self, effected):
-        self.effected = effected
+        object.__setattr__(self, 'effected', effected)
 
     def __setattr__(self, name, value):
-        if name in ['node']:
-            setattr(self.effected, name, value)
-        else:
-            object.__setattr__(self, name, value)
+        """Attributes should be assigned as deeply in the effect chain as
+           possible, so go all the way down the effect chain, and start coming
+           back until the first object to have the attribute is found. Set it
+           and return. If nothing is found, set it in this object."""
+        objs = []
+        obj = self
+
+        while hasattr(obj, 'effected'):
+            obj = obj.effected
+            objs.append(obj)
+
+        while objs:
+            obj = objs.pop()
+            if hasattr(obj, name):
+                object.__setattr__(obj, name, value)
+                return
+        object.__setattr__(self, name, value)
 
     def __getattr__(self, name):
+        """Python only calls this function if the attribute is not defined on
+           the object. This makes it so method calls are automatically passed
+           down the effect chain if they are not defined in the effect object"""
         return getattr(self.effected, name)
 
 
