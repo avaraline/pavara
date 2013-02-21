@@ -19,17 +19,7 @@ SOLID_COLLIDE_BIT = BitMask32.bit(1)
 GHOST_COLLIDE_BIT = BitMask32.bit(2)
 
 
-class MetaWorldObject(type):
-    def __instancecheck__(self, cls):
-        if type.__instancecheck__(self, cls):
-            return True
-        elif hasattr(cls, 'effected'):
-            return isinstance(cls.effected, self)
-        return False
-
-
 class WorldObject (object):
-    __metaclass__ = MetaWorldObject
     """
     Base class for anything attached to a World.
     """
@@ -123,7 +113,6 @@ class PhysicalObject (WorldObject):
         return self.node.get_pos()
 
 class Effect(object):
-    __metaclass__ = MetaWorldObject
 
     def __init__(self, effected):
         self.effected = effected
@@ -695,12 +684,12 @@ class World (object):
         return node
 
     def attach(self, obj):
-        assert isinstance(obj, WorldObject)
+        assert hasattr(obj, 'world') and hasattr(obj, 'name')
         assert obj.name not in self.objects
         obj.world = self
-        if isinstance(obj, Incarnator):
+        if obj.name.startswith('Incarnator'):
             self.incarnators.append(obj)
-        if isinstance(obj, PhysicalObject):
+        if hasattr(obj, 'create_node') and hasattr(obj, 'create_solid'):
             # Let each object define it's own NodePath, then reparent them.
             obj.node = obj.create_node()
             obj.solid = obj.create_solid()
