@@ -1,51 +1,64 @@
 <?xml version="1.0" standalone="yes" ?>
 <map name="Bwadi" tagline="A simple, open level with plenty of ammunition." author="Malkavian" description="Does anyone else think about what it would be like to watch your children grow up?">
-	<sky color="0,0.6,0.6" horizon="0.2,0.4,0.4" />
-	<ground color="0,0.2,0.2" />
+	<sky color="0,0.6,0.6" horizon="0.2,0.4,0.4"/>
+	<ground color="0,0.2,0.2"/>
 
-	<!-- incarnators -->
-	<incarnator location="28,30,-28" angle="45" />
-	<incarnator location="-28,30,28" angle="225" />
-	<incarnator location="-34,30,-18" angle="135" />
-	<incarnator location="34,30,18" angle="315" />
-	<incarnator location="-6.5,30,-42.5" angle="135" />
-	<incarnator location="6.5,30,42.5" angle="315" />
+	<!-- INCARNATORS -->
+	<incarnator location="28,30,-28" angle="45"/>
+	<incarnator location="-28,30,28" angle="225"/>
+	<incarnator location="-34,30,-18" angle="135"/>
+	<incarnator location="34,30,18" angle="315"/>
+	<incarnator location="-6.5,30,-42.5" angle="135"/>
+	<incarnator location="6.5,30,42.5" angle="315"/>
 
-	<!-- center -->
-	<block size="16,2,16" center="0,1,0" color="0.27,0.27,0.27" />
-	<block size="8,2,8" center="0,3,0" color="0.33,0.33,0.33" />
+	<!-- BUBBLE TELEPORTER -->
+	<teleporter location="0,30,0" group="recenter" model=""/>
+	<teleporter location="0,-30,0" activeRadius="135" deadRadius="110" destination="recenter" model=""/>
 
-	<!-- four blocks -->
-	<block size="4,2.5,4" center="18,1.25,-6" color="0.27,0.27,0.27" />
-	<block size="4,2.5,4" center="6,1.25,-18" color="0.27,0.27,0.27" />
-	<block size="4,2.5,4" center="-6,1.25,18" color="0.27,0.27,0.27" />
-	<block size="4,2.5,4" center="-18,1.25,6" color="0.27,0.27,0.27" />
+	<!-- CENTER -->
+	<block size="16,2,16" center="0,1,0" color="0.27,0.27,0.27"/>
+	<block size="8,2,8" center="0,3,0" color="0.33,0.33,0.33"/>
 
-	<!-- grenade structures -->
-	<block size="4,2.5,16" center="18,1.25,-24" color="0.27,0.27,0.27" />
-	<block size="12,2.5,4" center="26,1.25,-18" color="0.27,0.27,0.27" />
-	<block size="4,2.5,16" center="-18,1.25,24" color="0.27,0.27,0.27" />
-	<block size="12,2.5,4" center="-26,1.25,18" color="0.27,0.27,0.27" />
+	<!-- FOUR BLOCKS -->
+	<block size="4,2.5,4" center="18,1.25,-6" color="0.27,0.27,0.27"/>
+	<block size="4,2.5,4" center="6,1.25,-18" color="0.27,0.27,0.27"/>
+	<block size="4,2.5,4" center="-6,1.25,18" color="0.27,0.27,0.27"/>
+	<block size="4,2.5,4" center="-18,1.25,6" color="0.27,0.27,0.27"/>
 
-	<!-- missile structures -->
-	<block size="4,4.5,24" center="6,2.25,-40" color="0.27,0.27,0.27" />
-	<block size="20,4.5,4" center="-6,2.25,-30" color="0.27,0.27,0.27" />
-	<block size="6,4.5,6" center="1,2.25,-35" color="0.27,0.27,0.27" />
-	<block size="4,4.5,24" center="-6,2.25,40" color="0.27,0.27,0.27" />
-	<block size="20,4.5,4" center="6,2.25,30" color="0.27,0.27,0.27" />
-	<block size="6,4.5,6" center="-1,2.25,35" color="0.27,0.27,0.27" />
-	<ramp base="14,0,35" top="2,4.5,35" width="6" thickness="0.25" color="0,0,0.2" />
-	<ramp base="-14,0,-35" top="-2,4.5,-35" width="6" thickness="0.25" color="0,0,0.2" />
-	<ramp base="-1,0,50" top="-1,4.5,38" width="6" thickness="0.25" color="0,0,0.2" />
-	<ramp base="1,0,-50" top="1,4.5,-38" width="6" thickness="0.25" color="0,0,0.2" />
+	<!-- GRENADE STRUCTURES -->
+	<block size="4,2.5,16" center="18,1.25,-24" color="0.27,0.27,0.27"/>
+	<block size="12,2.5,4" center="26,1.25,-18" color="0.27,0.27,0.27"/>
+	<block size="4,2.5,16" center="-18,1.25,24" color="0.27,0.27,0.27"/>
+	<block size="12,2.5,4" center="-26,1.25,18" color="0.27,0.27,0.27"/>
 
-	<!-- grenade "pits" -->
-	<block size="4,2,16" center="-22,1,-12" color="0.27,0.27,0.27" />
-	<block size="4,2,16" center="-34,1,-12" color="0.27,0.27,0.27" />
-	<block size="8,2,4" center="-28,1,-6" color="0.27,0.27,0.27" />
-	<block size="8,2,4" center="-28,1,-18" color="0.27,0.27,0.27" />
-	<block size="4,2,16" center="22,1,12" color="0.27,0.27,0.27" />
-	<block size="4,2,16" center="34,1,12" color="0.27,0.27,0.27" />
-	<block size="8,2,4" center="28,1,6" color="0.27,0.27,0.27" />
-	<block size="8,2,4" center="28,1,18" color="0.27,0.27,0.27" />
+	<!-- MISSILE STRUCTURES -->
+	<block size="4,4.5,24" center="6,2.25,-40" color="0.27,0.27,0.27"/>
+	<block size="20,4.5,4" center="-6,2.25,-30" color="0.27,0.27,0.27"/>
+	<block size="6,4.5,6" center="1,2.25,-35" color="0.27,0.27,0.27"/>
+	<block size="4,4.5,24" center="-6,2.25,40" color="0.27,0.27,0.27"/>
+	<block size="20,4.5,4" center="6,2.25,30" color="0.27,0.27,0.27"/>
+	<block size="6,4.5,6" center="-1,2.25,35" color="0.27,0.27,0.27"/>
+	<ramp base="14,0,35" top="2,4.5,35" width="6" thickness="0.25" color="0,0,0.2"/>
+	<ramp base="-14,0,-35" top="-2,4.5,-35" width="6" thickness="0.25" color="0,0,0.2"/>
+	<ramp base="-1,0,50" top="-1,4.5,38" width="6" thickness="0.25" color="0,0,0.2"/>
+	<ramp base="1,0,-50" top="1,4.5,-38" width="6" thickness="0.25" color="0,0,0.2"/>
+
+	<!-- GRENADE "PITS" -->
+	<block size="4,2,16" center="-22,1,-12" color="0.27,0.27,0.27"/>
+	<block size="4,2,16" center="-34,1,-12" color="0.27,0.27,0.27"/>
+	<block size="8,2,4" center="-28,1,-6" color="0.27,0.27,0.27"/>
+	<block size="8,2,4" center="-28,1,-18" color="0.27,0.27,0.27"/>
+	<block size="4,2,16" center="22,1,12" color="0.27,0.27,0.27"/>
+	<block size="4,2,16" center="34,1,12" color="0.27,0.27,0.27"/>
+	<block size="8,2,4" center="28,1,6" color="0.27,0.27,0.27"/>
+	<block size="8,2,4" center="28,1,18" color="0.27,0.27,0.27"/>
+
+	<!-- GOODIES -->
+	<goody location="0,6,0" grenades="8" missiles="4" respawn="21.875" model="StandardPill" spin="256,0,0"/>
+	<goody location="-24,1.75,24" grenades="4" respawn="18.75" model="Grenade" spin="32,0,0"/>
+	<goody location="24,1.75,-24" grenades="4" respawn="18.75" model="Grenade" spin="32,0,0"/>
+	<goody location="-28,1.75,-12" grenades="4" respawn="15.625" model="Grenade" spin="32,0,0"/>
+	<goody location="28,1.75,12" grenades="4" respawn="15.625" model="Grenade" spin="32,0,0"/>
+	<goody location="-1,6.25,35" missiles="4" respawn="12.5" model="Missile" spin="32,0,0"/>
+	<goody location="1,6.25,-35" missiles="4" respawn="12.5" model="Missile" spin="32,0,0"/>
 </map>
