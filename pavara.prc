@@ -4,5 +4,5 @@ win-size 1280	720
 window-title Pavara
 #window-type none
 show-frame-rate-meter #t
-sync-video 0
-want-pstats 1
+sync-video 1
+#want-pstats 1
