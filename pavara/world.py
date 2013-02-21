@@ -112,7 +112,7 @@ class PhysicalObject (WorldObject):
     def position(self):
         return self.node.get_pos()
 
-class Effect(object):
+class Effect (object):
     """Effects wrap objects like boxes and ramps and other effects and change
        behavior of the wrapped object. Subclasses of this class automatically
        delegate anything not implemented in the effect to the object being
@@ -146,10 +146,10 @@ class Effect(object):
         return getattr(self.effected, name)
 
 
-class Hologram(Effect):
+class Hologram (Effect):
     collide_bits = NO_COLLISION_BITS
 
-class FreeSolid(Effect):
+class FreeSolid (Effect):
 
     def __init__(self, effected, mass):
         if mass > 0:
@@ -163,7 +163,7 @@ class FreeSolid(Effect):
         return node
 
 
-class Transparent(Effect):
+class Transparent (Effect):
 
     def __init__(self, effected, alpha):
         Effect.__init__(self, effected)
@@ -176,13 +176,14 @@ class Transparent(Effect):
         return node
 
 
-class Hector(PhysicalObject):
+class Hector (PhysicalObject):
 
     collide_bits = SOLID_COLLIDE_BIT
 
-    def __init__(self):
+    def __init__(self, incarnator):
         super(Hector, self).__init__()
 
+        self.spawn_point = incarnator
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
         self.xz_velocity = Vec3(0, 0, 0)
@@ -330,6 +331,8 @@ class Hector(PhysicalObject):
                            )
 
         self.walk_forward_seq = make_walk_sequence()
+        self.actor.set_pos(*self.spawn_point.pos)
+        self.actor.set_h(self.spawn_point.angle)
         return self.actor
 
     def create_solid(self):

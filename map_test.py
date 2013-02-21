@@ -23,14 +23,11 @@ class Pavara (ShowBase):
         self.map.world.render.flatten_strong()
 
         # Testing physical hector.
-
-
-        self.hector = self.map.world.attach(Hector())
-        self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4), "barrel_trim_color": Vec3(.8,.9,.6),
-                         "visor_color": Vec3(.3,.6,1), "body_color":Vec3(.2,.5,.3)})
         incarn = self.map.world.get_incarn()
-        self.hector.move(incarn.pos)
-        self.hector.actor.set_h(incarn.angle)
+        self.hector = self.map.world.attach(Hector(incarn))
+        self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4),
+            "barrel_trim_color": Vec3(.8,.9,.6), "visor_color": Vec3(.3,.6,1),
+            "body_color":Vec3(.2,.5,.3)})
 
         self.setupInput()
 
