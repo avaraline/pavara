@@ -7,14 +7,14 @@
 	<ground color="0.07,0.07,0.165"/>
 
 	<!-- INCARNATORS -->
-	<incarnator location="-40,10,0" angle="90"/>
-	<incarnator location="40,10,0" angle="270"/>
-	<incarnator location="0,10,40" angle="0"/>
-	<incarnator location="0,10,-40" angle="180"/>
-	<incarnator location="-38,28,-38" angle="135"/>
-	<incarnator location="38,28,38" angle="315"/>
-	<incarnator location="-44,10,44" angle="45"/>
-	<incarnator location="44,10,-44" angle="225"/>
+	<incarnator location="-40,10,0" heading="90"/>
+	<incarnator location="40,10,0" heading="270"/>
+	<incarnator location="0,10,40" heading="0"/>
+	<incarnator location="0,10,-40" heading="180"/>
+	<incarnator location="-38,28,-38" heading="135"/>
+	<incarnator location="38,28,38" heading="315"/>
+	<incarnator location="-44,10,44" heading="45"/>
+	<incarnator location="44,10,-44" heading="225"/>
 
 	<!-- CENTER -->
 	<block size="6,6,6" center="-3,3,-3" color="0.86,0.86,0.88"/>

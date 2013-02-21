@@ -89,8 +89,8 @@ class Map (object):
 
     def parse_incarnator(self, node):
         pos = parse_vector(node['location'])
-        angle = parse_float(node['angle'])
-        incarn = self.wrap_object(Incarnator(angle, pos, name=node['id']))
+        heading = parse_float(node['heading'])
+        incarn = self.wrap_object(Incarnator(pos, heading, name=node['id']))
         self.world.attach(incarn)
 
     def parse_block(self, node):

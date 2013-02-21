@@ -332,7 +332,7 @@ class Hector (PhysicalObject):
 
         self.walk_forward_seq = make_walk_sequence()
         self.actor.set_pos(*self.spawn_point.pos)
-        self.actor.set_h(self.spawn_point.angle)
+        self.actor.look_at(*self.spawn_point.heading)
         return self.actor
 
     def create_solid(self):
@@ -613,10 +613,10 @@ class Sky (WorldObject):
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
 
 class Incarnator (WorldObject):
-    def __init__(self, angle, pos, name=None):
+    def __init__(self, pos, heading, name=None):
         super(Incarnator, self).__init__(name)
-        self.pos = pos
-        self.angle = angle
+        self.pos = Vec3(*pos)
+        self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
 
 class Goody (PhysicalObject):
     def __init__(self, pos, model, items, respawn, spin, name=None):
