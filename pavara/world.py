@@ -155,6 +155,18 @@ class FreeSolid(Effect):
         return node
 
 
+class Transparent(Effect):
+
+    def __init__(self, effected, alpha):
+        Effect.__init__(self, effected)
+        self.alpha = alpha
+
+    def create_node(self):
+        node = self.effected.create_node()
+        node.set_transparency(TransparencyAttrib.MAlpha)
+        node.setAlphaScale(self.alpha)
+        return node
+
 
 class Hector(PhysicalObject):
 
