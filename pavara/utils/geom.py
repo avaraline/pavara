@@ -1,6 +1,6 @@
 from math import pi, hypot, sin, cos, radians, acos
 from panda3d.core import Vec3, Geom, GeomNode, GeomVertexFormat, GeomVertexWriter, GeomVertexData
-from panda3d.core import GeomTriangles, LRotationf, Point3, LOrientationf, AmbientLight, VBase4
+from panda3d.core import GeomTriangles, LRotationf, LVector3f, Point3, LOrientationf, AmbientLight, VBase4
 from panda3d.core import DirectionalLight, Vec4, Plane, Shader
 from panda3d.core import CompassEffect, TransparencyAttrib
 import random
@@ -75,21 +75,26 @@ class GeomBuilder(object):
 
         return self
 
-    def add_block(self, color, center, size, ypr=None):
+    def add_block(self, color, center, size, rot=None):
+        rot2 = rot
+        rot = LRotationf(0, 0, 0) if rot is None else rot
         x_shift = size[0] / 2.0
         y_shift = size[1] / 2.0
         z_shift = size[2] / 2.0
 
         vertices = (
-            Point3(center[0] - x_shift, center[1] + y_shift, center[2] + z_shift),
-            Point3(center[0] - x_shift, center[1] - y_shift, center[2] + z_shift),
-            Point3(center[0] + x_shift, center[1] - y_shift, center[2] + z_shift),
-            Point3(center[0] + x_shift, center[1] + y_shift, center[2] + z_shift),
-            Point3(center[0] + x_shift, center[1] + y_shift, center[2] - z_shift),
-            Point3(center[0] + x_shift, center[1] - y_shift, center[2] - z_shift),
-            Point3(center[0] - x_shift, center[1] - y_shift, center[2] - z_shift),
-            Point3(center[0] - x_shift, center[1] + y_shift, center[2] - z_shift),
+            Point3(-x_shift, +y_shift, +z_shift),
+            Point3(-x_shift, -y_shift, +z_shift),
+            Point3(+x_shift, -y_shift, +z_shift),
+            Point3(+x_shift, +y_shift, +z_shift),
+            Point3(+x_shift, +y_shift, -z_shift),
+            Point3(+x_shift, -y_shift, -z_shift),
+            Point3(-x_shift, -y_shift, -z_shift),
+            Point3(-x_shift, +y_shift, -z_shift),
         )
+        #if rot2:
+        #    rot = rot * LRotationf(0, 45, 0)
+        vertices = [rot.xform(vertex) + LVector3f(*center) for vertex in vertices]
 
         faces = (
             [vertices[0], vertices[1], vertices[2], vertices[3]],
@@ -117,7 +122,10 @@ class GeomBuilder(object):
         return self
 
 
-    def add_dome(colorf, radius, samples, planes):
+    def add_dome(self, colorf, center, radius, samples, planes, rot=None):
+        if not rot:
+            rot = LRotationf()
+        center = Vec3(*center)
         two_pi = pi * 2
         half_pi = pi / 2
         azimuths = [(two_pi * i) / samples for i in range(samples + 1)]
@@ -130,10 +138,18 @@ class GeomBuilder(object):
                 x2, y2, z2 = to_cartesian(azimuths[j], elevations[i + 1], radius)
                 x3, y3, z3 = to_cartesian(azimuths[j + 1], elevations[i + 1], radius)
                 x4, y4, z4 = to_cartesian(azimuths[j + 1], elevations[i], radius)
-                poly.points.append(Point3(x1, y1, z1))
-                poly.points.append(Point3(x2, y2, z2))
-                poly.points.append(Point3(x3, y3, z3))
-                poly.points.append(Point3(x4, y4, z4))
+                p = Point3(x1, y1, z1)
+                p = rot.xform(p) + center
+                poly.points.append(p)
+                p = Point3(x2, y2, z2)
+                p = rot.xform(p) + center
+                poly.points.append(p)
+                p = Point3(x3, y3, z3)
+                p = rot.xform(p) + center
+                poly.points.append(p)
+                p = Point3(x4, y4, z4)
+                p = rot.xform(p) + center
+                poly.points.append(p)
                 normal = poly.get_normal()
                 for point in poly.points:
                     self.writer.add_vertex(point, normal, colorf, (0.0, 1.0))

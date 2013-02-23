@@ -126,7 +126,10 @@ class CompositeObject (PhysicalObject):
         return NodePath(composite_geom.get_geom_node())
 
     def create_solid(self):
-        pass
+        node = BulletRigidBodyNode(self.name)
+        for obj in self.objects:
+            obj.add_solid(node)
+        return node
 
     def attach(self, obj):
         self.objects.append(obj)
@@ -493,13 +496,13 @@ class Block (PhysicalObject):
     A block. Blocks with non-zero mass will be treated as freesolids.
     """
 
-    def __init__(self, size, color, mass, center, ypr, name=None):
+    def __init__(self, size, color, mass, center, hpr, name=None):
         super(Block, self).__init__(name)
         self.size = size
         self.color = color
         self.mass = mass
         self.center = center
-        self.ypr = ypr
+        self.hpr = hpr
 
     def create_node(self):
         return NodePath(GeomBuilder('block').add_block(self.color, (0, 0, 0), self.size).get_geom_node())
@@ -509,28 +512,33 @@ class Block (PhysicalObject):
         node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)))
         return node
 
+    def add_solid(self, node):
+        node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)), TransformState.make_pos_hpr(Point3(*self.center), self.hpr))
+
     def add_to(self, geom_builder):
-        geom_builder.add_block(self.color, self.center, self.size)
+        rot = LRotationf()
+        rot.set_hpr(self.hpr)
+        geom_builder.add_block(self.color, self.center, self.size, rot)
 
     def attached(self):
         self.move(self.center)
-        self.rotate(*self.ypr)
+        self.rotate(*self.hpr)
 
 class Dome (PhysicalObject):
     """
     A dome.
     """
 
-    def __init__(self, radius, color, mass, center, ypr, name=None):
+    def __init__(self, radius, color, mass, center, hpr, name=None):
         super(Dome, self).__init__(name)
         self.radius = radius
         self.color = color
         self.mass = mass
         self.center = center
-        self.ypr = ypr
+        self.hpr = hpr
 
     def create_node(self):
-        self.geom = GeomBuilder().add_dome(self.color, self.radius, 8, 5).get_geom_node()
+        self.geom = GeomBuilder().add_dome(self.color, (0, 0, 0), self.radius, 8, 5).get_geom_node()
         return NodePath(self.geom)
 
     def create_solid(self):
@@ -540,12 +548,19 @@ class Dome (PhysicalObject):
         node.add_shape(mesh)
         return node
 
+    def add_solid(self, node):
+        mesh = BulletConvexHullShape()
+        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, 8, 5).get_geom())
+        node.add_shape(mesh)
+        return node
+
     def add_to(self, geom_builder):
-        geom_builder.add_dome(self.color, self.radius, 8, 5)
+        rot = LRotationf(*self.hpr)
+        geom_builder.add_dome(self.color, self.center, self.radius, 8, 5, rot)
 
     def attached(self):
         self.move(self.center)
-        self.rotate_by(*self.ypr)
+        self.rotate_by(*self.hpr)
 
 class Ground (PhysicalObject):
     """
@@ -571,7 +586,7 @@ class Ramp (PhysicalObject):
     A ramp. Basically a block that is rotated, and specified differently in XML. Should maybe be a Block subclass?
     """
 
-    def __init__(self, base, top, width, thickness, color, mass, ypr, name=None):
+    def __init__(self, base, top, width, thickness, color, mass, hpr, name=None):
         super(Ramp, self).__init__(name)
         self.base = Point3(*base)
         self.top = Point3(*top)
@@ -580,7 +595,16 @@ class Ramp (PhysicalObject):
         self.color = color
         self.length = (self.top - self.base).length()
         self.mass = mass
-        self.ypr = ypr
+        self.hpr = hpr
+        v1 = self.top - self.base
+        if self.base.get_x() != self.top.get_x():
+            p3 = Point3(self.top.get_x()+100, self.top.get_y(), self.top.get_z())
+        else:
+            p3 = Point3(self.top.get_x(), self.top.get_y(), self.top.get_z() + 100)
+        v2 = self.top - p3
+        self.up = v1.cross(v2)
+        self.up.normalize()
+        self.midpoint = Point3((self.base + self.top) / 2.0)
 
     def create_node(self):
         return NodePath(GeomBuilder('ramp').add_block(self.color, (0, 0, 0), (self.thickness, self.width, self.length)).get_geom_node())
@@ -590,23 +614,30 @@ class Ramp (PhysicalObject):
         node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
         return node
 
+    def add_solid(self, node):
+        node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)), TransformState.make_pos_hpr(Point3(*self.midpoint), self.hpr))
+
     def add_to(self, geom_builder):
-        pass
+        # honestly i don't understand this at all
+        diff = self.top - self.base
+        if diff.get_z() == 0:
+            vec2 = diff.get_xy()
+            vec2 = Vec2(abs(diff.get_x()), diff.get_y())
+            vec1 = Vec2(1, 0)
+        else:
+            vec1 = diff.get_yz()
+            vec1 = Vec2(diff.get_y(), abs(diff.get_z()))
+            vec2 = Vec2(0, -1)
+        rot = LRotation(diff.get_xz().signedAngleDeg(Vec2(0, -1)), (vec1.signedAngleDeg(vec2) ), 90)
+        rot = rot * LRotation(*self.hpr)
+        self.hpr = rot.get_hpr()
+        geom_builder.add_block(self.color, self.midpoint, (self.thickness, self.width, self.length), rot)
 
     def attached(self):
         # Do the block rotation after we've been attached (i.e. have a NodePath), so we can use node.look_at.
-        v1 = self.top - self.base
-        if self.base.get_x() != self.top.get_x():
-            p3 = Point3(self.top.get_x()+100, self.top.get_y(), self.top.get_z())
-        else:
-            p3 = Point3(self.top.get_x(), self.top.get_y(), self.top.get_z() + 100)
-        v2 = self.top - p3
-        up = v1.cross(v2)
-        up.normalize()
-        midpoint = Point3((self.base + self.top) / 2.0)
-        self.move(midpoint)
-        self.node.look_at(self.top, up)
-        self.rotate_by(*self.ypr)
+        self.move(self.midpoint)
+        self.node.look_at(self.top, self.up)
+        self.rotate_by(*self.hpr)
 
 class Sky (WorldObject):
     """
@@ -768,7 +799,6 @@ class World (object):
             if obj.node:
                 if obj.solid:
                     # If this is a solid visible object, create a new physics node and reparent the visual node to that.
-                    print obj.solid
                     phys_node = self.render.attach_new_node(obj.solid)
                     obj.node.reparent_to(phys_node)
                     obj.node = phys_node

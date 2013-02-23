@@ -145,7 +145,7 @@ class Map (object):
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        dome = self.world.attach(self.wrap_object(Dome(radius, color, mass, name=node['id'])))
+        dome = self.world.attach(self.wrap_object(Dome(radius, color, mass, center, (yaw, pitch, roll), name=node['id'])))
 
     def parse_sky(self, node):
         color = parse_color(node['color'], DEFAULT_SKY_COLOR)
