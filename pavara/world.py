@@ -1,6 +1,6 @@
 from pandac.PandaModules import *
 from panda3d.bullet import *
-from pavara.utils.geom import make_box, make_dome, to_cartesian, make_square
+from pavara.utils.geom import make_block, make_dome, to_cartesian, make_rect
 from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
@@ -481,7 +481,7 @@ class Block (PhysicalObject):
         self.mass = mass
 
     def create_node(self):
-        return NodePath(make_box(self.color, (0, 0, 0), *self.size))
+        return NodePath(make_block(self.color, (0, 0, 0), *self.size))
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
@@ -545,7 +545,7 @@ class Ramp (PhysicalObject):
         self.mass = mass
 
     def create_node(self):
-        return NodePath(make_box(self.color, (0, 0, 0), self.thickness, self.width, self.length))
+        return NodePath(make_block(self.color, (0, 0, 0), self.thickness, self.width, self.length))
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
@@ -584,7 +584,7 @@ class Sky (WorldObject):
         dl = bounds.getMin()
         ur = bounds.getMax()
         z = dl.getZ() * 0.99
-        geom.add_geom(make_square((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0))
+        geom.add_geom(make_rect((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0))
         self.node = self.world.render.attach_new_node(geom)
         self.node.set_shader(Shader.load('Shaders/Sky.sha'))
         self.node.set_shader_input('camera', self.world.camera)
