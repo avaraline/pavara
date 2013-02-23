@@ -114,10 +114,10 @@ class PhysicalObject (WorldObject):
 
 
 class CompositeObject (PhysicalObject):
-    objects = []
 
     def __init__(self, name=None):
         super(CompositeObject, self).__init__(name)
+        self.objects = []
 
     def create_node(self):
         composite_geom = GeomBuilder('composite')
