@@ -7,14 +7,18 @@
 	<ground color="0.07,0.07,0.165"/>
 
 	<!-- INCARNATORS -->
-	<incarnator location="-40,10,0" angle="90"/>
-	<incarnator location="40,10,0" angle="270"/>
-	<incarnator location="0,10,40" angle="0"/>
-	<incarnator location="0,10,-40" angle="180"/>
-	<incarnator location="-38,28,-38" angle="135"/>
-	<incarnator location="38,28,38" angle="315"/>
-	<incarnator location="-44,10,44" angle="45"/>
-	<incarnator location="44,10,-44" angle="225"/>
+	<incarnator location="-40,10,0" heading="90"/>
+	<incarnator location="40,10,0" heading="270"/>
+	<incarnator location="0,10,40" heading="0"/>
+	<incarnator location="0,10,-40" heading="180"/>
+	<incarnator location="-38,28,-38" heading="135"/>
+	<incarnator location="38,28,38" heading="315"/>
+	<incarnator location="-44,10,44" heading="45"/>
+	<incarnator location="44,10,-44" heading="225"/>
+
+	<!-- BUBBLE TELEPORTER -->
+	<teleporter location="0,23,0" group="recenter" model=""/>
+	<teleporter location="0,-10,0" activeRadius="150" deadRadius="100" destination="recenter" model=""/>
 
 	<!-- CENTER -->
 	<block size="6,6,6" center="-3,3,-3" color="0.86,0.86,0.88"/>
@@ -90,4 +94,26 @@
 	<!-- DOMES -->
 	<dome center="40,0,-40" radius="2.5" color="0.41,0.41,0.47"/>
 	<dome center="-40,0,40" radius="2.5" color="0.41,0.41,0.47"/>
+
+	<!-- DOME "LINK" DECOR -->
+	<hologram>
+		<block size="2.5,0,130" center="0,0,0" yaw="-45" color="0.93,0.93,0.93"/>
+		<block size="2.5,0,6" center="46.84,0,-46.84" yaw="45" color="0.93,0.93,0.93"/>
+		<block size="2.5,0,6" center="-46.84,0,46.84" yaw="45" color="0.93,0.93,0.93"/>
+	</hologram>
+
+	<!-- DOME "LINK" TELEPORTERS -->
+	<teleporter location="17.25,6,-17.25" group="dome-link-1" destination="dome-link-2" disorient="false" model=""/>
+	<teleporter location="-17.25,6,17.25" group="dome-link-2" destination="dome-link-1" disorient="false" model=""/>
+
+	<!-- GOODIES -->
+	<goody location="0,8,0" grenades="8" missiles="4" respawn="18.75" model="AvaraA" spin="80,0,0"/>
+	<goody location="15.5,14,-15.5" grenades="8" respawn="6.25" model="Grenade" spin="80,0,0"/>
+	<goody location="-15.5,14,15.5" grenades="8" respawn="6.25" model="Grenade" spin="80,0,0"/>
+	<goody location="22,2,22" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="-22,2,-22" grenades="4" respawn="12.5" model="Grenade" spin="80,0,0"/>
+	<goody location="26.5,20,26.5" missiles="4" respawn="6.25" model="Missile" spin="80,0,0"/>
+	<goody location="-26.5,20,-26.5" missiles="4" respawn="6.25" model="Missile" spin="80,0,0"/>
+	<goody location="40,4.5,-40" missiles="4" respawn="12.5" model="Missile" spin="80,0,0"/>
+	<goody location="-40,4.5,40" missiles="4" respawn="12.5" model="Missile" spin="80,0,0"/>
 </map>

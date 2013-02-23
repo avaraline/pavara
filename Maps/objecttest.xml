@@ -7,14 +7,14 @@
     <ground color="0.231,0.384,0.282"/>
 
     <!-- INCARNATORS -->
-    <incarnator location="2,20,-42" angle="180"/>
-    <incarnator location="-2,20,42" angle="0"/>
-    <incarnator location="42,20,-30" angle="225"/>
-    <incarnator location="-42,20,30" angle="45"/>
-    <incarnator location="34,20,30" angle="315"/>
-    <incarnator location="-34,20,-30" angle="135"/>
-    <incarnator location="46,20,2" angle="270"/>
-    <incarnator location="-46,10,-2" angle="90"/>
+    <incarnator location="2,20,-42" heading="180"/>
+    <incarnator location="-2,20,42" heading="0"/>
+    <incarnator location="42,20,-30" heading="225"/>
+    <incarnator location="-42,20,30" heading="45"/>
+    <incarnator location="34,20,30" heading="315"/>
+    <incarnator location="-34,20,-30" heading="135"/>
+    <incarnator location="46,20,2" heading="270"/>
+    <incarnator location="-46,10,-2" heading="90"/>
 
     <!-- BUBBLE TELEPORTER -->
     <teleporter location="0,17,0" group="recenter" disorient="false" model=""/>

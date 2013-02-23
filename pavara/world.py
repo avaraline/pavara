@@ -1,6 +1,6 @@
 from pandac.PandaModules import *
 from panda3d.bullet import *
-from pavara.utils.geom import make_box, make_dome, to_cartesian, make_square
+from pavara.utils.geom import GeomBuilder, to_cartesian
 from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
@@ -111,6 +111,28 @@ class PhysicalObject (WorldObject):
 
     def position(self):
         return self.node.get_pos()
+
+
+class CompositeObject (PhysicalObject):
+    objects = []
+
+    def __init__(self, name=None):
+        super(CompositeObject, self).__init__(name)
+
+    def create_node(self):
+        composite_geom = GeomBuilder('composite')
+        for obj in self.objects:
+            obj.add_to(composite_geom)
+        return NodePath(composite_geom.get_geom_node())
+
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        for obj in self.objects:
+            obj.add_solid(node)
+        return node
+
+    def attach(self, obj):
+        self.objects.append(obj)
 
 class Effect (object):
     """Effects wrap objects like boxes and ramps and other effects and change
@@ -332,7 +354,7 @@ class Hector (PhysicalObject):
 
         self.walk_forward_seq = make_walk_sequence()
         self.actor.set_pos(*self.spawn_point.pos)
-        self.actor.set_h(self.spawn_point.angle)
+        self.actor.look_at(*self.spawn_point.heading)
         return self.actor
 
     def create_solid(self):
@@ -474,33 +496,49 @@ class Block (PhysicalObject):
     A block. Blocks with non-zero mass will be treated as freesolids.
     """
 
-    def __init__(self, size, color, mass, name=None):
+    def __init__(self, size, color, mass, center, hpr, name=None):
         super(Block, self).__init__(name)
         self.size = size
         self.color = color
         self.mass = mass
+        self.center = center
+        self.hpr = hpr
 
     def create_node(self):
-        return NodePath(make_box(self.color, (0, 0, 0), *self.size))
+        return NodePath(GeomBuilder('block').add_block(self.color, (0, 0, 0), self.size).get_geom_node())
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
         node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)))
         return node
 
+    def add_solid(self, node):
+        node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)), TransformState.make_pos_hpr(Point3(*self.center), self.hpr))
+
+    def add_to(self, geom_builder):
+        rot = LRotationf()
+        rot.set_hpr(self.hpr)
+        geom_builder.add_block(self.color, self.center, self.size, rot)
+
+    def attached(self):
+        self.move(self.center)
+        self.rotate(*self.hpr)
+
 class Dome (PhysicalObject):
     """
     A dome.
     """
 
-    def __init__(self, radius, color, mass, name=None):
+    def __init__(self, radius, color, mass, center, hpr, name=None):
         super(Dome, self).__init__(name)
         self.radius = radius
         self.color = color
-        self.geom = make_dome(self.color, self.radius, 8, 5)
         self.mass = mass
+        self.center = center
+        self.hpr = hpr
 
     def create_node(self):
+        self.geom = GeomBuilder().add_dome(self.color, (0, 0, 0), self.radius, 8, 5).get_geom_node()
         return NodePath(self.geom)
 
     def create_solid(self):
@@ -509,6 +547,20 @@ class Dome (PhysicalObject):
         mesh.add_geom(self.geom.get_geom(0))
         node.add_shape(mesh)
         return node
+
+    def add_solid(self, node):
+        mesh = BulletConvexHullShape()
+        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, 8, 5).get_geom())
+        node.add_shape(mesh)
+        return node
+
+    def add_to(self, geom_builder):
+        rot = LRotationf(*self.hpr)
+        geom_builder.add_dome(self.color, self.center, self.radius, 8, 5, rot)
+
+    def attached(self):
+        self.move(self.center)
+        self.rotate_by(*self.hpr)
 
 class Ground (PhysicalObject):
     """
@@ -534,7 +586,7 @@ class Ramp (PhysicalObject):
     A ramp. Basically a block that is rotated, and specified differently in XML. Should maybe be a Block subclass?
     """
 
-    def __init__(self, base, top, width, thickness, color, mass, name=None):
+    def __init__(self, base, top, width, thickness, color, mass, hpr, name=None):
         super(Ramp, self).__init__(name)
         self.base = Point3(*base)
         self.top = Point3(*top)
@@ -543,28 +595,49 @@ class Ramp (PhysicalObject):
         self.color = color
         self.length = (self.top - self.base).length()
         self.mass = mass
-
-    def create_node(self):
-        return NodePath(make_box(self.color, (0, 0, 0), self.thickness, self.width, self.length))
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
-        return node
-
-    def attached(self):
-        # Do the block rotation after we've been attached (i.e. have a NodePath), so we can use node.look_at.
+        self.hpr = hpr
         v1 = self.top - self.base
         if self.base.get_x() != self.top.get_x():
             p3 = Point3(self.top.get_x()+100, self.top.get_y(), self.top.get_z())
         else:
             p3 = Point3(self.top.get_x(), self.top.get_y(), self.top.get_z() + 100)
         v2 = self.top - p3
-        up = v1.cross(v2)
-        up.normalize()
-        midpoint = Point3((self.base + self.top) / 2.0)
-        self.move(midpoint)
-        self.node.look_at(self.top, up)
+        self.up = v1.cross(v2)
+        self.up.normalize()
+        self.midpoint = Point3((self.base + self.top) / 2.0)
+
+    def create_node(self):
+        return NodePath(GeomBuilder('ramp').add_block(self.color, (0, 0, 0), (self.thickness, self.width, self.length)).get_geom_node())
+
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
+        return node
+
+    def add_solid(self, node):
+        node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)), TransformState.make_pos_hpr(Point3(*self.midpoint), self.hpr))
+
+    def add_to(self, geom_builder):
+        # honestly i don't understand this at all
+        diff = self.top - self.base
+        if diff.get_z() == 0:
+            vec2 = diff.get_xy()
+            vec2 = Vec2(abs(diff.get_x()), diff.get_y())
+            vec1 = Vec2(1, 0)
+        else:
+            vec1 = diff.get_yz()
+            vec1 = Vec2(diff.get_y(), abs(diff.get_z()))
+            vec2 = Vec2(0, -1)
+        rot = LRotation(diff.get_xz().signedAngleDeg(Vec2(0, -1)), (vec1.signedAngleDeg(vec2) ), 90)
+        rot = rot * LRotation(*self.hpr)
+        self.hpr = rot.get_hpr()
+        geom_builder.add_block(self.color, self.midpoint, (self.thickness, self.width, self.length), rot)
+
+    def attached(self):
+        # Do the block rotation after we've been attached (i.e. have a NodePath), so we can use node.look_at.
+        self.move(self.midpoint)
+        self.node.look_at(self.top, self.up)
+        self.rotate_by(*self.hpr)
 
 class Sky (WorldObject):
     """
@@ -584,7 +657,8 @@ class Sky (WorldObject):
         dl = bounds.getMin()
         ur = bounds.getMax()
         z = dl.getZ() * 0.99
-        geom.add_geom(make_square((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0))
+
+        geom.add_geom(GeomBuilder('sky').add_rect((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0).get_geom())
         self.node = self.world.render.attach_new_node(geom)
         self.node.set_shader(Shader.load('Shaders/Sky.sha'))
         self.node.set_shader_input('camera', self.world.camera)
@@ -613,10 +687,10 @@ class Sky (WorldObject):
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
 
 class Incarnator (WorldObject):
-    def __init__(self, angle, pos, name=None):
+    def __init__(self, pos, heading, name=None):
         super(Incarnator, self).__init__(name)
-        self.pos = pos
-        self.angle = angle
+        self.pos = Vec3(*pos)
+        self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
 
 class Goody (PhysicalObject):
     def __init__(self, pos, model, items, respawn, spin, name=None):
@@ -666,7 +740,7 @@ class Goody (PhysicalObject):
             node_1 = contact.getNode0()
             node_2 = contact.getNode1()
             if "Hector" in node_2.get_name():
-               #TODO: identify which player and credit them with the items
+               # TODO: identify which player and credit them with the items.
                self.active = False
                self.node.hide()
 

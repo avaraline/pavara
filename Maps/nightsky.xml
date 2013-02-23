@@ -8,18 +8,18 @@
 	<ground color="0.15,0.15,0.15"/>
 
 	<!-- INCARNATORS -->
-	<incarnator location="-32,9,0" angle="90"/>
-	<incarnator location="32,9,0" angle="270"/>
-	<incarnator location="-22,13,-12" angle="135"/>
-	<incarnator location="22,13,-12" angle="225"/>
-	<incarnator location="22,13,12" angle="315"/>
-	<incarnator location="-22,13,12" angle="45"/>
-	<incarnator location="-22,11,-32" angle="135"/>
-	<incarnator location="22,11,-32" angle="225"/>
-	<incarnator location="22,11,32" angle="315"/>
-	<incarnator location="-22,11,32" angle="45"/>
-	<incarnator location="0,10,-32" angle="180"/>
-	<incarnator location="0,10,32" angle="0"/>
+	<incarnator location="-32,9,0" heading="90"/>
+	<incarnator location="32,9,0" heading="270"/>
+	<incarnator location="-22,13,-12" heading="135"/>
+	<incarnator location="22,13,-12" heading="225"/>
+	<incarnator location="22,13,12" heading="315"/>
+	<incarnator location="-22,13,12" heading="45"/>
+	<incarnator location="-22,11,-32" heading="135"/>
+	<incarnator location="22,11,-32" heading="225"/>
+	<incarnator location="22,11,32" heading="315"/>
+	<incarnator location="-22,11,32" heading="45"/>
+	<incarnator location="0,10,-32" heading="180"/>
+	<incarnator location="0,10,32" heading="0"/>
 
 	<!-- CENTER -->
 	<block size="4,2.5,4" center="0,1.25,-6" color="0.14,0.18,0.25"/>

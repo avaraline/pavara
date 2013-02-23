@@ -13,35 +13,33 @@ class Pavara (ShowBase):
         ShowBase.__init__(self)
         self.x = None
         self.y = None
-        base.camLens.setFov(50)
-        # init panda3d crap
+
+        # Init Panda3D crap.
         self.initP3D()
-        maps = load_maps('Maps/stratocaster.xml', self.cam)
+        maps = load_maps('Maps/bodhi.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
-        self.map.world.render.flatten_strong()
-        # Testing physical hector.
 
+        print render.analyze()
+        # Testing physical hector.
         incarn = self.map.world.get_incarn()
         self.hector = self.map.world.attach(Hector(incarn))
         self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4),
             "barrel_trim_color": Vec3(.8,.9,.6), "visor_color": Vec3(.3,.6,1),
             "body_color":Vec3(.2,.5,.3)})
 
-        self.map.world.render.analyze()
-
         self.setupInput()
 
-        #Put the hector in the World's render so the lighting applies correctly
-        #self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
+        # Put the hector in the World's render so the lighting applies correctly
+        # self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
 
         self.map.show(self.render)
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
 
-        #axes = loader.loadModel('models/yup-axis')
-        #axes.setScale(10)
-        #axes.reparentTo(render)
+        # axes = loader.loadModel('models/yup-axis')
+        # axes.setScale(10)
+        # axes.reparentTo(render)
 
     def initP3D(self):
         self.setBackgroundColor(0, 0, 0)
