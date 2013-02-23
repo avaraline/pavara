@@ -20,8 +20,8 @@ class Pavara (ShowBase):
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
-        self.map.world.render.flatten_strong()
 
+        print render.analyze()
         # Testing physical hector.
         incarn = self.map.world.get_incarn()
         self.hector = self.map.world.attach(Hector(incarn))

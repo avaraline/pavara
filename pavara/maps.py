@@ -65,6 +65,13 @@ class Map (object):
             if hasattr(self, func_name):
                 getattr(self, func_name)(child)
 
+    def parse_static(self, node):
+        world = self.world
+        self.world = CompositeObject()
+        self.process_children(node)
+        world.attach(self.world)
+        self.world = world
+
     def parse_transparent(self, node):
         alpha = parse_float(node['alpha'])
         self.effects.append(lambda effected: Transparent(effected, alpha))
@@ -101,9 +108,7 @@ class Map (object):
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        block = self.world.attach(self.wrap_object(Block(size, color, mass, name=node['id'])))
-        block.move(center)
-        block.rotate(yaw, pitch, roll)
+        block = self.world.attach(self.wrap_object(Block(size, color, mass, center, (yaw, pitch, roll), name=node['id'])))
 
     def parse_ramp(self, node):
         base = parse_vector(node['base'])
@@ -115,8 +120,7 @@ class Map (object):
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        ramp = self.world.attach(self.wrap_object(Ramp(base, top, width, thickness, color, mass, name=node['id'])))
-        ramp.rotate_by(yaw, pitch, roll)
+        ramp = self.world.attach(self.wrap_object(Ramp(base, top, width, thickness, color, mass, (yaw, pitch, roll), name=node['id'])))
 
     def parse_ground(self, node):
         color = parse_color(node['color'], (1, 1, 1, 1))
@@ -142,8 +146,6 @@ class Map (object):
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
         dome = self.world.attach(self.wrap_object(Dome(radius, color, mass, name=node['id'])))
-        dome.move(center)
-        dome.rotate(yaw, pitch, roll)
 
     def parse_sky(self, node):
         color = parse_color(node['color'], DEFAULT_SKY_COLOR)
