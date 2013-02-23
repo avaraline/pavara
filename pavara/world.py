@@ -828,11 +828,12 @@ class World (object):
         Adds a celestial light source to the scene. If it is a visible celestial, also add a sphere model.
         """
         location = Vec3(to_cartesian(azimuth, elevation, 1000.0 * 255.0 / 256.0))
-        dlight = DirectionalLight('celestial')
-        dlight.set_color((color[0]*intensity, color[1]*intensity, color[2]*intensity, 1.0))
-        node = self.render.attach_new_node(dlight)
-        node.look_at(*(location * -1))
-        self.render.set_light(node)
+        if intensity:
+            dlight = DirectionalLight('celestial')
+            dlight.set_color((color[0]*intensity, color[1]*intensity, color[2]*intensity, 1.0))
+            node = self.render.attach_new_node(dlight)
+            node.look_at(*(location * -1))
+            self.render.set_light(node)
         if visible:
             sphere = load_model('misc/sphere')
             sphere.set_transparency(TransparencyAttrib.MAlpha)
