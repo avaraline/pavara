@@ -27,6 +27,7 @@
 	<teleporter location="38,0,-22" group="floor" destination="pillar" disorient="false" model="Lotus" scale="0.3"/>
 	<teleporter location="-32,0,38" group="floor" destination="pillar" disorient="false" model="Lotus" scale="0.3"/>
 	<teleporter location="-38,0,22" group="floor" destination="pillar" disorient="false" model="Lotus" scale="0.3"/>
+
 	<static>
 		<!-- CENTER -->
 		<block size="12,4,20" center="0,2,0" color="0.231,0.384,0.282"/>
