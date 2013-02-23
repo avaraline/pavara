@@ -7,15 +7,15 @@ from direct.showbase.ShowBase import ShowBase
 from pavara.maps import load_maps
 from pavara.world import Block, Hector
 
+
 class Pavara (ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
         self.x = None
         self.y = None
 
-        # init panda3d crap
+        # Init Panda3D crap.
         self.initP3D()
-
         maps = load_maps('Maps/stratocaster.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
@@ -31,26 +31,26 @@ class Pavara (ShowBase):
 
         self.setupInput()
 
-        # Put the hector in the World's render so the lighting applies correctly.
-        #self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
+        # Put the hector in the World's render so the lighting applies correctly
+        # self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
 
         self.map.show(self.render)
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
 
-        #axes = loader.loadModel('models/yup-axis')
-        #axes.setScale(10)
-        #axes.reparentTo(render)
+        # axes = loader.loadModel('models/yup-axis')
+        # axes.setScale(10)
+        # axes.reparentTo(render)
 
     def initP3D(self):
-        self.setBackgroundColor(0,0,0)
+        self.setBackgroundColor(0, 0, 0)
         self.enableParticles()
         self.disableMouse()
         render.setAntialias(AntialiasAttrib.MAuto)
         props = WindowProperties()
         props.setCursorHidden(True)
         self.win.requestProperties(props)
-        self.camera.setPos(0,20,40)
-        self.camera.setHpr(0,0,0)
+        self.camera.setPos(0, 20, 40)
+        self.camera.setHpr(0, 0, 0)
         self.floater = NodePath(PandaNode("floater"))
         self.floater.reparentTo(render)
         self.up = Vec3(0, 1, 0)
@@ -108,7 +108,7 @@ class Pavara (ShowBase):
             self.y = md.getY()
             centerx = self.win.getProperties().getXSize()/2
             centery = self.win.getProperties().getYSize()/2
-            self.win.movePointer(0,centerx,centery)
+            self.win.movePointer(0, centerx, centery)
 
             if (oldx is not None):
                 self.floater.setPos(self.camera, 0, 0, 0)

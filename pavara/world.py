@@ -657,6 +657,7 @@ class Goody (PhysicalObject):
             if self.timeout > self.respawn:
                 self.active = True
                 self.node.show()
+                self.timeout = 0
             return
 
         self.rotate_by(*[x * dt for x in self.spin])
@@ -665,6 +666,7 @@ class Goody (PhysicalObject):
             node_1 = contact.getNode0()
             node_2 = contact.getNode1()
             if "Hector" in node_2.get_name():
+               # TODO: identify which player and credit them with the items.
                self.active = False
                self.node.hide()
 
