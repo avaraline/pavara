@@ -92,14 +92,16 @@
 
 	<!-- MARKINGS -->
 	<hologram>
-		<block size="2,0,2" center="0,0.01,0" color="0.02,0.05,0.13"/>
-		<block size="2,0,2" center="0,0.01,-10" color="0.02,0.05,0.13"/>
-		<block size="2,0,2" center="0,0.01,10" color="0.02,0.05,0.13"/>
-		<block size="1,0,8" center="0,0.01,0" color="0.02,0.05,0.13"/>
-		<block size="2,0,2" center="-22,4.01,0" color="0.02,0.05,0.13"/>
-		<block size="2,0,2" center="22,4.01,0" color="0.02,0.05,0.13"/>
-		<block size="2,0,2" center="0,2.01,-40" color="0.02,0.05,0.13"/>
-		<block size="2,0,2" center="0,2.01,40" color="0.02,0.05,0.13"/>
+		<static>
+			<block size="2,0,2" center="0,0.01,0" color="0.02,0.05,0.13"/>
+			<block size="2,0,2" center="0,0.01,-10" color="0.02,0.05,0.13"/>
+			<block size="2,0,2" center="0,0.01,10" color="0.02,0.05,0.13"/>
+			<block size="1,0,8" center="0,0.01,0" color="0.02,0.05,0.13"/>
+			<block size="2,0,2" center="-22,4.01,0" color="0.02,0.05,0.13"/>
+			<block size="2,0,2" center="22,4.01,0" color="0.02,0.05,0.13"/>
+			<block size="2,0,2" center="0,2.01,-40" color="0.02,0.05,0.13"/>
+			<block size="2,0,2" center="0,2.01,40" color="0.02,0.05,0.13"/>
+		</static>
 	</hologram>
 
 	<!-- GOODIES -->

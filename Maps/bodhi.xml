@@ -95,12 +95,14 @@
 
 	<!-- GOODY MARKERS -->
 	<hologram>
-		<block size="2,0,2" center="0,4.01,0" yaw="45" color="1,1,0.863"/>
-		<block size="2,0,2" center="26,6.01,-30" yaw="45" color="1,1,0.863"/>
-		<block size="2,0,2" center="-26,6.01,30" yaw="45" color="1,1,0.863"/>
-		<block size="2,0,2" center="30,0,46" yaw="45" color="1,1,0.863"/>
-		<block size="2,0,2" center="-30,0,-46" yaw="45" color="1,1,0.863"/>
-		<block size="2,0,2" center="38,7.81,10" yaw="45" color="1,1,0.863"/>
-		<block size="2,0,2" center="-38,7.81,-10" yaw="45" color="1,1,0.863"/>
+		<static>
+			<block size="2,0,2" center="0,4.01,0" yaw="45" color="1,1,0.863"/>
+			<block size="2,0,2" center="26,6.01,-30" yaw="45" color="1,1,0.863"/>
+			<block size="2,0,2" center="-26,6.01,30" yaw="45" color="1,1,0.863"/>
+			<block size="2,0,2" center="30,0,46" yaw="45" color="1,1,0.863"/>
+			<block size="2,0,2" center="-30,0,-46" yaw="45" color="1,1,0.863"/>
+			<block size="2,0,2" center="38,7.81,10" yaw="45" color="1,1,0.863"/>
+			<block size="2,0,2" center="-38,7.81,-10" yaw="45" color="1,1,0.863"/>
+		</static>
 	</hologram>
 </map>

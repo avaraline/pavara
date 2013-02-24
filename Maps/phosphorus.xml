@@ -84,24 +84,24 @@
 		<dome center="-40,0,40" radius="2.5" color="0.41,0.41,0.47"/>
 	</static>
 
-	<!-- CENTER DECOR -->
 	<hologram>
-		<block size="4,0,4" center="0,6.01,0" yaw="45" color="0.41,0.41,0.47"/>
-		<block size="2,0,2" center="-4,6.01,0" yaw="45" color="0.41,0.41,0.47"/>
-		<block size="2,0,2" center="4,6.01,0" yaw="45" color="0.41,0.41,0.47"/>
-		<block size="2,0,2" center="0,6.01,4" yaw="45" color="0.41,0.41,0.47"/>
-		<block size="2,0,2" center="0,6.01,-4" yaw="45" color="0.41,0.41,0.47"/>
-		<block size="1,0,1" center="-3.5,6.01,-3.5" color="0.69,0.69,0.73"/>
-		<block size="1,0,1" center="3.5,6.01,3.5" color="0.69,0.69,0.73"/>
-		<block size="1,0,1" center="3.5,6.01,-3.5" color="0.93,0.93,0.93"/>
-		<block size="1,0,1" center="-3.5,6.01,3.5" color="0.93,0.93,0.93"/>
-	</hologram>
+		<static>
+			<!-- CENTER DECOR -->
+			<block size="4,0,4" center="0,6.01,0" yaw="45" color="0.41,0.41,0.47"/>
+			<block size="2,0,2" center="-4,6.01,0" yaw="45" color="0.41,0.41,0.47"/>
+			<block size="2,0,2" center="4,6.01,0" yaw="45" color="0.41,0.41,0.47"/>
+			<block size="2,0,2" center="0,6.01,4" yaw="45" color="0.41,0.41,0.47"/>
+			<block size="2,0,2" center="0,6.01,-4" yaw="45" color="0.41,0.41,0.47"/>
+			<block size="1,0,1" center="-3.5,6.01,-3.5" color="0.69,0.69,0.73"/>
+			<block size="1,0,1" center="3.5,6.01,3.5" color="0.69,0.69,0.73"/>
+			<block size="1,0,1" center="3.5,6.01,-3.5" color="0.93,0.93,0.93"/>
+			<block size="1,0,1" center="-3.5,6.01,3.5" color="0.93,0.93,0.93"/>
 
-	<!-- DOME "LINK" DECOR -->
-	<hologram>
-		<block size="2.5,0,130" center="0,0,0" yaw="-45" color="0.93,0.93,0.93"/>
-		<block size="2.5,0,6" center="46.84,0,-46.84" yaw="45" color="0.93,0.93,0.93"/>
-		<block size="2.5,0,6" center="-46.84,0,46.84" yaw="45" color="0.93,0.93,0.93"/>
+			<!-- DOME "LINK" DECOR -->
+			<block size="2.5,0,130" center="0,0,0" yaw="-45" color="0.93,0.93,0.93"/>
+			<block size="2.5,0,6" center="46.84,0,-46.84" yaw="45" color="0.93,0.93,0.93"/>
+			<block size="2.5,0,6" center="-46.84,0,46.84" yaw="45" color="0.93,0.93,0.93"/>
+		</static>
 	</hologram>
 
 	<!-- DOME "LINK" TELEPORTERS -->
