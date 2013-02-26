@@ -1,0 +1,79 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Icebox Classic" tagline="Before Avara was released, the beta team played in a slightly lighter icebox..." author="mantis" description="icebox">
+	<sky color="0,0.2,0.6" horizon="0,0.4,1"/>
+	<ground color="0,0,0.333"/>
+
+	<!-- INCARNATORS -->
+	<incarnator location="16,30,16" heading="315" order="1"/>
+	<incarnator location="-16,30,16" heading="45" order="2"/>
+	<incarnator location="-16,30,-16" heading="135" order="3"/>
+	<incarnator location="16,30,-16" heading="225" order="4"/>
+	<!-- These next two incarnators are supposed to shut off immediately. -->
+	<incarnator location="0,30,0" heading="135" order="5"/>
+	<incarnator location="0,33,0" heading="135" order="6"/>
+
+	<!-- BUBBLE TELEPORTER -->
+	<teleporter location="0,30,0" group="recenter" model=""/>
+	<teleporter location="0,-30,0" activeRadius="175" deadRadius="140" destination="recenter" model=""/>
+
+	<static>
+		<!-- OUTER WALLS -->
+		<block size="68,12,6" center="0,6,-37" color="0.2,0.6,1"/>
+		<block size="6,12,68" center="37,6,0" color="0.2,0.6,1"/>
+		<block size="68,12,6" center="0,6,37" color="0.2,0.6,1"/>
+		<block size="6,12,68" center="-37,6,0" color="0.2,0.6,1"/>
+		<block size="6,20,6" center="-37,10,-37" color="0.2,0.4,1"/>
+		<block size="6,20,6" center="37,10,-37" color="0.2,0.4,1"/>
+		<block size="6,20,6" center="37,10,37" color="0.2,0.4,1"/>
+		<block size="6,20,6" center="-37,10,37" color="0.2,0.4,1"/>
+		<block size="6,3,6" center="-31,1.5,-31" color="0.2,0.4,1"/>
+		<block size="6,3,6" center="31,1.5,-31" color="0.2,0.4,1"/>
+		<block size="6,3,6" center="31,1.5,31" color="0.2,0.4,1"/>
+		<block size="6,3,6" center="-31,1.5,31" color="0.2,0.4,1"/>
+	</static>
+
+	<!-- ICE CUBES -->
+	<freesolid relativeGravity="0.12" mass="20" power="10">
+		<block size="5,2.5,5" center="-24,1.25,-24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-16,1.25,-24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-8,1.25,-24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-24,1.25,-16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-8,1.25,-16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-24,1.25,-8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-16,1.25,-8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-8,1.25,-8" color="0.6,0.8,1"/>
+
+		<block size="5,2.5,5" center="24,1.25,-24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="16,1.25,-24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="8,1.25,-24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="24,1.25,-16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="8,1.25,-16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="24,1.25,-8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="16,1.25,-8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="8,1.25,-8" color="0.6,0.8,1"/>
+
+		<block size="5,2.5,5" center="24,1.25,24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="16,1.25,24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="8,1.25,24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="24,1.25,16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="8,1.25,16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="24,1.25,8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="16,1.25,8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="8,1.25,8" color="0.6,0.8,1"/>
+
+		<block size="5,2.5,5" center="-24,1.25,24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-16,1.25,24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-8,1.25,24" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-24,1.25,16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-8,1.25,16" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-24,1.25,8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-16,1.25,8" color="0.6,0.8,1"/>
+		<block size="5,2.5,5" center="-8,1.25,8" color="0.6,0.8,1"/>
+	</freesolid>
+
+	<!-- GOODIES -->
+	<goody location="31,5,-31" grenades="4" respawn="21.875" model="Grenade" spin="32,0,0"/>
+	<goody location="-31,5,31" grenades="4" respawn="21.875" model="Grenade" spin="32,0,0"/>
+	<goody location="-31,5,-31" missiles="3" respawn="18.75" model="Missile" spin="32,0,0"/>
+	<goody location="31,5,31" missiles="3" respawn="18.75" model="Missile" spin="32,0,0"/>
+</map>
