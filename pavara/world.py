@@ -228,7 +228,8 @@ class Hector (PhysicalObject):
         self.placing = False
         self.head_height = Vec3(0, 1.5, 0)
         self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
-
+        self.missle_loaded = False
+        
     def create_node(self):
         from direct.actor.Actor import Actor
         self.actor = Actor('hector.egg')
@@ -467,13 +468,15 @@ class Hector (PhysicalObject):
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
 
         sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
-        while sweep_result.has_hit():
+        count = 0
+        while sweep_result.has_hit() and count < 10:
             moveby = sweep_result.get_hit_normal()
             moveby.normalize()
             moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
             self.move(self.position() + moveby)
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
             sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
+            count += 1
 
 
     def update_legs(self, walk, dt):
@@ -744,6 +747,12 @@ class Goody (PhysicalObject):
                self.active = False
                self.node.hide()
 
+class Bolt (PhysicalObject):
+	def __init__(self, pos, vector, energy):
+		self.pos = Vec3(*pos)
+		self.vector = Vec3(*pos)
+		self.energy = energy
+		
 
 
 class World (object):
