@@ -840,7 +840,11 @@ class World (object):
             node.look_at(*(location * -1))
             self.render.set_light(node)
         if visible:
-            sphere = Dome(45*radius, color, 0, location, ((-(math.degrees(azimuth)) ), 90+math.degrees(elevation), 0), samples=20, planes=2)
+            if radius < 0.1:
+                samples = 6
+            else:
+                samples = 20
+            sphere = Dome(45*radius, color, 0, location, ((-(math.degrees(azimuth)) ), 90+math.degrees(elevation), 0), samples=samples, planes=2)
             self.celestials.attach(sphere)
 
     def create_celestial_node(self):
