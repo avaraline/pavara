@@ -52,6 +52,7 @@ class Map (object):
         if not self.has_celestials:
             self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 1.0, False)
             self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 1.0, False)
+        self.world.create_celestial_node()
 
     def show(self, render):
         """

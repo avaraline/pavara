@@ -529,8 +529,10 @@ class Dome (PhysicalObject):
     A dome.
     """
 
-    def __init__(self, radius, color, mass, center, hpr, name=None):
+    def __init__(self, radius, color, mass, center, hpr, name=None, **kwargs):
         super(Dome, self).__init__(name)
+        self.samples = kwargs.get('samples', 8)
+        self.planes = kwargs.get('planes', 5)
         self.radius = radius
         self.color = color
         self.mass = mass
@@ -538,7 +540,7 @@ class Dome (PhysicalObject):
         self.hpr = hpr
 
     def create_node(self):
-        self.geom = GeomBuilder().add_dome(self.color, (0, 0, 0), self.radius, 8, 5).get_geom_node()
+        self.geom = GeomBuilder().add_dome(self.color, (0, 0, 0), self.radius, self.samples, self.planes).get_geom_node()
         return NodePath(self.geom)
 
     def create_solid(self):
@@ -550,13 +552,13 @@ class Dome (PhysicalObject):
 
     def add_solid(self, node):
         mesh = BulletConvexHullShape()
-        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, 8, 5).get_geom())
+        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, self.samples, self.planes).get_geom())
         node.add_shape(mesh)
         return node
 
     def add_to(self, geom_builder):
         rot = LRotationf(*self.hpr)
-        geom_builder.add_dome(self.color, self.center, self.radius, 8, 5, rot)
+        geom_builder.add_dome(self.color, self.center, self.radius, self.samples, self.planes, rot)
 
     def attached(self):
         self.move(self.center)
@@ -759,6 +761,7 @@ class World (object):
         self.render = NodePath('world')
         self.camera = camera
         self.ambient = self._make_ambient()
+        self.celestials = CompositeObject()
         self.sky = self.attach(Sky())
         # Set up the physics world. TODO: let maps set gravity.
         self.physics = BulletWorld()
@@ -835,14 +838,15 @@ class World (object):
             node.look_at(*(location * -1))
             self.render.set_light(node)
         if visible:
-            sphere = load_model('misc/sphere')
-            sphere.set_transparency(TransparencyAttrib.MAlpha)
-            sphere.reparent_to(self.render)
-            sphere.set_light_off()
-            sphere.set_effect(CompassEffect.make(self.camera, CompassEffect.PPos))
-            sphere.set_scale(45*radius)
-            sphere.set_color(*color)
-            sphere.set_pos(location)
+            sphere = Dome(45*radius, color, 0, location, ((-(math.degrees(azimuth)) ), 90+math.degrees(elevation), 0), samples=20, planes=2)
+            self.celestials.attach(sphere)
+
+    def create_celestial_node(self):
+        self.celestials = self.celestials.create_node()
+        self.celestials.set_transparency(TransparencyAttrib.MAlpha)
+        self.celestials.set_light_off()
+        self.celestials.set_effect(CompassEffect.make(self.camera, CompassEffect.PPos))
+        self.celestials.reparent_to(self.render)
 
     def register_collider(self, obj):
         assert isinstance(obj, PhysicalObject)
