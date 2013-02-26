@@ -16,7 +16,7 @@ class Pavara (ShowBase):
 
         # Init Panda3D crap.
         self.initP3D()
-        maps = load_maps('Maps/objecttest.xml', self.cam)
+        maps = load_maps('Maps/nightsky.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
