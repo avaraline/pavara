@@ -1,16 +1,11 @@
-"""
-Drill XML
-https://github.com/dcwatson/drill
-"""
-
-__version_info__ = (1, 0, 0)
+__version_info__ = (1, 1, 0)
 __version__ = '.'.join(str(i) for i in __version_info__)
 
-from xml.sax import make_parser
-from xml.sax.handler import feature_namespaces, ContentHandler
 from xml.sax.saxutils import escape, quoteattr
-from xml.sax.xmlreader import InputSource
+from xml.parsers import expat
+import contextlib
 import sys
+import re
 
 PY3 = sys.version_info[0] == 3
 
@@ -25,6 +20,9 @@ else:
     from StringIO import StringIO as string_io
     from cStringIO import StringIO as bytes_io
     import urllib2 as url_lib
+
+xpath_re = re.compile(r'(?P<tag>[a-zA-Z0-9\.\*]+)(?P<predicate>\[.+\])?')
+num_re = re.compile(r'[0-9\-]+')
 
 class XmlWriter (object):
     """
@@ -86,10 +84,88 @@ class XmlWriter (object):
             self.data(data, newline=False)
         self.end(tag, indent=False)
 
+def traverse(element, query, deep=False):
+    """
+    Helper function to traverse an element tree rooted at element, yielding nodes matching the query.
+    """
+    # Grab the next part of the query (it will be chopped from the front each iteration).
+    part = query[0]
+    if not part:
+        # If the part is blank, we encountered a //, meaning search all sub-nodes.
+        query = query[1:]
+        part = query[0]
+        deep = True
+    # Parse out any predicate (tag[pred]) from this part of the query.
+    part, predicate = xpath_re.match(query[0]).groups()
+    for c in element._children:
+        if part in ('*', c.tagname) and c._match(predicate):
+            # A potential matching branch: this child matches the next query part (and predicate).
+            if len(query) == 1:
+                # If this is the last part of the query, we found a matching element, yield it.
+                yield c
+            else:
+                # Otherwise, check the children of this child against the next query part.
+                for e in traverse(c, query[1:]):
+                    yield e
+        if deep:
+            # If we're searching all sub-nodes, traverse with the same query, regardless of matching.
+            # This basically creates a recursion branch to search EVERYWHERE for anything after //.
+            for e in traverse(c, query, deep=True):
+                yield e
+
+def parse_query(query):
+    """
+    Given a simplified XPath query string, returns an array of normalized query parts.
+    """
+    parts = query.split('/')
+    norm = []
+    for p in parts:
+        p = p.strip()
+        if p:
+            norm.append(p)
+        elif '' not in norm:
+            norm.append('')
+    return norm
+
+class XmlQuery (object):
+    """
+    An iterable object returned by XmlElement.find, with convenience methods for getting the first and last elements
+    of the result set.
+    """
+
+    def __init__(self, root, query):
+        self.root = root
+        self.query = query
+
+    def __repr__(self):
+        return '%s -> %s' % (self.root.path(), self.query)
+
+    def __iter__(self):
+        return traverse(self.root, parse_query(self.query))
+
+    def first(self):
+        """
+        Returns the first matching element of this query, or None if there was no match.
+        """
+        for e in self:
+            return e
+
+    def last(self):
+        """
+        Returns the last matching element of this query, or None if there was no match.
+        """
+        last_found = None
+        for e in self:
+            last_found = e
+        return last_found
+
 class XmlElement (object):
     """
     A mutable object encapsulating an XML element.
     """
+
+    # This makes a pretty big difference when parsing huge XML files.
+    __slots__ = ('tagname', 'parent', 'index', 'attrs', 'data', '_children')
 
     def __init__(self, name, attrs=None, data=None, parent=None, index=None):
         self.tagname = name
@@ -98,9 +174,7 @@ class XmlElement (object):
         self.attrs = {}
         if attrs:
             self.attrs.update(attrs)
-        self.data = ''
-        if data:
-            self.data += unicode(data)
+        self.data = unicode(data) if data else ''
         self._children = []
 
     def __repr__(self):
@@ -142,22 +216,11 @@ class XmlElement (object):
         """
         return self.first(name)
 
-    def _characters(self, ch=None):
-        """
-        Called when the parser detects character data while in this node.
-        """
-        if ch is not None:
-            self.data += unicode(ch)
-
-    def _finalize(self):
-        """
-        Called when the parser detects an end tag.
-        """
-        self.data = self.data.strip()
-
     def write(self, writer):
         """
         Writes an XML representation of this node (including descendants) to the specified file-like object.
+
+        :param writer: An :class:`XmlWriter` instance to write this node to
         """
         multiline = bool(self._children)
         newline_start = multiline and not bool(self.data)
@@ -170,7 +233,10 @@ class XmlElement (object):
 
     def xml(self, **kwargs):
         """
-        Returns an XML representation of this node (including descendants).
+        Returns an XML representation of this node (including descendants). This method automatically creates an
+        :class:`XmlWriter` instance internally to handle the writing.
+
+        :param **kwargs: Any named arguments are passed along to the :class:`XmlWriter` constructor
         """
         s = bytes_io()
         writer = XmlWriter(s, **kwargs)
@@ -179,7 +245,14 @@ class XmlElement (object):
 
     def append(self, name, attrs=None, data=None):
         """
-        Called when the parser detects a start tag (child element) while in this node.
+        Called when the parser detects a start tag (child element) while in this node. Internally creates an
+        :class:`XmlElement` and adds it to the end of this node's children.
+
+        :param name: The tag name to add
+        :param attrs: Attributes for the new tag
+        :param data: CDATA for the new tag
+        :returns: The newly-created element
+        :rtype: :class:`XmlElement`
         """
         elem = XmlElement(name, attrs, data, self, len(self._children))
         self._children.append(elem)
@@ -188,6 +261,13 @@ class XmlElement (object):
     def insert(self, before, name, attrs=None, data=None):
         """
         Inserts a new element as a child of this element, before the specified index or sibling.
+
+        :param before: An :class:`XmlElement` or a numeric index to insert the new node before
+        :param name: The tag name to add
+        :param attrs: Attributes for the new tag
+        :param data: CDATA for the new tag
+        :returns: The newly-created element
+        :rtype: :class:`XmlElement`
         """
         if isinstance(before, XmlElement):
             if before.parent != self:
@@ -204,7 +284,8 @@ class XmlElement (object):
 
     def clear(self):
         """
-        Clears out all children, attributes, and data.
+        Clears out all children, attributes, and data. Especially useful when using :func:`iterparse`, to release
+        memory used by storing attributes, character data, and child nodes.
         """
         self.attrs = {}
         self.data = ''
@@ -212,7 +293,7 @@ class XmlElement (object):
 
     def items(self):
         """
-        A Generator yielding ``key: value`` attribute pairs, sorted by key name.
+        A generator yielding ``(key, value)`` attribute pairs, sorted by key name.
         """
         for key in sorted(self.attrs):
             yield key, self.attrs[key]
@@ -231,10 +312,83 @@ class XmlElement (object):
             if name is None or elem.tagname == name:
                 yield elem
 
-    def find(self, name=None):
+    def _match(self, pred):
         """
-        Recursively find any descendants of this node with the given tag name. If a tag name
-        is omitted, this will yield every descendant node.
+        Helper function to determine if this node matches the given predicate.
+        """
+        if not pred:
+            return True
+        # Strip off the [ and ]
+        pred = pred[1:-1]
+        if pred.startswith('@'):
+            # An attribute predicate checks the existence (and optionally value) of an attribute on this tag.
+            pred = pred[1:]
+            if '=' in pred:
+                attr, value = pred.split('=', 1)
+                if value[0] in ('"', "'"):
+                    value = value[1:]
+                if value[-1] in ('"', "'"):
+                    value = value[:-1]
+                return self.attrs.get(attr) == value
+            else:
+                return pred in self.attrs
+        elif num_re.match(pred):
+            # An index predicate checks whether we are the n-th child of our parent (0-based).
+            index = int(pred)
+            if index < 0:
+                if self.parent:
+                    # For negative indexes, count from the end of the list.
+                    return self.index == (len(self.parent._children) + index)
+                else:
+                    # If we're the root node, the only index we could be is 0.
+                    return index == 0
+            else:
+                return index == self.index
+        else:
+            if '=' in pred:
+                tag, value = pred.split('=', 1)
+                if value[0] in ('"', "'"):
+                    value = value[1:]
+                if value[-1] in ('"', "'"):
+                    value = value[:-1]
+                for c in self._children:
+                    if c.tagname == tag and c.data == value:
+                        return True
+            else:
+                # A plain [tag] predicate means we match if we have a child with tagname "tag".
+                for c in self._children:
+                    if c.tagname == pred:
+                        return True
+        return False
+
+    def path(self, include_root=False):
+        """
+        Returns a canonical path to this element, relative to the root node.
+
+        :param include_root: If ``True``, include the root node in the path. Defaults to ``False``.
+        """
+        path = '%s[%d]' % (self.tagname, self.index or 0)
+        p = self.parent
+        while p is not None:
+            if p.parent or include_root:
+                path = '%s[%d]/%s' % (p.tagname, p.index or 0, path)
+            p = p.parent
+        return path
+
+    def find(self, query):
+        """
+        Recursively find any descendants of this node matching the given query.
+
+        :param query: A simplified XPath query describing elements that should be returned, e.g. ``//title``,
+            ``book/*``, ``*/author``, ``*/*``, etc.
+        :returns: An :class:`XmlQuery` yielding matching descendants
+        """
+        return XmlQuery(self, query)
+
+    def iter(self, name=None):
+        """
+        Recursively find any descendants of this node with the given tag name. If a tag name is omitted, this will
+        yield every descendant node.
 
         :param name: If specified, only consider elements with this tag name
         :returns: A generator yielding descendants of this node
@@ -265,6 +419,29 @@ class XmlElement (object):
         for c in self.children(name, reverse=True):
             return c
 
+    def parents(self, name=None):
+        """
+        Yields all parents of this element, back to the root element.
+
+        :param name: If specified, only consider elements with this tag name
+        """
+        p = self.parent
+        while p is not None:
+            if name is None or p.tagname == name:
+                yield p
+            p = p.parent
+
+    def siblings(self, name=None):
+        """
+        Yields all siblings of this node (not including the node itself).
+
+        :param name: If specified, only consider elements with this tag name
+        """
+        if self.parent and self.index:
+            for c in self.parent._children:
+                if c.index != self.index and (name is None or name == c.tagname):
+                    yield c
+
     def next(self, name=None):
         """
         Returns the next sibling of this node.
@@ -291,69 +468,73 @@ class XmlElement (object):
             if name is None or self.parent[idx].tagname == name:
                 return self.parent[idx]
 
-class DrillContentHandler (ContentHandler):
+class DrillHandler (object):
 
     def __init__(self, queue=None):
         self.root = None
         self.current = None
         self.queue = queue
+        # Store character data in the parse handler instead of each element, to save memory.
+        self.cdata = []
 
-    def startElement(self, name, attrs):
-        if not self.root:
+    def start_element(self, name, attrs):
+        if self.root is None:
             self.root = XmlElement(name, attrs)
             self.current = self.root
         elif self.current is not None:
             self.current = self.current.append(name, attrs)
 
-    def endElement(self, name):
+    def end_element(self, name):
         if self.current is not None:
-            self.current._finalize()
+            self.current.data = ''.join(self.cdata).strip()
+            self.cdata = []
             if self.queue:
                 self.queue.add(self.current)
             self.current = self.current.parent
 
     def characters(self, ch):
         if self.current is not None:
-            self.current._characters(ch)
+            self.cdata.append(unicode(ch))
 
 def parse(url_or_path, encoding=None):
     """
     :param url_or_path: A file-like object, a filesystem path, a URL, or a string containing XML
     :rtype: :class:`XmlElement`
     """
-    handler = DrillContentHandler()
-    parser = make_parser()
-    parser.setFeature(feature_namespaces, 0)
-    parser.setContentHandler(handler)
+    handler = DrillHandler()
+    parser = expat.ParserCreate(encoding)
+    parser.buffer_text = 1
+    parser.StartElementHandler = handler.start_element
+    parser.EndElementHandler = handler.end_element
+    parser.CharacterDataHandler = handler.characters
     if isinstance(url_or_path, basestring):
         if '://' in url_or_path[:20]:
-            # A URL.
-            parser.parse(url_lib.urlopen(url_or_path))
+            #with contextlib.closing(url_lib.urlopen(url_or_path)) as f:
+            f = contextlib.closing(url_lib.urlopen(url_or_path))
+            try:    
+                parser.ParseFile(f)
+            except Exception:
+                pass
+            finally:
+                f.close()
         elif url_or_path[:100].strip().startswith('<'):
-            # Actual XML data.
             if isinstance(url_or_path, unicode):
-                # The parser doesn't like unicode strings, encode it to UTF-8 (or whatever) bytes.
                 if encoding is None:
                     encoding = 'utf-8'
                 url_or_path = url_or_path.encode(encoding)
-            src = InputSource()
-            src.setByteStream(bytes_io(url_or_path))
-            if encoding:
-                src.setEncoding(encoding)
-            parser.parse(src)
+            parser.Parse(url_or_path, True)
         else:
-            # Assume a filesystem path.
-            parser.parse(open(url_or_path, 'rb'))
+            f = open(url_or_path, 'rb')
+            try:
+                parser.ParseFile(f)
+            except Exception:
+                pass 
+            finally:
+                f.close()
     elif PY3 and isinstance(url_or_path, bytes):
-        # For Python 3 bytes, create an InputSource and set the byte stream.
-        src = InputSource()
-        src.setByteStream(bytes_io(url_or_path))
-        if encoding:
-            src.setEncoding(encoding)
-        parser.parse(src)
+        parser.ParseFile(bytes_io(url_or_path))
     else:
-        # A file-like object or an InputSource.
-        parser.parse(url_or_path)
+        parser.ParseFile(url_or_path)
     return handler.root
 
 class DrillElementIterator (object):
@@ -373,10 +554,9 @@ class DrillElementIterator (object):
     def next(self):
         while not self.elements:
             data = self.filelike.read(self.READ_CHUNK_SIZE)
+            self.parser.Parse(data, not data)
             if not data:
                 raise StopIteration
-            # Feeding the parser will cause the handler to call our add method for parsed elements.
-            self.parser.feed(data)
         return self.elements.pop(0)
 
     def __iter__(self):
@@ -385,11 +565,13 @@ class DrillElementIterator (object):
 def iterparse(filelike):
     """
     :param filelike: A file-like object with a ``read`` method
-    :returns: An iterator returning :class:`XmlElement`
+    :returns: An iterator yielding :class:`XmlElement` objects
     """
-    parser = make_parser(['xml.sax.expatreader'])
-    parser.setFeature(feature_namespaces, 0)
+    parser = expat.ParserCreate()
     elem_iter = DrillElementIterator(filelike, parser)
-    handler = DrillContentHandler(elem_iter)
-    parser.setContentHandler(handler)
+    handler = DrillHandler(elem_iter)
+    parser.buffer_text = 1
+    parser.StartElementHandler = handler.start_element
+    parser.EndElementHandler = handler.end_element
+    parser.CharacterDataHandler = handler.characters
     return elem_iter
