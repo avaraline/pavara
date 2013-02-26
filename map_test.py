@@ -5,7 +5,7 @@ from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
 
 from pavara.maps import load_maps
-from pavara.world import Block, Hector
+from pavara.world import Block, FreeSolid, Hector
 
 
 class Pavara (ShowBase):
@@ -20,14 +20,14 @@ class Pavara (ShowBase):
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
-
         print render.analyze()
+
         # Testing physical hector.
         incarn = self.map.world.get_incarn()
         self.hector = self.map.world.attach(Hector(incarn))
-        self.hector.setupColor({"barrel_color": Vec3(.4,.7,.4),
-            "barrel_trim_color": Vec3(.8,.9,.6), "visor_color": Vec3(.3,.6,1),
-            "body_color":Vec3(.2,.5,.3)})
+        self.hector.setupColor({"barrel_color": Vec3(.7,.7,.7),
+            "barrel_trim_color": Vec3(.2,.2,.2), "visor_color": Vec3(.3,.6,1),
+            "body_color":Vec3(.6,.2,.2)})
 
         self.setupInput()
 
@@ -60,11 +60,10 @@ class Pavara (ShowBase):
         self.keyMap[key] = value
 
     def drop_blocks(self):
-        block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
-        block.move((0, 40, 0))
+        block = self.map.world.attach(FreeSolid(Block((1, 1, 1), (1, 0, 0, 1), 0.01, (0, 40, 0), (0, 0, 0)), 0.01))
         for i in range(10):
-            block = self.map.world.attach(Block((1, 1, 1), (1, 0, 0, 1), 0.01))
-            block.move((random.randint(-25, 25), 40, random.randint(-25, 25)))
+            rand_pos = (random.randint(-25, 25), 40, random.randint(-25, 25))
+            block = self.map.world.attach(FreeSolid(Block((1, 1, 1), (1, 0, 0, 1), 0.01, rand_pos, (0, 0, 0)), 0.01))
 
     def setupInput(self):
         self.keyMap = { 'left': 0

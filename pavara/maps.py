@@ -67,7 +67,7 @@ class Map (object):
 
     def parse_static(self, node):
         world = self.world
-        self.world = CompositeObject()
+        self.world = self.wrap_object(CompositeObject())
         self.process_children(node)
         world.attach(self.world)
         self.world = world

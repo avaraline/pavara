@@ -15,98 +15,100 @@
 	<teleporter location="0,30,0" group="recenter" model=""/>
 	<teleporter location="0,-30,0" activeRadius="175" deadRadius="130" destination="recenter" model=""/>
 
-	<!-- CENTER "H" -->
-	<block size="8,4.5,16" center="0,2.25,0" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,32" center="-8,2.25,0" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,32" center="8,2.25,0" color="0.18,0.39,0.40"/>
+	<static>
+		<!-- CENTER "H" -->
+		<block size="8,4.5,16" center="0,2.25,0" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,32" center="-8,2.25,0" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,32" center="8,2.25,0" color="0.18,0.39,0.40"/>
 
-	<!-- TIER 2 BASES -->
-	<block size="32,4.5,32" center="-28,2.25,0" color="0.18,0.39,0.40"/>
-	<block size="32,4.5,32" center="28,2.25,0" color="0.18,0.39,0.40"/>
+		<!-- TIER 2 BASES -->
+		<block size="32,4.5,32" center="-28,2.25,0" color="0.18,0.39,0.40"/>
+		<block size="32,4.5,32" center="28,2.25,0" color="0.18,0.39,0.40"/>
 
-	<!-- MISC TIER 1 BLOCKS (NEGATIVE X) -->
-	<block size="24,4.5,8" center="-24,2.25,-20" color="0.18,0.39,0.40"/>
-	<block size="24,4.5,8" center="-24,2.25,20" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,16" center="-48,2.25,0" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-48,2.25,-20" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-48,2.25,20" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-24,2.25,-28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-8,2.25,-28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-8,2.25,-44" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-24,2.25,28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-8,2.25,28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="-8,2.25,44" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="0,2.25,-36" color="0.18,0.39,0.40"/>
+		<!-- MISC TIER 1 BLOCKS (NEGATIVE X) -->
+		<block size="24,4.5,8" center="-24,2.25,-20" color="0.18,0.39,0.40"/>
+		<block size="24,4.5,8" center="-24,2.25,20" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,16" center="-48,2.25,0" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-48,2.25,-20" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-48,2.25,20" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-24,2.25,-28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-8,2.25,-28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-8,2.25,-44" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-24,2.25,28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-8,2.25,28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="-8,2.25,44" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="0,2.25,-36" color="0.18,0.39,0.40"/>
 
-	<!-- MISC TIER 1 BLOCKS (POSITIVE X) -->
-	<block size="24,4.5,8" center="24,2.25,-20" color="0.18,0.39,0.40"/>
-	<block size="24,4.5,8" center="24,2.25,20" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,16" center="48,2.25,0" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="48,2.25,-20" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="48,2.25,20" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="24,2.25,-28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="8,2.25,-28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="8,2.25,-44" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="24,2.25,28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="8,2.25,28" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="8,2.25,44" color="0.18,0.39,0.40"/>
-	<block size="8,4.5,8" center="0,2.25,36" color="0.18,0.39,0.40"/>
+		<!-- MISC TIER 1 BLOCKS (POSITIVE X) -->
+		<block size="24,4.5,8" center="24,2.25,-20" color="0.18,0.39,0.40"/>
+		<block size="24,4.5,8" center="24,2.25,20" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,16" center="48,2.25,0" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="48,2.25,-20" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="48,2.25,20" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="24,2.25,-28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="8,2.25,-28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="8,2.25,-44" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="24,2.25,28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="8,2.25,28" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="8,2.25,44" color="0.18,0.39,0.40"/>
+		<block size="8,4.5,8" center="0,2.25,36" color="0.18,0.39,0.40"/>
 
-	<!-- PIT (NEGATIVE Z) -->
-	<ramp base="-4,0,-20" top="-12,4.5,-20" color="0,0.06,0.32"/>
-	<ramp base="0,0,-24" top="0,4.5,-32" color="0,0.06,0.32"/>
-	<ramp base="4,0,-20" top="12,4.5,-20" color="0,0.06,0.32"/>
-	<ramp base="0,0,-16" top="0,4.5,-8" color="0,0.06,0.32"/>
+		<!-- PIT (NEGATIVE Z) -->
+		<ramp base="-4,0,-20" top="-12,4.5,-20" color="0,0.06,0.32"/>
+		<ramp base="0,0,-24" top="0,4.5,-32" color="0,0.06,0.32"/>
+		<ramp base="4,0,-20" top="12,4.5,-20" color="0,0.06,0.32"/>
+		<ramp base="0,0,-16" top="0,4.5,-8" color="0,0.06,0.32"/>
 
-	<!-- PIT (POSITIVE Z) -->
-	<ramp base="-4,0,20" top="-12,4.5,20" color="0,0.06,0.32"/>
-	<ramp base="0,0,24" top="0,4.5,32" color="0,0.06,0.32"/>
-	<ramp base="4,0,20" top="12,4.5,20" color="0,0.06,0.32"/>
-	<ramp base="0,0,16" top="0,4.5,8" color="0,0.06,0.32"/>
+		<!-- PIT (POSITIVE Z) -->
+		<ramp base="-4,0,20" top="-12,4.5,20" color="0,0.06,0.32"/>
+		<ramp base="0,0,24" top="0,4.5,32" color="0,0.06,0.32"/>
+		<ramp base="4,0,20" top="12,4.5,20" color="0,0.06,0.32"/>
+		<ramp base="0,0,16" top="0,4.5,8" color="0,0.06,0.32"/>
 
-	<!-- MISC TIER 1 RAMPS (NEGATIVE Z) -->
-	<ramp base="-52,0,-12" top="-44,4.5,-12" color="0,0.06,0.32"/>
-	<ramp base="-40,0,-24" top="-40,4.5,-16" color="0,0.06,0.32"/>
-	<ramp base="52,0,-12" top="44,4.5,-12" color="0,0.06,0.32"/>
-	<ramp base="40,0,-24" top="40,4.5,-16" color="0,0.06,0.32"/>
-	<ramp base="-16,0,-32" top="-16,4.5,-24" color="0,0.06,0.32"/>
-	<ramp base="-12,0,-36" top="-4,4.5,-36" color="0,0.06,0.32"/>
-	<ramp base="16,0,-32" top="16,4.5,-24" color="0,0.06,0.32"/>
-	<ramp base="12,0,-36" top="4,4.5,-36" color="0,0.06,0.32"/>
-	<ramp base="0,0,-48" top="0,4.5,-40" color="0,0.06,0.32"/>
+		<!-- MISC TIER 1 RAMPS (NEGATIVE Z) -->
+		<ramp base="-52,0,-12" top="-44,4.5,-12" color="0,0.06,0.32"/>
+		<ramp base="-40,0,-24" top="-40,4.5,-16" color="0,0.06,0.32"/>
+		<ramp base="52,0,-12" top="44,4.5,-12" color="0,0.06,0.32"/>
+		<ramp base="40,0,-24" top="40,4.5,-16" color="0,0.06,0.32"/>
+		<ramp base="-16,0,-32" top="-16,4.5,-24" color="0,0.06,0.32"/>
+		<ramp base="-12,0,-36" top="-4,4.5,-36" color="0,0.06,0.32"/>
+		<ramp base="16,0,-32" top="16,4.5,-24" color="0,0.06,0.32"/>
+		<ramp base="12,0,-36" top="4,4.5,-36" color="0,0.06,0.32"/>
+		<ramp base="0,0,-48" top="0,4.5,-40" color="0,0.06,0.32"/>
 
-	<!-- MISC TIER 1 RAMPS (POSITIVE Z) -->
-	<ramp base="-52,0,12" top="-44,4.5,12" color="0,0.06,0.32"/>
-	<ramp base="-40,0,24" top="-40,4.5,16" color="0,0.06,0.32"/>
-	<ramp base="52,0,12" top="44,4.5,12" color="0,0.06,0.32"/>
-	<ramp base="40,0,24" top="40,4.5,16" color="0,0.06,0.32"/>
-	<ramp base="-16,0,32" top="-16,4.5,24" color="0,0.06,0.32"/>
-	<ramp base="-12,0,36" top="-4,4.5,36" color="0,0.06,0.32"/>
-	<ramp base="16,0,32" top="16,4.5,24" color="0,0.06,0.32"/>
-	<ramp base="12,0,36" top="4,4.5,36" color="0,0.06,0.32"/>
-	<ramp base="0,0,48" top="0,4.5,40" color="0,0.06,0.32"/>
+		<!-- MISC TIER 1 RAMPS (POSITIVE Z) -->
+		<ramp base="-52,0,12" top="-44,4.5,12" color="0,0.06,0.32"/>
+		<ramp base="-40,0,24" top="-40,4.5,16" color="0,0.06,0.32"/>
+		<ramp base="52,0,12" top="44,4.5,12" color="0,0.06,0.32"/>
+		<ramp base="40,0,24" top="40,4.5,16" color="0,0.06,0.32"/>
+		<ramp base="-16,0,32" top="-16,4.5,24" color="0,0.06,0.32"/>
+		<ramp base="-12,0,36" top="-4,4.5,36" color="0,0.06,0.32"/>
+		<ramp base="16,0,32" top="16,4.5,24" color="0,0.06,0.32"/>
+		<ramp base="12,0,36" top="4,4.5,36" color="0,0.06,0.32"/>
+		<ramp base="0,0,48" top="0,4.5,40" color="0,0.06,0.32"/>
 
-	<!-- TIER 2 HILLS (NEGATIVE X) -->
-	<block size="8,4.5,8" center="-28,6.75,0" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="-36,6.75,-8" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="-20,6.75,-8" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="-36,6.75,8" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="-20,6.75,8" color="0.33,0.59,0.60"/>
-	<ramp base="-40,4.5,0" top="-32,9,0" color="0,0.06,0.32"/>
-	<ramp base="-28,4.5,-12" top="-28,9,-4" color="0,0.06,0.32"/>
-	<ramp base="-16,4.5,0" top="-24,9,0" color="0,0.06,0.32"/>
-	<ramp base="-28,4.5,12" top="-28,9,4" color="0,0.06,0.32"/>
+		<!-- TIER 2 HILLS (NEGATIVE X) -->
+		<block size="8,4.5,8" center="-28,6.75,0" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="-36,6.75,-8" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="-20,6.75,-8" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="-36,6.75,8" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="-20,6.75,8" color="0.33,0.59,0.60"/>
+		<ramp base="-40,4.5,0" top="-32,9,0" color="0,0.06,0.32"/>
+		<ramp base="-28,4.5,-12" top="-28,9,-4" color="0,0.06,0.32"/>
+		<ramp base="-16,4.5,0" top="-24,9,0" color="0,0.06,0.32"/>
+		<ramp base="-28,4.5,12" top="-28,9,4" color="0,0.06,0.32"/>
 
-	<!-- TIER 2 HILLS (POSITIVE X) -->
-	<block size="8,4.5,8" center="28,6.75,0" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="36,6.75,8" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="20,6.75,8" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="36,6.75,-8" color="0.33,0.59,0.60"/>
-	<block size="8,4.5,8" center="20,6.75,-8" color="0.33,0.59,0.60"/>
-	<ramp base="40,4.5,0" top="32,9,0" color="0,0.06,0.32"/>
-	<ramp base="28,4.5,12" top="28,9,4" color="0,0.06,0.32"/>
-	<ramp base="16,4.5,0" top="24,9,0" color="0,0.06,0.32"/>
-	<ramp base="28,4.5,-12" top="28,9,-4" color="0,0.06,0.32"/>
+		<!-- TIER 2 HILLS (POSITIVE X) -->
+		<block size="8,4.5,8" center="28,6.75,0" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="36,6.75,8" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="20,6.75,8" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="36,6.75,-8" color="0.33,0.59,0.60"/>
+		<block size="8,4.5,8" center="20,6.75,-8" color="0.33,0.59,0.60"/>
+		<ramp base="40,4.5,0" top="32,9,0" color="0,0.06,0.32"/>
+		<ramp base="28,4.5,12" top="28,9,4" color="0,0.06,0.32"/>
+		<ramp base="16,4.5,0" top="24,9,0" color="0,0.06,0.32"/>
+		<ramp base="28,4.5,-12" top="28,9,-4" color="0,0.06,0.32"/>
+	</static>
 
 	<!-- GOODIES -->
 	<goody location="-28,10.75,0" grenades="8" respawn="18.75" model="Grenade" spin="32,0,0"/>
