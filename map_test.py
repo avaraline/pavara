@@ -16,7 +16,7 @@ class Pavara (ShowBase):
 
         # Init Panda3D crap.
         self.initP3D()
-        maps = load_maps('Maps/bodhi.xml', self.cam)
+        maps = load_maps('Maps/objecttest.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
@@ -96,6 +96,10 @@ class Pavara (ShowBase):
         self.accept('l-up',     self.hector.handle_command, ['right', False])
         self.accept('shift',    self.hector.handle_command, ['crouch', True])
         self.accept('shift-up', self.hector.handle_command, ['crouch', False])
+        self.accept('mouse1',   self.hector.handle_command, ['fire', True])
+        self.accept('mouse1-up',self.hector.handle_command, ['fire', False])
+        self.accept('u',        self.hector.handle_command, ['missile', True])
+        self.accept('u-up',     self.hector.handle_command, ['missile', False])
 
     def move(self, task):
         dt = globalClock.getDt()

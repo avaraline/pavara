@@ -1,71 +1,78 @@
 #!/usr/bin/python
 
-import sys, re, math
-import xml.etree.ElementTree as et
-
-
+import os, sys, re, math
+from pavara.utils import drill
+from pavara.utils.drill import XmlWriter
 
 class ConvertSVGLevel():
-    class Rect():
-        def __init__(self, pos_x, pos_y, width, height, fill, stroke):
+    class SVGObject():
+        def __init__(self):
+            self.x = None
+            self.y = None
+            self.fill = None
+            self.stroke = None
+            self.width = None
+            self.height = None
+            self.paths = None
+            self.text = None
+        
+        def set_pos(self, pos_x, pos_y):
             self.x = pos_x
             self.y = pos_y
-            self.height = height
+        
+        def set_fill_stroke(self, fill, stroke):
+            self.fill = fill
+            self.stroke = stroke
+        
+        def set_box_dim(self, width, height):
             self.width = width
-            self.fill = fill
-            self.stroke = stroke
-        def __repr__(self):
-            return "Rect { x: %s, y: %s, height: %s, width: %s, fill:%s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.fill,self.stroke)
-    class RoundRect():
-        def __init__(self, pos_x, pos_y, rect_width, rect_height, radius, fill, stroke):
-            self.x = pos_x
-            self.y = pos_y
-            self.height = rect_height
-            self.width = rect_width
-            self.radius = radius
-            self.fill = fill
-            self.stroke = stroke
-        def __repr__(self):
-            return "RoundRect { x: %s, y: %s, height: %s, width: %s, radius: %s, fill: %s, stroke: %s }" % (self.x,self.y,self.height,self.width,self.radius,self.fill,self.stroke)
-    
-    class Arc():
-        def __init__(self, pos_x, pos_y, angle, fill, stroke):    
-            self.x = pos_x
-            self.y = pos_y
-            self.angle = angle
-            self.fill = fill
-            self.stroke = stroke
-        def __repr__(self):
-            return "Arc { x: %s, y: %s, angle: %s, fill:%s, stroke: %s }" % (self.x, self.y, self.angle, self.fill, self.stroke)    
+            self.height = height
+        
+        def set_paths(self, paths):
+            self.paths = paths
+        
+        def set_text(self, text):
+            self.text = text
     
     def __init__(self, levelpath, outputpath, mapname):
-        self.oldfile = open(levelpath, 'r')
+        #self.oldfile = open(levelpath, 'r')
+        levelpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), levelpath)
+        outputpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), outputpath)
+        
+        self.svg_doc = drill.parse(levelpath)
         self.newfile = open(outputpath, 'w')
-        xmltext = '\n'.join(self.oldfile.readlines())
-        tree = et.parse(levelpath)
-        root = tree.getroot()
-        
         self.newfile.write('<?xml version="1.0" standalone="yes" ?>\n')
-        self.newtree = et.Element('map')
-        self.newtree.set("name", mapname)
+        self.xml_writer = XmlWriter(self.newfile)
         
-        print root.tag
-        print root.attrib
+        print self.svg_doc
         
-        doc_width = float(root.get('width').strip('px'))
-        doc_height = float(root.get('height').strip('px'))
+        doc_width = float(self.svg_doc.attrs['width'].strip('px'))
+        doc_height = float(self.svg_doc.attrs['height'].strip('px'))
         
         self.center_x = self.pix_to_units(doc_width / 2.0)
         self.center_y = self.pix_to_units(doc_height / 2.0)
         
-        self.el_stack = []
+        self.svg_stack = []
         self.curr_wa = 0
         self.curr_wall_height = 0
-        self.block_follows = False
         
-        for idx,child in enumerate(root):
-            print idx, child
-            print child.attrib
+        print self.svg_doc.attrs
+        
+        for child in self.svg_doc.find('//g'):
+            for gchild in child.children():
+                print gchild.attrs
+                print gchild
+                if gchild.tagname == "path":
+                    p = new SVGObject()
+                    p.set_paths(self.parse_pathdata(gchild.attrs['d']))
+                    p.set_fill_stroke(self.parse_style(gchild.attrs['style']))
+                    self.svg_stack.append(p)
+                elif gchild.tagname == "rect":
+                    r = new SVGObject()
+                    r.set_pos(gchild.attrs['x'], gchild.attrs['y'])
+                    r.set_box_dim(gchild.attrs['width'], gchild.attrs['height'])
+            
+            continue
             found_paths = []
             found_rects = []
             found_script = []
@@ -172,10 +179,28 @@ class ConvertSVGLevel():
                 self.parse_script(lines)
                 del(found_script[:])
         #end for each child
-        et.dump(self.newtree)
-        self.newfile.write(et.tostring(self.newtree))
-            
-                
+    
+    def parse_style(self, stylestring):
+        this_fill = None
+        this_stroke = None
+        styles = style.split(";")
+        for style in styles:
+            s_split = style.split(':')
+            if s_split[0] == "fill" and s_split[1] != "none":
+                this_fill = s_split[1]
+            if s_split[0] == "stroke":
+                this_stroke = s_split[1]
+        return (this_fill, this_stroke)
+    
+    def parse_pathdata(self, pathdata):
+        instructions = pathdata.split(',')
+        path_data_out = []
+        for inst in instructions:
+            command = inst[0]
+            arguments = inst[1:]
+            path_data_out.append((command,arguments))
+        return path_data_out
+                    
     def get_rot_loc_from_path(self, pathdata, is_stroke):
         #print pathdata
         pdata = re.split('([a-zA-Z]{1})',pathdata)
@@ -282,7 +307,7 @@ class ConvertSVGLevel():
         
         
         #print "rotation: %s, position: %s" %(c_angle, (loc_x, loc_y))
-        if(is_stroke):
+        if(is_stroke): 
             return c_angle
         else:    
             print (loc_x, loc_y)

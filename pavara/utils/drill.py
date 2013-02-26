@@ -513,8 +513,8 @@ def parse(url_or_path, encoding=None):
             f = contextlib.closing(url_lib.urlopen(url_or_path))
             try:    
                 parser.ParseFile(f)
-            except Exception:
-                pass
+            except Exception, e:
+                raise e
             finally:
                 f.close()
         elif url_or_path[:100].strip().startswith('<'):
@@ -527,8 +527,8 @@ def parse(url_or_path, encoding=None):
             f = open(url_or_path, 'rb')
             try:
                 parser.ParseFile(f)
-            except Exception:
-                pass 
+            except Exception, e:
+                raise e 
             finally:
                 f.close()
     elif PY3 and isinstance(url_or_path, bytes):

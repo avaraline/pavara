@@ -193,6 +193,8 @@ class Transparent (Effect):
 
     def create_node(self):
         node = self.effected.create_node()
+        node.setTwoSided(True)
+        node.setDepthWrite(False) 
         node.set_transparency(TransparencyAttrib.MAlpha)
         node.setAlphaScale(self.alpha)
         return node
@@ -432,7 +434,12 @@ class Hector (PhysicalObject):
         if cmd is 'crouch' and not pressed and self.on_ground:
             self.y_velocity = 0.1
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
-
+        if cmd is 'fire' and pressed:
+        	self.handle_fire()
+	
+	def handle_fire(self):
+		pass
+	
     def update(self, dt):
         dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
         yaw = self.movement['left'] + self.movement['right']
