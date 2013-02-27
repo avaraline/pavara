@@ -2,7 +2,7 @@
 <map name="Nightsky" author="Sir Aureus &lt;sir.aureus@gmail.com&gt; (shamelessly cribbed from Quell)">
 	<sky color="0,0,0" horizon="0.15,0.0,0.3" ambient="0.1,0.1,0.1">
 		<celestial azimuth="30" elevation="20" color="1.0,1.0,1.0" intensity="0.6" visible="true"/>
-		<starfield seed="1234567890" count="1000" minColor="0.85,0.85,0.85" maxColor="1.0,1.0,1.0" minSize="0.02" maxSize="0.035" mode="realistic"/>
+		<starfield seed="1234567890" count="1000" mode="realistic"/>
 	</sky>
 
 	<ground color="0.15,0.15,0.15"/>

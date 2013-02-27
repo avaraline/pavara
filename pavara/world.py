@@ -197,6 +197,8 @@ class Transparent (Effect):
         node.setTwoSided(True)
         node.setDepthWrite(False) 
         node.set_transparency(TransparencyAttrib.MAlpha)
+        node.setTwoSided(True)
+        node.setDepthWrite(False)
         node.setAlphaScale(self.alpha)
         return node
 
@@ -557,11 +559,11 @@ class Dome (PhysicalObject):
     A dome.
     """
 
-    def __init__(self, radius, color, mass, center, hpr, name=None, **kwargs):
+    def __init__(self, radius, samples, planes, color, mass, center, hpr, name=None):
         super(Dome, self).__init__(name)
-        self.samples = kwargs.get('samples', 8)
-        self.planes = kwargs.get('planes', 5)
         self.radius = radius
+        self.samples = samples
+        self.planes = planes
         self.color = color
         self.mass = mass
         self.center = center
@@ -898,23 +900,30 @@ class World (object):
         location = Vec3(to_cartesian(azimuth, elevation, 1000.0 * 255.0 / 256.0))
         if intensity:
             dlight = DirectionalLight('celestial')
-            dlight.set_color((color[0]*intensity, color[1]*intensity, color[2]*intensity, 1.0))
+            dlight.set_color((color[0] * intensity, color[1] * intensity,
+                color[2] * intensity, 1.0))
             node = self.render.attach_new_node(dlight)
             node.look_at(*(location * -1))
             self.render.set_light(node)
         if visible:
-            if radius < 0.1:
+            if radius <= 2.0:
                 samples = 6
+            elif radius >= 36.0:
+                samples = 40
             else:
-                samples = 20
-            sphere = Dome(45*radius, color, 0, location, ((-(math.degrees(azimuth)) ), 90+math.degrees(elevation), 0), samples=samples, planes=2)
-            self.celestials.attach(sphere)
+                samples = int(round(((1.5 * radius) * (2 / 3.0)) + 3.75))
+            celestial = Dome(radius * 1.5, samples, 2, color, 0, location,
+                ((-(math.degrees(azimuth))), 90 + math.degrees(elevation), 0))
+            self.celestials.attach(celestial)
 
     def create_celestial_node(self):
+        bounds = self.camera.node().get_lens().make_bounds()
         self.celestials = self.celestials.create_node()
         self.celestials.set_transparency(TransparencyAttrib.MAlpha)
         self.celestials.set_light_off()
         self.celestials.set_effect(CompassEffect.make(self.camera, CompassEffect.PPos))
+        self.celestials.node().set_bounds(bounds)
+        self.celestials.node().set_final(True)
         self.celestials.reparent_to(self.render)
 
     def register_collider(self, obj):

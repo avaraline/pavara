@@ -1,6 +1,8 @@
 <?xml version="1.0" standalone="yes" ?>
 <map name="Stratocaster" tagline="Musical." author="ryan &apos;silverfox&apos; herriman" description="Pick me up and finger me.">
-	<sky color="0,0.235,0.231" horizon="0.937,0.953,0.953" horizonScale="0.65"/>
+	<sky color="0,0.235,0.231" horizon="0.937,0.953,0.953" horizonScale="0.65">
+		<starfield seed="81321345589144" count="437" minSize="0.4" maxSize="0.8" mode="realistic"/>
+	</sky>
 	<ground color="0,0.235,0.231"/>
 
 	<!-- INCARNATORS -->

@@ -19,22 +19,44 @@
 
 	<static>
 		<!-- OUTER WALLS -->
-		<block size="68,12,6" center="0,6,-37" color="0.322,0.561,0.8"/>
-		<block size="6,12,68" center="37,6,0" color="0.322,0.561,0.8"/>
-		<block size="68,12,6" center="0,6,37" color="0.322,0.561,0.8"/>
-		<block size="6,12,68" center="-37,6,0" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="-24.042,6,-37" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="24.042,6,-37" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="-9.163,6,-43.163" yaw="45" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="9.163,6,-43.163" yaw="-45" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="37,6,-24.042" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="37,6,24.042" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="43.163,6,-9.163" yaw="45" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="43.163,6,9.163" yaw="-45" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="24.042,6,37" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="-24.042,6,37" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="9.163,6,43.163" yaw="45" color="0.322,0.561,0.8"/>
+		<block size="19.917,12,6" center="-9.163,6,43.163" yaw="-45" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="-37,6,24.042" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="-37,6,-24.042" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="-43.163,6,9.163" yaw="45" color="0.322,0.561,0.8"/>
+		<block size="6,12,19.917" center="-43.163,6,-9.163" yaw="-45" color="0.322,0.561,0.8"/>
+
 		<block size="8,20,8" center="-38,10,-38" color="0.102,0.149,0.2"/>
+		<block size="8,20,8" center="0,10,-53.741" yaw="45" color="0.102,0.149,0.2"/>
 		<block size="8,20,8" center="38,10,-38" color="0.102,0.149,0.2"/>
+		<block size="8,20,8" center="53.741,10,0" yaw="45" color="0.102,0.149,0.2"/>
 		<block size="8,20,8" center="38,10,38" color="0.102,0.149,0.2"/>
+		<block size="8,20,8" center="0,10,53.741" yaw="45" color="0.102,0.149,0.2"/>
 		<block size="8,20,8" center="-38,10,38" color="0.102,0.149,0.2"/>
+		<block size="8,20,8" center="-53.741,10,0" yaw="45" color="0.102,0.149,0.2"/>
+
 		<block size="6,3,6" center="-31,1.5,-31" color="0.102,0.149,0.2"/>
+		<block size="6,3,6" center="0,1.5,-43.842" yaw="45" color="0.102,0.149,0.2"/>
 		<block size="6,3,6" center="31,1.5,-31" color="0.102,0.149,0.2"/>
+		<block size="6,3,6" center="43.842,1.5,0" yaw="45" color="0.102,0.149,0.2"/>
 		<block size="6,3,6" center="31,1.5,31" color="0.102,0.149,0.2"/>
+		<block size="6,3,6" center="0,1.5,43.842" yaw="45" color="0.102,0.149,0.2"/>
 		<block size="6,3,6" center="-31,1.5,31" color="0.102,0.149,0.2"/>
+		<block size="6,3,6" center="-43.842,1.5,0" yaw="45" color="0.102,0.149,0.2"/>
 	</static>
 
 	<!-- ICE CUBES -->
-	<transparent alpha="0.6">
+	<transparent alpha="0.4">
 		<freesolid relativeGravity="0.12" mass="20" power="10">
 			<block size="5,2.5,5" center="-24,1.25,-24" color="0.8,0.898,1"/>
 			<block size="5,2.5,5" center="-16,1.25,-24" color="0.8,0.898,1"/>
@@ -75,8 +97,12 @@
 	</transparent>
 
 	<!-- GOODIES -->
-	<goody location="31,5,-31" grenades="4" respawn="15.625" model="Grenade" spin="80,0,0"/>
-	<goody location="-31,5,31" grenades="4" respawn="15.625" model="Grenade" spin="80,0,0"/>
-	<goody location="-31,5,-31" missiles="4" respawn="12.5" model="Missile" spin="80,0,0"/>
-	<goody location="31,5,31" missiles="4" respawn="12.5" model="Missile" spin="80,0,0"/>
+	<goody location="31,5,-31" grenades="4" respawn="18.75" model="Grenade" spin="80,0,0"/>
+	<goody location="-31,5,31" grenades="4" respawn="18.75" model="Grenade" spin="80,0,0"/>
+	<goody location="-31,5,-31" grenades="4" respawn="18.75" model="Grenade" spin="80,0,0"/>
+	<goody location="31,5,31" grenades="4" respawn="18.75" model="Grenade" spin="80,0,0"/>
+	<goody location="0,5,-43.842" missiles="4" respawn="18.75" model="Missile" spin="80,0,0"/>
+	<goody location="43.842,5,0" missiles="4" respawn="18.75" model="Missile" spin="80,0,0"/>
+	<goody location="0,5,43.842" missiles="4" respawn="18.75" model="Missile" spin="80,0,0"/>
+	<goody location="-43.842,5,0" missiles="4" respawn="18.75" model="Missile" spin="80,0,0"/>
 </map>
