@@ -1,5 +1,5 @@
 <?xml version="1.0" standalone="yes" ?>
-<map name="Bodhi" debug="false" tagline="Sought a yogi, found a grizzly." author="ryan &apos;silverfox&apos; herriman" description="Within three lifetimes, even you may escape the cycle of rebirth.">
+<map name="Bodhi" tagline="Sought a yogi, found a grizzly." author="ryan &apos;silverfox&apos; herriman" description="Within three lifetimes, even you may escape the cycle of rebirth.">
 	<sky color="0.812,0.953,0.859" horizon="0.780,0.780,0.635">
 		<celestial azimuth="10" elevation="20" color="1,1,1" intensity="0.8" visible="true"/>
 		<celestial azimuth="200" elevation="20" color="1,1,1" intensity="0.3" visible="false"/>

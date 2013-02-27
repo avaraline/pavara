@@ -16,11 +16,10 @@ class Pavara (ShowBase):
 
         # Init Panda3D crap.
         self.initP3D()
-        maps = load_maps('Maps/nightsky.xml', self.cam)
+        maps = load_maps('Maps/bodhi.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
-        print render.analyze()
 
         # Testing physical hector.
         incarn = self.map.world.get_incarn()
@@ -36,6 +35,7 @@ class Pavara (ShowBase):
 
         self.map.show(self.render)
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
+        print render.analyze()
 
         # axes = loader.loadModel('models/yup-axis')
         # axes.setScale(10)

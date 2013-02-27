@@ -50,8 +50,8 @@ class Map (object):
         self.world = World(camera, debug=parse_bool(root['debug']))
         self.process_children(root)
         if not self.has_celestials:
-            self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 1.0, False)
-            self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 1.0, False)
+            self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 30.0, False)
+            self.world.add_celestial(math.radians(200), math.radians(20), (1, 1, 1, 1), 0.3, 30.0, False)
         self.world.create_celestial_node()
 
     def show(self, render):
@@ -141,12 +141,14 @@ class Map (object):
     def parse_dome(self, node):
         center = parse_vector(node['center'])
         radius = parse_float(node['radius'], 2.5)
+        samples = parse_int(node['samples'], 8)
+        planes = parse_int(node['planes'], 5)
         color = parse_color(node['color'], (1, 1, 1, 1))
         mass = parse_float(node['mass'])
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
-        dome = self.world.attach(self.wrap_object(Dome(radius, color, mass, center, (yaw, pitch, roll), name=node['id'])))
+        dome = self.world.attach(self.wrap_object(Dome(radius, samples, planes, color, mass, center, (yaw, pitch, roll), name=node['id'])))
 
     def parse_sky(self, node):
         color = parse_color(node['color'], DEFAULT_SKY_COLOR)
@@ -165,7 +167,8 @@ class Map (object):
             color = parse_color(child['color'], (1, 1, 1, 1))
             intensity = parse_float(child['intensity'], 0.6)
             visible = parse_bool(child['visible'])
-            self.world.add_celestial(azimuth, elevation, color, intensity, 1.0, visible)
+            size = parse_float(child['size'], 30.0)
+            self.world.add_celestial(azimuth, elevation, color, intensity, size, visible)
             self.has_celestials = True
 
         for child in node.children('starfield'):
@@ -173,8 +176,8 @@ class Map (object):
             count = parse_int(child['count'])
             min_color = parse_color(child['minColor'], (1, 1, 1, 1))
             max_color = parse_color(child['maxColor'], (1, 1, 1, 1))
-            min_size = parse_float(child['minSize'], 0.025)
-            max_size = parse_float(child['maxSize'], 0.025)
+            min_size = parse_float(child['minSize'], 0.4)
+            max_size = parse_float(child['maxSize'], 1.0)
             mode = child['mode'] or 'default'
             mode = mode.strip().lower()
             min_r = min_color[0]
