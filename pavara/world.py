@@ -23,6 +23,7 @@ MIN_PLASMA_CHARGE = .4
 HECTOR_RECHARGE_FACTOR = .23
 HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
 HECTOR_MIN_CHARGE_ENERGY = .2
+PLASMA_LIFESPAN = 900
 
 MISSILE_ENGINE_COLORS = [
                             [173.0/255.0, 0, 0] #dark red
@@ -31,6 +32,10 @@ MISSILE_ENGINE_COLORS = [
                            ,[247.0/255.0, 76.0/255.0, 42.0/255.0] #brighter red
                         ]
 MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
+MISSILE_SCALE = .33
+MISSILE_OFFSET = [0, 6, 2.5]
+MISSILE_LIFESPAN = 600
+
 class WorldObject (object):
     """
     Base class for anything attached to a World.
@@ -382,13 +387,13 @@ class Hector (PhysicalObject):
         self.right_barrel_end.set_pos(self.right_barrel_end, -.31, 1.6,.82)
         
         self.loaded_missile = load_model('missile.egg')
-        self.loaded_missile.set_scale(.4)
+        self.loaded_missile.set_scale(MISSILE_SCALE)
         self.body = self.loaded_missile.find('**/bodywings')
         self.body.set_color(*MISSILE_BODY_COLOR)
         self.main_engines = self.loaded_missile.find('**/mainengines')
         self.wing_engines = self.loaded_missile.find('**/wingengines')
         self.loaded_missile.reparentTo(self.head)
-        self.loaded_missile.set_pos(self.loaded_missile, 0, 5, 2.5)
+        self.loaded_missile.set_pos(self.loaded_missile, *MISSILE_OFFSET)
         self.main_engines.set_color(.2,.2,.2)
         self.wing_engines.set_color(.2,.2,.2)
         self.loaded_missile.hide()
@@ -848,6 +853,7 @@ class Plasma (PhysicalObject):
         self.pos = Vec3(*pos)
         self.hpr = hpr
         self.energy = energy
+        self.age = 0
     
     def create_node(self):
         m = load_model('plasma.egg')
@@ -884,7 +890,8 @@ class Plasma (PhysicalObject):
         self.move_by(0,0,(dt*60)/4)
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
-        if len(result.getContacts()) > 0:
+        self.age += dt*60
+        if len(result.getContacts()) > 0 or self.age > PLASMA_LIFESPAN:
             self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
 
@@ -893,7 +900,8 @@ class Missile (PhysicalObject):
         self.name = "missile"+(''.join(random.choice(string.digits) for x in range(5)))
         self.pos = Vec3(*pos)
         self.hpr = hpr
-        self.move_divisor = 12
+        self.move_divisor = 9
+        self.age = 0
     
     def create_node(self):
         self.model = load_model('missile.egg')
@@ -903,7 +911,7 @@ class Missile (PhysicalObject):
         self.wing_engines = self.model.find('**/wingengines')
         self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
-        self.model.set_scale(.5)
+        self.model.set_scale(MISSILE_SCALE)
         self.model.set_hpr(0,0,0)
         return self.model
     
@@ -924,12 +932,12 @@ class Missile (PhysicalObject):
     def update(self, dt):
         self.move_by(0,0,(dt*60)/self.move_divisor)
         if self.move_divisor > 2:
-            self.move_divisor -= .3
+            self.move_divisor -= .25
         self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         result = self.world.physics.contact_test(self.solid)
-        if len(result.getContacts()) > 0:
-            self.world.render.clear_light(self.light_node)
+        self.age += dt
+        if len(result.getContacts()) > 0 or self.age > MISSILE_LIFESPAN:
             self.world.garbage.add(self)
         
 
