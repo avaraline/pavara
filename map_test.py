@@ -20,7 +20,6 @@ class Pavara (ShowBase):
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
-        print render.analyze()
 
         # Testing physical hector.
         incarn = self.map.world.get_incarn()
@@ -31,10 +30,8 @@ class Pavara (ShowBase):
 
         self.setupInput()
 
-        # Put the hector in the World's render so the lighting applies correctly
-        # self.h = HectorActor(self.map.world.render, 0, 13, 14, 90)
-
         self.map.show(self.render)
+        print render.analyze()
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
 
         # axes = loader.loadModel('models/yup-axis')
@@ -74,6 +71,8 @@ class Pavara (ShowBase):
                       , 'rotateRight': 0
                       , 'walkForward': 0
                       , 'crouch': 0
+                      , 'fire': 0
+                      , 'missile': 0
                       }
         self.accept('escape', sys.exit)
         self.accept('p', self.drop_blocks)

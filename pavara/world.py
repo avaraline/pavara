@@ -6,6 +6,7 @@ from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
 import math
 import random
+import string
 
 DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
 DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
@@ -231,6 +232,7 @@ class Hector (PhysicalObject):
         self.head_height = Vec3(0, 1.5, 0)
         self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.missle_loaded = False
+        self.grenade_loaded = False
         
     def create_node(self):
         from direct.actor.Actor import Actor
@@ -356,6 +358,13 @@ class Hector (PhysicalObject):
                            )
 
         self.walk_forward_seq = make_walk_sequence()
+        
+        self.left_barrel_end = self.actor.attach_new_node("hector_barrel_node_left")
+        self.left_barrel_end.set_pos(self.left_barrel_end, .31, 1.6, .82)
+        
+        self.right_barrel_end = self.actor.attach_new_node("hector_barrel_node_right")
+        self.right_barrel_end.set_pos(self.left_barrel_end, -.31, 1.6,.82)
+        
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         return self.actor
@@ -433,13 +442,22 @@ class Hector (PhysicalObject):
     def handle_command(self, cmd, pressed):
         if cmd is 'crouch' and not pressed and self.on_ground:
             self.y_velocity = 0.1
-        self.movement[cmd] = self.factors[cmd] if pressed else 0.0
         if cmd is 'fire' and pressed:
-        	self.handle_fire()
-	
-	def handle_fire(self):
-		pass
-	
+            self.handle_fire()
+            return
+        self.movement[cmd] = self.factors[cmd] if pressed else 0.0
+
+    def handle_fire(self):
+        if self.missle_loaded:
+            pass
+        elif self.grenade_loaded:
+            pass
+        else:
+            origin = self.left_barrel_end.get_pos(self.world.render)
+            hpr = self.actor.get_hpr()
+            hpr += self.head.get_hpr()
+            plasma = self.world.attach(Plasma(origin, hpr, 1.0))
+    
     def update(self, dt):
         dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
         yaw = self.movement['left'] + self.movement['right']
@@ -756,13 +774,43 @@ class Goody (PhysicalObject):
                self.active = False
                self.node.hide()
 
-class Bolt (PhysicalObject):
-	def __init__(self, pos, vector, energy):
-		self.pos = Vec3(*pos)
-		self.vector = Vec3(*pos)
-		self.energy = energy
-		
-
+class Plasma (PhysicalObject):
+    def __init__(self, pos, hpr, energy):
+        self.name = "plasma"+(''.join(random.choice(string.digits) for x in range(5)))
+        self.pos = Vec3(*pos)
+        self.hpr = hpr
+        self.energy = energy
+    
+    def create_node(self):
+        m = load_model('plasma.egg')
+        p = m.find('**/plasma')
+        p.setColor(.9,.5,.5)
+        m.set_scale(.5)
+        m.set_hpr(180,0,0)
+        return m
+        
+    def create_solid(self):
+        node = BulletGhostNode("plasma")
+        node_shape = BulletSphereShape(.05)
+        node.add_shape(node_shape)
+        node.set_kinematic(True)
+        return node
+        
+    def attached(self):
+        self.node.set_pos(self.pos)
+        self.node.set_hpr(self.hpr)
+        self.world.register_updater(self)
+        self.world.register_collider(self)
+        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
+        
+    def update(self, dt):
+        self.move_by(0,0,(dt*60)/4)
+        self.rotate_by(0,0,(dt*60)*3)
+        result = self.world.physics.contact_test(self.solid)
+        if len(result.getContacts()) > 0:
+            self.world.garbage.add(self)
+            
+        
 
 class World (object):
     """
@@ -774,6 +822,7 @@ class World (object):
         self.incarnators = []
         self.collidables = set()
         self.updatables = set()
+        self.garbage = set()
         self.render = NodePath('world')
         self.camera = camera
         self.ambient = self._make_ambient()
@@ -883,6 +932,17 @@ class World (object):
         dt = globalClock.getDt()
         for obj in self.updatables:
             obj.update(dt)
+        self.updatables.difference_update(self.garbage)
+        self.collidables.difference_update(self.garbage)
+        while True:
+        	if len(self.garbage) < 1:
+        		break;
+        	trash = self.garbage.pop()
+        	trash.node.remove_node()
+        	if(isinstance(trash.solid, BulletGhostNode)):
+        		self.physics.remove_ghost(trash.solid)
+        	if(isinstance(trash.solid, BulletRigidBodyNode)):
+        		self.physics.remove_rigid_body(trash.solid)
         self.physics.do_physics(dt)
         for obj in self.collidables:
             result = self.physics.contact_test(obj.node.node())
