@@ -24,6 +24,13 @@ HECTOR_RECHARGE_FACTOR = .23
 HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
 HECTOR_MIN_CHARGE_ENERGY = .2
 
+MISSILE_ENGINE_COLORS = [
+                            [173.0/255.0, 0, 0] #dark red
+                           ,[237.0/255.0, 118.0/255.0, 21.0/255.0] #bright orange
+                           ,[194.0/255.0, 116.0/255.0, 14.0/255.0] #darker orange
+                           ,[247.0/255.0, 76.0/255.0, 42.0/255.0] #brighter red
+                        ]
+MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
 class WorldObject (object):
     """
     Base class for anything attached to a World.
@@ -237,7 +244,7 @@ class Hector (PhysicalObject):
         self.placing = False
         self.head_height = Vec3(0, 1.5, 0)
         self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
-        self.missle_loaded = False
+        self.missile_loaded = False
         self.grenade_loaded = False
         self.energy = 1.0
         self.left_gun_charge = 1.0
@@ -374,6 +381,18 @@ class Hector (PhysicalObject):
         self.right_barrel_end = self.actor.attach_new_node("hector_barrel_node_right")
         self.right_barrel_end.set_pos(self.right_barrel_end, -.31, 1.6,.82)
         
+        self.loaded_missile = load_model('missile.egg')
+        self.loaded_missile.set_scale(.4)
+        self.body = self.loaded_missile.find('**/bodywings')
+        self.body.set_color(*MISSILE_BODY_COLOR)
+        self.main_engines = self.loaded_missile.find('**/mainengines')
+        self.wing_engines = self.loaded_missile.find('**/wingengines')
+        self.loaded_missile.reparentTo(self.head)
+        self.loaded_missile.set_pos(self.loaded_missile, 0, 5, 2.5)
+        self.main_engines.set_color(.2,.2,.2)
+        self.wing_engines.set_color(.2,.2,.2)
+        self.loaded_missile.hide()
+        
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         return self.actor
@@ -454,11 +473,23 @@ class Hector (PhysicalObject):
         if cmd is 'fire' and pressed:
             self.handle_fire()
             return
+        if cmd is 'missile' and pressed:
+            self.missile_loaded = not self.missile_loaded
+            if self.missile_loaded:
+                self.loaded_missile.show()
+            else:
+                self.loaded_missile.hide()
+            return
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def handle_fire(self):
-        if self.missle_loaded:
-            pass
+        if self.missile_loaded:
+            origin = self.loaded_missile.get_pos(self.world.render)
+            hpr = self.actor.get_hpr()
+            hpr += self.head.get_hpr()
+            missile = self.world.attach(Missile(origin, hpr))
+            self.missile_loaded = False
+            self.loaded_missile.hide()
         elif self.grenade_loaded:
             pass
         else:
@@ -475,7 +506,6 @@ class Hector (PhysicalObject):
                 if p_energy < MIN_PLASMA_CHARGE:
                     return
                 self.right_gun_charge = 0
-            
             hpr = self.actor.get_hpr()
             hpr += self.head.get_hpr()
             plasma = self.world.attach(Plasma(origin, hpr, p_energy))
@@ -530,14 +560,14 @@ class Hector (PhysicalObject):
                 self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
                 self.left_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
             else:
-            	self.left_gun_charge = math.floor(self.left_gun_charge)
+                self.left_gun_charge = math.floor(self.left_gun_charge)
             
             if self.right_gun_charge < 1:
                 self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
                 self.right_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
             else:
-            	self.right_gun_charge = math.floor(self.right_gun_charge)
-            	
+                self.right_gun_charge = math.floor(self.right_gun_charge)
+                
         if self.energy < 1:
             self.energy += HECTOR_RECHARGE_FACTOR * (dt)
         #print "energy: ", self.energy, " right_gun: ", self.right_gun_charge, " left_gun: ", self.left_gun_charge
@@ -765,7 +795,7 @@ class Goody (PhysicalObject):
         super(Goody, self).__init__(name)
         self.pos = Vec3(*pos)
         self.grenades = items[0]
-        self.missles = items[1]
+        self.missiles = items[1]
         self.boosters = items[2]
         self.model = model
         self.respawn = float(respawn)
@@ -848,7 +878,49 @@ class Plasma (PhysicalObject):
         result = self.world.physics.contact_test(self.solid)
         if len(result.getContacts()) > 0:
             self.world.garbage.add(self)
-            
+
+class Missile (PhysicalObject):
+    def __init__(self, pos, hpr):
+        self.name = "missile"+(''.join(random.choice(string.digits) for x in range(5)))
+        self.pos = Vec3(*pos)
+        self.hpr = hpr
+        self.move_divisor = 12
+    
+    def create_node(self):
+        self.model = load_model('missile.egg')
+        self.body = self.model.find('**/bodywings')
+        self.body.set_color(*MISSILE_BODY_COLOR)
+        self.main_engines = self.model.find('**/mainengines')
+        self.wing_engines = self.model.find('**/wingengines')
+        self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
+        self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
+        self.model.set_scale(.5)
+        self.model.set_hpr(0,0,0)
+        return self.model
+    
+    def create_solid(self):
+        node = BulletGhostNode("missile")
+        node_shape = BulletSphereShape(.08)
+        node.add_shape(node_shape)
+        node.set_kinematic(True)
+        return node
+    
+    def attached(self):
+        self.node.set_pos(self.pos)
+        self.node.set_hpr(self.hpr)
+        self.world.register_updater(self)
+        self.world.register_collider(self)
+        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
+    
+    def update(self, dt):
+        self.move_by(0,0,(dt*60)/self.move_divisor)
+        if self.move_divisor > 2:
+        	self.move_divisor -= .3
+        self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
+        self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
+        result = self.world.physics.contact_test(self.solid)
+        if len(result.getContacts()) > 0:
+            self.world.garbage.add(self)
         
 
 class World (object):
