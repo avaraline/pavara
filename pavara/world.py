@@ -19,6 +19,10 @@ MAP_COLLIDE_BIT =   BitMask32.bit(0)
 SOLID_COLLIDE_BIT = BitMask32.bit(1)
 GHOST_COLLIDE_BIT = BitMask32.bit(2)
 
+MIN_PLASMA_CHARGE = .4
+HECTOR_RECHARGE_FACTOR = .23
+HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
+HECTOR_MIN_CHARGE_ENERGY = .2
 
 class WorldObject (object):
     """
@@ -235,6 +239,9 @@ class Hector (PhysicalObject):
         self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
         self.missle_loaded = False
         self.grenade_loaded = False
+        self.energy = 1.0
+        self.left_gun_charge = 1.0
+        self.right_gun_charge = 1.0
         
     def create_node(self):
         from direct.actor.Actor import Actor
@@ -365,7 +372,7 @@ class Hector (PhysicalObject):
         self.left_barrel_end.set_pos(self.left_barrel_end, .31, 1.6, .82)
         
         self.right_barrel_end = self.actor.attach_new_node("hector_barrel_node_right")
-        self.right_barrel_end.set_pos(self.left_barrel_end, -.31, 1.6,.82)
+        self.right_barrel_end.set_pos(self.right_barrel_end, -.31, 1.6,.82)
         
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
@@ -455,10 +462,23 @@ class Hector (PhysicalObject):
         elif self.grenade_loaded:
             pass
         else:
-            origin = self.left_barrel_end.get_pos(self.world.render)
+            p_energy = 0
+            if self.left_gun_charge > self.right_gun_charge:
+                origin = self.left_barrel_end.get_pos(self.world.render)
+                p_energy = self.left_gun_charge
+                if p_energy < MIN_PLASMA_CHARGE:
+                    return
+                self.left_gun_charge = 0
+            else:
+                origin = self.right_barrel_end.get_pos(self.world.render)
+                p_energy = self.right_gun_charge
+                if p_energy < MIN_PLASMA_CHARGE:
+                    return
+                self.right_gun_charge = 0
+            
             hpr = self.actor.get_hpr()
             hpr += self.head.get_hpr()
-            plasma = self.world.attach(Plasma(origin, hpr, 1.0))
+            plasma = self.world.attach(Plasma(origin, hpr, p_energy))
     
     def update(self, dt):
         dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
@@ -504,7 +524,23 @@ class Hector (PhysicalObject):
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
             sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
             count += 1
-
+            
+        if self.energy > HECTOR_MIN_CHARGE_ENERGY:        
+            if self.left_gun_charge < 1:
+                self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
+                self.left_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
+            else:
+            	self.left_gun_charge = math.floor(self.left_gun_charge)
+            
+            if self.right_gun_charge < 1:
+                self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
+                self.right_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
+            else:
+            	self.right_gun_charge = math.floor(self.right_gun_charge)
+            	
+        if self.energy < 1:
+            self.energy += HECTOR_RECHARGE_FACTOR * (dt)
+        #print "energy: ", self.energy, " right_gun: ", self.right_gun_charge, " left_gun: ", self.left_gun_charge
 
     def update_legs(self, walk, dt):
         if walk != 0:
@@ -786,7 +822,8 @@ class Plasma (PhysicalObject):
     def create_node(self):
         m = load_model('plasma.egg')
         p = m.find('**/plasma')
-        p.setColor(.9,.5,.5)
+        cf = self.energy
+        p.setColor(.9*cf,.5*cf,.5*cf)
         m.set_scale(.5)
         m.set_hpr(180,0,0)
         return m
@@ -944,14 +981,14 @@ class World (object):
         self.updatables.difference_update(self.garbage)
         self.collidables.difference_update(self.garbage)
         while True:
-        	if len(self.garbage) < 1:
-        		break;
-        	trash = self.garbage.pop()
-        	trash.node.remove_node()
-        	if(isinstance(trash.solid, BulletGhostNode)):
-        		self.physics.remove_ghost(trash.solid)
-        	if(isinstance(trash.solid, BulletRigidBodyNode)):
-        		self.physics.remove_rigid_body(trash.solid)
+            if len(self.garbage) < 1:
+                break;
+            trash = self.garbage.pop()
+            trash.node.remove_node()
+            if(isinstance(trash.solid, BulletGhostNode)):
+                self.physics.remove_ghost(trash.solid)
+            if(isinstance(trash.solid, BulletRigidBodyNode)):
+                self.physics.remove_rigid_body(trash.solid)
         self.physics.do_physics(dt)
         for obj in self.collidables:
             result = self.physics.contact_test(obj.node.node())
