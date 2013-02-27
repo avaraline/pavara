@@ -851,6 +851,7 @@ class Plasma (PhysicalObject):
     
     def create_node(self):
         m = load_model('plasma.egg')
+        m.set_shader_auto()
         p = m.find('**/plasma')
         cf = self.energy
         p.setColor(.9*cf,.5*cf,.5*cf)
@@ -868,6 +869,13 @@ class Plasma (PhysicalObject):
     def attached(self):
         self.node.set_pos(self.pos)
         self.node.set_hpr(self.hpr)
+        light = PointLight(self.name+"_light")
+        cf  = self.energy
+        light.set_color(VBase4(.9*cf,0,0,1))
+        light.set_attenuation(Point3(0.1, 0.1, 0.8))
+        self.light_node = self.node.attach_new_node(light)
+        
+        self.world.render.set_light(self.light_node)
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
@@ -877,6 +885,7 @@ class Plasma (PhysicalObject):
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
         if len(result.getContacts()) > 0:
+            self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
 
 class Missile (PhysicalObject):
@@ -915,11 +924,12 @@ class Missile (PhysicalObject):
     def update(self, dt):
         self.move_by(0,0,(dt*60)/self.move_divisor)
         if self.move_divisor > 2:
-        	self.move_divisor -= .3
+            self.move_divisor -= .3
         self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         result = self.world.physics.contact_test(self.solid)
         if len(result.getContacts()) > 0:
+            self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
         
 

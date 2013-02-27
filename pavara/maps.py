@@ -58,6 +58,7 @@ class Map (object):
         """
         Reparents the root NodePath of this Map's World to the given NodePath.
         """
+        self.world.render.setColorOff()
         self.world.render.reparent_to(render)
 
     def process_children(self, node):
