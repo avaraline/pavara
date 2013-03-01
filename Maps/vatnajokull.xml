@@ -1,0 +1,70 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Vatnajökull" tagline="" author="Malkavian" description="Is that incessant clanging you hear in the background something trailing far behind you with razor sharp jaws and a Camaro?">
+	<sky color="0.933,0.898,0.745" horizon="0.467,0.384,0.047">
+		<celestial azimuth="10" elevation="20" color="1,1,1" intensity="0.8" visible="false"/>
+		<celestial azimuth="200" elevation="20" color="1,1,1" intensity="0.3" visible="false"/>
+	</sky>
+	<ground color="0.067,0.051,0"/>
+
+	<!-- INCARNATORS -->
+	<incarnator location="-24,20,-36" heading="135"/>
+	<incarnator location="14,20,-22" heading="180"/>
+	<incarnator location="24,20,16" heading="315"/>
+	<incarnator location="-8,20,32" heading="45"/>
+	<incarnator location="-36,20,12" heading="90"/>
+	<incarnator location="-4,20,-4" heading="180"/>
+
+	<!-- BUBBLE TELEPORTER -->
+	<teleporter location="-4,30,-28" group="recenter" model=""/>
+	<teleporter location="16,30,16" group="recenter" model=""/>
+	<teleporter location="-20,30,4" group="recenter" model=""/>
+	<teleporter location="-0.5,-30,1.5" activeRadius="170" deadRadius="110" destination="recenter" model=""/>
+
+	<static>
+		<block size="8,2.5,8" center="-24,1.25,-36" color="0.333,0.271,0"/>
+		<block size="12,2.5,24" center="-14,1.25,-28" color="0.333,0.271,0"/>
+		<block size="12,2.5,8" center="-22,1.25,-12" color="0.333,0.271,0"/>
+		<block size="12,2.5,4" center="6,1.25,2" color="0.333,0.271,0"/>
+		<block size="4,2.5,8" center="10,1.25,-4" color="0.333,0.271,0"/>
+		<block size="8,2.5,4" center="16,1.25,-6" color="0.333,0.271,0"/>
+		<block size="8,2.5,20" center="24,1.25,-6" color="0.333,0.271,0"/>
+		<block size="8,2.5,8" center="-8,1.25,32" color="0.333,0.271,0"/>
+		<block size="12,2.5,12" center="-10,1.25,22" color="0.333,0.271,0"/>
+		<block size="8,2.5,4" center="-20,1.25,26" color="0.333,0.271,0"/>
+		<block size="8,2.5,20" center="-28,1.25,26" color="0.333,0.271,0"/>
+
+		<block size="8,5,8" center="-4,2.5,-36" color="0.533,0.467,0.176"/>
+		<block size="8,5,40" center="4,2.5,-20" color="0.533,0.467,0.176"/>
+		<block size="8,5,8" center="24,2.5,16" color="0.533,0.467,0.176"/>
+		<block size="24,5,8" center="16,2.5,24" color="0.533,0.467,0.176"/>
+		<block size="8,5,8" center="-28,2.5,4" color="0.533,0.467,0.176"/>
+		<block size="24,5,8" center="-20,2.5,-4" color="0.533,0.467,0.176"/>
+		<block size="8,0,8" center="-4,5,-4" color="0.533,0.467,0.176"/>
+
+		<block size="8,10,8" center="-4,5,-28" color="0.733,0.655,0.318"/>
+		<block size="8,10,8" center="16,5,16" color="0.733,0.655,0.318"/>
+		<block size="8,10,8" center="-20,5,4" color="0.733,0.655,0.318"/>
+
+		<ramp base="-28,0,-24" top="-20,2.5,-24" width="16" color="0.733,0.655,0.318"/>
+		<ramp base="-8,2.5,-20" top="0,5,-20" color="0.733,0.655,0.318"/>
+		<ramp base="-8,0,-12" top="-16,2.5,-12" color="0.733,0.655,0.318"/>
+		<ramp base="14,0,-16" top="14,2.5,-8" width="12" color="0.733,0.655,0.318"/>
+		<ramp base="16,0,4" top="16,2.5,-4" color="0.733,0.655,0.318"/>
+		<ramp base="24,2.5,4" top="24,5,12" color="0.733,0.655,0.318"/>
+		<ramp base="-4,2.5,24" top="4,5,24" color="0.733,0.655,0.318"/>
+		<ramp base="-18,0,36" top="-18,2.5,28" width="12" color="0.733,0.655,0.318"/>
+		<ramp base="-20,0,16" top="-20,2.5,24" color="0.733,0.655,0.318"/>
+		<ramp base="-28,2.5,16" top="-28,5,8" color="0.733,0.655,0.318"/>
+	</static>
+
+	<!-- GOODIES -->
+	<goody location="-4,11.75,-28" grenades="2" missiles="1" respawn="21.875" model="AvaraA" scale="0.5" spin="32,0,0" yon="20"/>
+	<goody location="16,11.75,16" grenades="2" missiles="1" respawn="21.875" model="AvaraA" scale="0.5" spin="32,0,0" yon="20"/>
+	<goody location="-20,11.75,4" grenades="2" missiles="1" respawn="21.875" model="AvaraA" scale="0.5" spin="32,0,0" yon="20"/>
+	<goody location="-4,6.75,-36" missiles="4" respawn="25" model="Missile" spin="32,0,0" yon="30"/>
+	<goody location="-4,1.75,-20" grenades="8" respawn="21.875" model="Grenade" spin="32,0,0" yon="30"/>
+	<goody location="4,6.75,-4" grenades="8" respawn="21.875" model="Grenade" spin="32,0,0" yon="30"/>
+	<goody location="24,4.25,-12" missiles="4" respawn="25" model="Missile" spin="32,0,0" yon="30"/>
+	<goody location="24,6.75,24" grenades="8" respawn="21.875" model="Grenade" spin="32,0,0" yon="30"/>
+	<goody location="-28,6.75,-4" missiles="4" respawn="25" model="Missile" spin="32,0,0" yon="30"/>
+</map>
