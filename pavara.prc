@@ -7,3 +7,4 @@ window-title Pavara
 show-frame-rate-meter #t
 sync-video 1
 #want-pstats 1
+basic-shaders-only 1
