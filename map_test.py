@@ -15,11 +15,11 @@ class Pavara (ShowBase):
         self.x = None
         self.y = None
         self.filters = CommonFilters(self.win, self.cam)
-        
+
         self.render.setShaderAuto()
         # Init Panda3D crap.
         self.initP3D()
-        maps = load_maps('Maps/vatnajokull.xml', self.cam)
+        maps = load_maps('Maps/bwadi.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
@@ -45,7 +45,7 @@ class Pavara (ShowBase):
     def initP3D(self):
         self.setBackgroundColor(0, 0, 0)
         #self.enableParticles()
-        self.disableMouse() 
+        self.disableMouse()
         #self.filters.setBloom()
         render.setAntialias(AntialiasAttrib.MAuto)
         props = WindowProperties()
