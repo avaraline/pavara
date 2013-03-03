@@ -116,13 +116,14 @@ class Map (object):
     def parse_ramp(self, node):
         base = parse_vector(node['base'])
         top = parse_vector(node['top'], (0, 4, 4))
-        width = parse_float(node['width'], 8)
         thickness = parse_float(node['thickness'])
+        width = parse_float(node['width'], 8)
         color = parse_color(node['color'], (1, 1, 1, 1))
         mass = parse_float(node['mass'])
         yaw = parse_float(node['yaw'])
         pitch = parse_float(node['pitch'])
         roll = parse_float(node['roll'])
+
         ramp = self.world.attach(self.wrap_object(Ramp(base, top, width, thickness, color, mass, (yaw, pitch, roll), name=node['id'])))
 
     def parse_ground(self, node):
@@ -133,11 +134,11 @@ class Map (object):
     def parse_goody(self, node):
         model = node["model"]
         pos = parse_vector(node["location"])
-        grenades = node["grenades"] or 0
-        missles = node["missles"] or 0
-        boosters = node["boosters"] or 0
-        respawn = node["respawn"] or 8 #default spawn time
-        spin = parse_vector(node['spin']) or Vec3(60,0,0)
+        grenades = parse_int(node["grenades"])
+        missles = parse_int(node["missles"])
+        boosters = parse_int(node["boosters"])
+        respawn = parse_float(node["respawn"], 8.0) # Default spawn time.
+        spin = parse_vector(node['spin'])
         goody = self.world.attach(self.wrap_object(Goody(pos, model, (grenades, missles, boosters), respawn, spin)))
 
     def parse_dome(self, node):

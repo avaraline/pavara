@@ -844,8 +844,8 @@ class Goody (PhysicalObject):
         self.missiles = items[1]
         self.boosters = items[2]
         self.model = model
-        self.respawn = float(respawn)
-        self.spin = spin
+        self.respawn = respawn
+        self.spin = Vec3(*spin)
         self.geom = None
         self.active = True
         self.timeout = 0
