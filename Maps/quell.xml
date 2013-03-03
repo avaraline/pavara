@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="yes" ?>
 <map name="Quell" tagline="Black as ink." author="ryan &apos;silverfox&apos; herriman" description="impartial nightfall&#x000A;yawns electronic rumble&#x000A;another sad song">
-	<sky color="1,1,1" horizon="0.84,0.94,0.99"/>
+	<sky color="1,1,1" horizon="0.84,0.94,0.99" horizonScale="0.15"/>
 	<ground color="1,1,1"/>
 
 	<!-- INCARNATORS -->
@@ -50,14 +50,14 @@
 		<block size="0.5,10,8" center="10.25,9,-24" color="0.02,0.05,0.13"/>
 		<block size="0.5,10,8" center="-10.25,9,24" color="0.02,0.05,0.13"/>
 		<block size="0.5,10,8" center="10.25,9,24" color="0.02,0.05,0.13"/>
-		<ramp base="-10.293,13.862,-8" top="-8.293,16.862,-8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.293,13.862,-8" top="8.293,16.862,-8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="-10.293,13.862,8" top="-8.293,16.862,8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.293,13.862,8" top="8.293,16.862,8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="-10.293,13.862,-24" top="-8.293,16.862,-24" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.293,13.862,-24" top="8.293,16.862,-24" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="-10.293,13.862,24" top="-8.293,16.862,24" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.293,13.862,24" top="8.293,16.862,24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,13.725,-8" top="-8.085,17,-8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,13.725,-8" top="8.085,17,-8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,13.725,8" top="-8.085,17,8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,13.725,8" top="8.085,17,8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,13.725,-24" top="-8.085,17,-24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,13.725,-24" top="8.085,17,-24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,13.725,24" top="-8.085,17,24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,13.725,24" top="8.085,17,24" thickness="0.5" color="0.02,0.05,0.13"/>
 		<block size="17,0.5,8" center="0,16.75,-24" color="0.02,0.05,0.13"/>
 		<block size="17,0.5,8" center="0,16.75,24" color="0.02,0.05,0.13"/>
 

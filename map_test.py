@@ -19,7 +19,7 @@ class Pavara (ShowBase):
         self.render.setShaderAuto()
         # Init Panda3D crap.
         self.initP3D()
-        maps = load_maps('Maps/bwadi.xml', self.cam)
+        maps = load_maps('Maps/bodhi.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
@@ -34,7 +34,6 @@ class Pavara (ShowBase):
         self.setupInput()
 
         self.map.show(self.render)
-        print render.analyze()
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
         print render.analyze()
 
