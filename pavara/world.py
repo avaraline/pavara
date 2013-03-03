@@ -23,6 +23,7 @@ MIN_PLASMA_CHARGE = .4
 HECTOR_RECHARGE_FACTOR = .23
 HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
 HECTOR_MIN_CHARGE_ENERGY = .2
+PLASMA_LIFESPAN = 900
 
 MISSILE_ENGINE_COLORS = [
                             [173.0/255.0, 0, 0] #dark red
@@ -31,6 +32,10 @@ MISSILE_ENGINE_COLORS = [
                            ,[247.0/255.0, 76.0/255.0, 42.0/255.0] #brighter red
                         ]
 MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
+MISSILE_SCALE = .33
+MISSILE_OFFSET = [0, 6, 2.5]
+MISSILE_LIFESPAN = 600
+
 class WorldObject (object):
     """
     Base class for anything attached to a World.
@@ -382,13 +387,13 @@ class Hector (PhysicalObject):
         self.right_barrel_end.set_pos(self.right_barrel_end, -.31, 1.6,.82)
 
         self.loaded_missile = load_model('missile.egg')
-        self.loaded_missile.set_scale(.4)
+        self.loaded_missile.set_scale(MISSILE_SCALE)
         self.body = self.loaded_missile.find('**/bodywings')
         self.body.set_color(*MISSILE_BODY_COLOR)
         self.main_engines = self.loaded_missile.find('**/mainengines')
         self.wing_engines = self.loaded_missile.find('**/wingengines')
         self.loaded_missile.reparentTo(self.head)
-        self.loaded_missile.set_pos(self.loaded_missile, 0, 5, 2.5)
+        self.loaded_missile.set_pos(self.loaded_missile, *MISSILE_OFFSET)
         self.main_engines.set_color(.2,.2,.2)
         self.wing_engines.set_color(.2,.2,.2)
         self.loaded_missile.hide()
@@ -690,6 +695,7 @@ class Ramp (PhysicalObject):
         self.top = Point3(*top)
         self.width = width
         self.thickness = thickness
+        self.__adjust_ends__()
         self.color = color
         self.length = (self.top - self.base).length()
         self.mass = mass
@@ -703,6 +709,46 @@ class Ramp (PhysicalObject):
         self.up = v1.cross(v2)
         self.up.normalize()
         self.midpoint = Point3((self.base + self.top) / 2.0)
+
+    def __quadratic__(self, a, b, c):
+        sqrt = math.sqrt(b**2.0 - 4.0 * a * c)
+        denom = 2.0 * a
+        return (-b - sqrt)/denom, (-b + sqrt)/denom
+
+    def __adjust_ends__(self):
+        SEARCH_ITERATIONS = 20
+        v = self.top - self.base
+        l = v.get_xz().length()
+        h = abs(v.get_y())
+        midx = l / 2.0
+        midy = h / 2.0
+        maxr = v.length() / 2.0
+        minr = max(midx, midy)
+        for i in range(0, SEARCH_ITERATIONS):
+            r = (maxr - minr)/2.0 + minr
+            # r = ((midl - x)**2 + (midh - y)**2)**0.5 substitute 0 for x and solve, then do the same for y. these two values represent the corners of a ramp and the distance between them is thickness.
+            miny, maxy = self.__quadratic__(1, -2 * midy, midx**2 + midy**2 - r ** 2)
+            minx, maxx = self.__quadratic__(1, -2 * midx, midx**2 + midy**2 - r ** 2)
+            d = (minx**2 + miny**2)**0.5
+            if d == self.thickness: # yaaaaay
+                break
+            elif d > self.thickness: # r is too small
+                minr = r
+            else: # r is too large
+                maxr = r
+        # x and y should be pretty close to where we want the corners of the ramp to be. the midpoint between them is where we want the base to be.
+        leftcorner = Point2(0, miny)
+        bottomcorner = Point2(minx, 0)
+        newbase = (leftcorner - bottomcorner)/2 + bottomcorner
+        midramp = Point2(midx, midy)
+        newtop = (midramp - newbase)*2 + newbase
+        topxz = v.get_xz()/l*newtop.get_x()
+        topy = v.get_y()/h*newtop.get_y()
+        self.top = self.base + (topxz[0], topy, topxz[1])
+        bottomxz = v.get_xz()/l*newbase.get_x()
+        bottomy = v.get_y()/h*newbase.get_y()
+        self.base = self.base + (bottomxz[0], bottomy, bottomxz[1])
+
 
     def create_node(self):
         return NodePath(GeomBuilder('ramp').add_block(self.color, (0, 0, 0), (self.thickness, self.width, self.length)).get_geom_node())
@@ -848,9 +894,11 @@ class Plasma (PhysicalObject):
         self.pos = Vec3(*pos)
         self.hpr = hpr
         self.energy = energy
+        self.age = 0
 
     def create_node(self):
         m = load_model('plasma.egg')
+        m.set_shader_auto()
         p = m.find('**/plasma')
         cf = self.energy
         p.setColor(.9*cf,.5*cf,.5*cf)
@@ -868,6 +916,13 @@ class Plasma (PhysicalObject):
     def attached(self):
         self.node.set_pos(self.pos)
         self.node.set_hpr(self.hpr)
+        light = PointLight(self.name+"_light")
+        cf  = self.energy
+        light.set_color(VBase4(.9*cf,0,0,1))
+        light.set_attenuation(Point3(0.1, 0.1, 0.8))
+        self.light_node = self.node.attach_new_node(light)
+
+        self.world.render.set_light(self.light_node)
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
@@ -876,7 +931,9 @@ class Plasma (PhysicalObject):
         self.move_by(0,0,(dt*60)/4)
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
-        if len(result.getContacts()) > 0:
+        self.age += dt*60
+        if len(result.getContacts()) > 0 or self.age > PLASMA_LIFESPAN:
+            self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
 
 class Missile (PhysicalObject):
@@ -884,7 +941,8 @@ class Missile (PhysicalObject):
         self.name = "missile"+(''.join(random.choice(string.digits) for x in range(5)))
         self.pos = Vec3(*pos)
         self.hpr = hpr
-        self.move_divisor = 12
+        self.move_divisor = 9
+        self.age = 0
 
     def create_node(self):
         self.model = load_model('missile.egg')
@@ -894,7 +952,7 @@ class Missile (PhysicalObject):
         self.wing_engines = self.model.find('**/wingengines')
         self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
-        self.model.set_scale(.5)
+        self.model.set_scale(MISSILE_SCALE)
         self.model.set_hpr(0,0,0)
         return self.model
 
@@ -915,11 +973,12 @@ class Missile (PhysicalObject):
     def update(self, dt):
         self.move_by(0,0,(dt*60)/self.move_divisor)
         if self.move_divisor > 2:
-        	self.move_divisor -= .3
+            self.move_divisor -= .25
         self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         result = self.world.physics.contact_test(self.solid)
-        if len(result.getContacts()) > 0:
+        self.age += dt
+        if len(result.getContacts()) > 0 or self.age > MISSILE_LIFESPAN:
             self.world.garbage.add(self)
 
 
