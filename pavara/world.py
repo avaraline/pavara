@@ -24,6 +24,7 @@ HECTOR_RECHARGE_FACTOR = .23
 HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
 HECTOR_MIN_CHARGE_ENERGY = .2
 PLASMA_LIFESPAN = 900
+PLASMA_BARREL_OFFSET = [.25, 1.47, .82]
 
 MISSILE_ENGINE_COLORS = [
                             [173.0/255.0, 0, 0] #dark red
@@ -33,7 +34,7 @@ MISSILE_ENGINE_COLORS = [
                         ]
 MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
 MISSILE_SCALE = .28
-MISSILE_OFFSET = [0, 6, 2.5]
+MISSILE_OFFSET = [0, 1.8, .55]
 MISSILE_LIFESPAN = 600
 
 class WorldObject (object):
@@ -377,17 +378,19 @@ class Hector (PhysicalObject):
         self.walk_forward_seq = make_walk_sequence()
 
         self.left_barrel_end = self.actor.attach_new_node("hector_barrel_node_left")
-        self.left_barrel_end.set_pos(self.left_barrel_end, .31, 1.6, .82)
+        self.left_barrel_end.set_pos(self.left_barrel_end, PLASMA_BARREL_OFFSET[0], 
+        PLASMA_BARREL_OFFSET[1], PLASMA_BARREL_OFFSET[2])
 
         self.right_barrel_end = self.actor.attach_new_node("hector_barrel_node_right")
-        self.right_barrel_end.set_pos(self.right_barrel_end, -.31, 1.6,.82)
+        self.right_barrel_end.set_pos(self.right_barrel_end, PLASMA_BARREL_OFFSET[0]*-1, 
+        PLASMA_BARREL_OFFSET[1], PLASMA_BARREL_OFFSET[2]
 
         self.loaded_missile = load_model('missile.egg')
         self.body = self.loaded_missile.find('**/bodywings')
         self.body.set_color(*MISSILE_BODY_COLOR)
         self.main_engines = self.loaded_missile.find('**/mainengines')
         self.wing_engines = self.loaded_missile.find('**/wingengines')
-        self.loaded_missile.reparentTo(self.head_primary)
+        self.loaded_missile.reparentTo(self.actor)
         self.loaded_missile.set_pos(self.loaded_missile, *MISSILE_OFFSET)
         self.loaded_missile.set_scale(MISSILE_SCALE)
         self.main_engines.set_color(.2,.2,.2)
@@ -488,8 +491,8 @@ class Hector (PhysicalObject):
     def handle_fire(self):
         if self.missile_loaded:
             origin = self.loaded_missile.get_pos(self.world.render)
-            hpr = self.actor.get_hpr()
-            hpr += self.head_primary.get_hpr()
+            hpr = self.hector_node.get_hpr()
+            #hpr += head angle
             missile = self.world.attach(Missile(origin, hpr))
             self.missile_loaded = False
             self.loaded_missile.hide()
@@ -510,7 +513,7 @@ class Hector (PhysicalObject):
                     return
                 self.right_gun_charge = 0
             hpr = self.actor.get_hpr()
-            hpr += self.head_primary.get_hpr()
+            hpr += self.hector_node.get_hpr()
             plasma = self.world.attach(Plasma(origin, hpr, p_energy))
 
     def update(self, dt):
