@@ -54,22 +54,20 @@ Maps
 	*   need definitions/implementation for
 		*   per-level logic/scripting
 		*	assign ids to objects for scripting
-		*	assign mass to objects to make freeSolids
 		*   fields/areas
-		*   goodies
 		*   custom shapes
+		*   assigning colors to shapes
 
 Graphics
 --------
 ###high priority
 *   **walking animation**
-	*	use `LerpInterval`s to move hector model rigging
+    *   improvements
 	*	work with colliision character to stop feet on terrain
 
 ###low priority
 *   **updated assets**
-    *   walker(s) (export bobski's model)
-	*   missile/grenade/plasma
+	*   grenade model, finalize missle/plasma
 	*   unigoody
 *   **shadows**
     *   directional soft shadow mapping
@@ -113,14 +111,12 @@ Sound
 	*	incarnator and teleporter sounds
 	*	xplosions
 
-Physics (ODE)
+Physics (Bullet)
 -------
 ###higher priority
 *	**kinematic character controller**
-	*	apply forces after physics tick for movement
-	*	keep collision shape upright
+	*	improve collision detection
 	*	send messages to hector object for animation
-	*	update position and rotation of hector object
 *	**ballistics**
 	*	grenade lobbing
 	*	"smart" missle tracking
@@ -129,7 +125,6 @@ Physics (ODE)
 
 ###lower priority
 *	**other collidables**
-	*	goodies
 	*	fields/areas
 	*	kinematic map objects
 

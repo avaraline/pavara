@@ -32,7 +32,7 @@ MISSILE_ENGINE_COLORS = [
                            ,[247.0/255.0, 76.0/255.0, 42.0/255.0] #brighter red
                         ]
 MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
-MISSILE_SCALE = .33
+MISSILE_SCALE = .28
 MISSILE_OFFSET = [0, 6, 2.5]
 MISSILE_LIFESPAN = 600
 
@@ -257,56 +257,56 @@ class Hector (PhysicalObject):
 
     def create_node(self):
         from direct.actor.Actor import Actor
-        self.actor = Actor('hector.egg')
-        #self.actor.listJoints()
-        self.barrels = self.actor.find("**/barrels")
-        self.barrel_trim = self.actor.find("**/barrelTrim")
-        self.visor = self.actor.find("**/visor")
-        self.hull = self.actor.find("**/hull")
-        self.crotch = self.actor.find("**/crotch")
-        self.head = self.actor.attachNewNode("hector_head_node")
-        self.barrels.reparentTo(self.head)
-        self.barrel_trim.reparentTo(self.head)
-        self.visor.reparentTo(self.head)
-        self.hull.reparentTo(self.head)
-        self.crotch.reparentTo(self.head)
-        self.left_top = self.actor.find("**/leftTop")
-        self.right_top = self.actor.find("**/rightTop")
-        self.left_middle = self.actor.find("**/leftMiddle")
-        self.left_middle.reparentTo(self.left_top)
-        self.right_middle = self.actor.find("**/rightMiddle")
-        self.right_middle.reparentTo(self.right_top)
-        self.left_bottom = self.actor.find("**/leftBottom")
-        self.left_bottom.reparentTo(self.left_middle)
-        self.right_bottom = self.actor.find("**/rightBottom")
-        self.right_bottom.reparentTo(self.right_middle)
-
+        self.actor = Actor('walker.egg')
+        def m_expose(obj_name):
+            return self.actor.find("**/%s" % obj_name)
+        self.l_barrel_inner = m_expose("L_barrel_inner")
+        self.l_barrel_outer = m_expose("L_barrel_outer")
+        self.r_barrel_inner = m_expose("R_barrel_inner")
+        self.r_barrel_outer = m_expose("R_barrel_outer")
+        self.visor = m_expose("visor")
+        self.head_primary = m_expose("head_primary")
+        self.head_secondary = m_expose("head_secondary")
+        self.lb_primary = m_expose("LB_leg_primary")
+        self.lb_secondary = m_expose("LB_leg_secondary")
+        self.lt_primary = m_expose("LT_leg_primary")
+        self.lt_secondary = m_expose("LT_leg_secondary")
+        self.rb_primary = m_expose("RB_leg_primary")
+        self.rb_secondary = m_expose("RB_leg_secondary")
+        self.rt_primary = m_expose("RT_leg_primary")
+        self.rt_secondary = m_expose("RT_leg_secondary")
+        self.shoulders_primary = m_expose("shoulders_primary")
+        self.shoulders_secondary = m_expose("shoulders_secondary")
+        self.engines = m_expose("engines")
         self.walk_playing = False
 
         def get_joint_control(name):
             return self.actor.controlJoint(None, "modelRoot", name)
+        
         self.right_top_bone = get_joint_control("rightTopBone")
         self.left_top_bone = get_joint_control("leftTopBone")
-        self.right_middle_bone = get_joint_control("rightMidBone")
-        self.left_middle_bone = get_joint_control("leftMidBone")
         self.right_bottom_bone = get_joint_control("rightBottomBone")
         self.left_bottom_bone = get_joint_control("leftBottomBone")
+        self.shoulder_bone = get_joint_control("shoulderBone")
         self.head_bone = get_joint_control("headBone")
 
         def get_joint_expose(name):
             return self.actor.exposeJoint(None, "modelRoot", name)
         self.right_top_bone_joint = get_joint_expose("rightTopBone")
         self.left_top_bone_joint = get_joint_expose("leftTopBone")
-        self.right_middle_bone_joint = get_joint_expose("rightMidBone")
-        self.left_middle_bone_joint = get_joint_expose("leftMidBone")
         self.right_bottom_bone_joint = get_joint_expose("rightBottomBone")
         self.left_bottom_bone_joint = get_joint_expose("leftBottomBone")
+        self.left_foot_joint = get_joint_expose("leftFootBone")
+        self.right_foot_joint = get_joint_expose("rightFootBone")
+        self.shoulder_bone_joint = get_joint_expose("shoulderBone")
         self.head_bone_joint = get_joint_expose("headBone")
+        
+        
 
-        self.torso_rest_y = [self.head_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
-        self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_middle_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
-                               [self.left_top_bone.get_hpr(), self.left_middle_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
-
+        self.torso_rest_y = [self.shoulder_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
+        self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
+                               [self.left_top_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
+                               
         """the below two functions will get called when the interval starts, allowing us to set the base
             positions for crouching/leg extension etc. currently they return the values without modification."""
         def get_base_leg_rotation(address1, address2, motion = 0):
@@ -319,21 +319,19 @@ class Hector (PhysicalObject):
 
         def make_return_sequence():
             return_speed = .1
-            y_return_head_int = LerpPosInterval(self.head_bone, return_speed, get_base_torso_y(0))
+            y_return_torso_int = LerpPosInterval(self.shoulder_bone, return_speed, get_base_torso_y(0))
             y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, get_base_torso_y(1))
             y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, get_base_torso_y(2))
 
             r_top_return_int = LerpHprInterval(self.right_top_bone, return_speed, get_base_leg_rotation(0,0))
-            r_mid_return_int = LerpHprInterval(self.right_middle_bone, return_speed, get_base_leg_rotation(0,1))
-            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, get_base_leg_rotation(0,2))
+            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, get_base_leg_rotation(0,1))
 
             l_top_return_int = LerpHprInterval(self.left_top_bone, return_speed, get_base_leg_rotation(1,0))
-            l_mid_return_int = LerpHprInterval(self.left_middle_bone, return_speed, get_base_leg_rotation(1,1))
-            l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, get_base_leg_rotation(1,2))
+            l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, get_base_leg_rotation(1,1))
 
-            return Parallel(r_top_return_int, r_mid_return_int, r_bot_return_int,
-                            l_top_return_int, l_mid_return_int, l_bot_return_int,
-                            y_return_head_int, y_return_left_int, y_return_right_int)
+            return Parallel(r_top_return_int, r_bot_return_int,
+                            l_top_return_int, l_bot_return_int,
+                            y_return_torso_int, y_return_left_int, y_return_right_int)
 
         self.return_seq = make_return_sequence()
 
@@ -343,38 +341,36 @@ class Hector (PhysicalObject):
 
             upbob = Vec3(0, 0.03, 0)
             downbob = upbob * -1
-            bob_parts = (self.head_bone, self.left_top_bone, self.right_top_bone)
+            bob_parts = (self.shoulder_bone, self.left_top_bone, self.right_top_bone)
 
             down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, downbob)) for (idx, bone) in enumerate(bob_parts)]
             up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, upbob)) for (idx, bone) in enumerate(bob_parts)]
-
+            
+            #These are completely wrong for 2 segment legs
             top_motion = [Vec3(0, p, 0) for p in    [ 30, -5, -40,  28]]
-            mid_motion = [Vec3(0, p, 0) for p in    [ 20,  0,  -4, -10]]
             bottom_motion = [Vec3(0, p, 0) for p in [-50,  5,  44, -18]]
 
-            right_bones = [self.right_top_bone, self.right_middle_bone, self.right_bottom_bone]
-            left_bones = [self.left_top_bone, self.left_middle_bone, self.left_bottom_bone]
+            right_bones = [self.right_top_bone, self.right_bottom_bone]
+            left_bones = [self.left_top_bone, self.left_bottom_bone]
 
             right_top_forward = [LerpHprInterval(right_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(0, 0, motion)) for motion in top_motion]
-            right_mid_forward = [LerpHprInterval(right_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(0, 1, motion)) for motion in mid_motion]
-            right_bottom_forward = [LerpHprInterval(right_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(0, 2, motion)) for motion in bottom_motion]
+            right_bottom_forward = [LerpHprInterval(right_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(0, 1, motion)) for motion in bottom_motion]
 
             left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(1, 0, motion)) for motion in top_motion]
-            left_mid_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in mid_motion]
-            left_bottom_forward = [LerpHprInterval(left_bones[2], walk_cycle_speed/4.0, get_base_leg_rotation(1, 2, motion)) for motion in bottom_motion]
+            left_bottom_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in bottom_motion]
 
             return Sequence(
-                            Parallel(right_top_forward[0], right_mid_forward[0], right_bottom_forward[0],
-                                    left_top_forward[2], left_mid_forward[2], left_bottom_forward[2],
+                            Parallel(right_top_forward[0], right_bottom_forward[0],
+                                    left_top_forward[2], left_bottom_forward[2],
                                     down_interval[0], down_interval[1], down_interval[2]),
-                            Parallel(right_top_forward[1], right_mid_forward[1], right_bottom_forward[1],
-                                    left_top_forward[3], left_mid_forward[3], left_bottom_forward[3],
+                            Parallel(right_top_forward[1], right_bottom_forward[1],
+                                    left_top_forward[3], left_bottom_forward[3],
                                     up_interval[0], up_interval[1], up_interval[2]),
-                            Parallel(right_top_forward[2], right_mid_forward[2], right_bottom_forward[2],
-                                    left_top_forward[0], left_mid_forward[0], left_bottom_forward[0],
+                            Parallel(right_top_forward[2], right_bottom_forward[2],
+                                    left_top_forward[0], left_bottom_forward[0],
                                     down_interval[0], down_interval[1], down_interval[2]),
-                            Parallel(right_top_forward[3], right_mid_forward[3], right_bottom_forward[3],
-                                    left_top_forward[1], left_mid_forward[1], left_bottom_forward[1],
+                            Parallel(right_top_forward[3], right_bottom_forward[3],
+                                    left_top_forward[1], left_bottom_forward[1],
                                     up_interval[0], up_interval[1], up_interval[2]),
                            )
 
@@ -387,20 +383,24 @@ class Hector (PhysicalObject):
         self.right_barrel_end.set_pos(self.right_barrel_end, -.31, 1.6,.82)
 
         self.loaded_missile = load_model('missile.egg')
-        self.loaded_missile.set_scale(MISSILE_SCALE)
         self.body = self.loaded_missile.find('**/bodywings')
         self.body.set_color(*MISSILE_BODY_COLOR)
         self.main_engines = self.loaded_missile.find('**/mainengines')
         self.wing_engines = self.loaded_missile.find('**/wingengines')
-        self.loaded_missile.reparentTo(self.head)
+        self.loaded_missile.reparentTo(self.head_primary)
         self.loaded_missile.set_pos(self.loaded_missile, *MISSILE_OFFSET)
+        self.loaded_missile.set_scale(MISSILE_SCALE)
         self.main_engines.set_color(.2,.2,.2)
         self.wing_engines.set_color(.2,.2,.2)
         self.loaded_missile.hide()
-
-        self.actor.set_pos(*self.spawn_point.pos)
-        self.actor.look_at(*self.spawn_point.heading)
-        return self.actor
+		
+		#local offset in container node
+        self.hector_node = self.world.render.attachNewNode("hector_container_node")
+        self.hector_node.set_pos(*self.spawn_point.pos)
+        self.hector_node.look_at(*self.spawn_point.heading)
+        self.actor.reparent_to(self.hector_node)
+        self.actor.set_pos(self.actor, 0,.75,0)
+        return self.hector_node
 
     def create_solid(self):
         self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
@@ -430,37 +430,35 @@ class Hector (PhysicalObject):
         return np
 
     def setupColor(self, colordict):
-        if colordict.has_key("barrel_color"):
-            self.barrels.setColor(*colordict.get("barrel_color"))
-        if colordict.has_key("barrel_trim_color"):
-            self.barrel_trim.setColor(*colordict.get("barrel_trim_color"))
+        if colordict.has_key("barrel_outer_color"):
+            color = colordict.get("barrel_outer_color")
+            self.l_barrel_outer.setColor(*color)
+            self.r_barrel_outer.setColor(*color)
+        if colordict.has_key("barrel_inner_color"):
+            color = colordict.get("barrel_inner_color")
+            self.l_barrel_inner.setColor(*color)
+            self.r_barrel_inner.setColor(*color)
         if colordict.has_key("visor_color"):
             self.visor.setColor(*colordict.get("visor_color"))
-        if colordict.has_key("body_color"):
-            color = colordict.get("body_color")
-            self.hull.setColor(*color)
-            self.crotch.setColor(*color)
-            self.left_top.setColor(*color)
-            self.right_top.setColor(*color)
-            self.left_middle.setColor(*color)
-            self.right_middle.setColor(*color)
-            self.left_bottom.setColor(*color)
-            self.right_bottom.setColor(*color)
-        if colordict.has_key("hull_color"):
-            self.hull.setColor(*colordict.get("hull_color"))
-            self.crotch.setColor(*colordict.get("hull_color"))
-        if colordict.has_key("top_leg_color"):
-            color = colordict.get("top_leg_color")
-            self.left_top.setColor(*color)
-            self.right_top.setColor(*color)
-        if colordict.has_key("middle_leg_color"):
-            color = colordict.get("middle_leg_color")
-            self.left_middle.setColor(*color)
-            self.right_middle.setColor(*color)
-        if colordict.has_key("bottom_leg_color"):
-            color = colordict.get("bottom_leg_color")
-            self.left_bottom.setColor(*color)
-            self.right_bottom.setColor(*color)
+        if colordict.has_key("body_primary_color"):
+            color = colordict.get("body_primary_color")
+            self.head_primary.setColor(*color)
+            self.shoulders_primary.setColor(*color)
+            self.lt_primary.setColor(*color)
+            self.rt_primary.setColor(*color)
+            self.lb_primary.setColor(*color)
+            self.rb_primary.setColor(*color)
+        if colordict.has_key("body_secondary_color"):
+            color = colordict.get("body_secondary_color")
+            self.head_secondary.setColor(*color)
+            self.shoulders_secondary.setColor(*color)
+            self.lt_secondary.setColor(*color)
+            self.rt_secondary.setColor(*color)
+            self.lb_secondary.setColor(*color)
+            self.rb_secondary.setColor(*color)
+        if colordict.has_key("engines"):
+            color = colordict.get("engines")
+            self.engines.setColor(*color)
         return
 
     def attached(self):
@@ -491,7 +489,7 @@ class Hector (PhysicalObject):
         if self.missile_loaded:
             origin = self.loaded_missile.get_pos(self.world.render)
             hpr = self.actor.get_hpr()
-            hpr += self.head.get_hpr()
+            hpr += self.head_primary.get_hpr()
             missile = self.world.attach(Missile(origin, hpr))
             self.missile_loaded = False
             self.loaded_missile.hide()
@@ -512,7 +510,7 @@ class Hector (PhysicalObject):
                     return
                 self.right_gun_charge = 0
             hpr = self.actor.get_hpr()
-            hpr += self.head.get_hpr()
+            hpr += self.head_primary.get_hpr()
             plasma = self.world.attach(Plasma(origin, hpr, p_energy))
 
     def update(self, dt):
@@ -582,9 +580,11 @@ class Hector (PhysicalObject):
             if not self.walk_playing:
                 self.walk_playing = True
                 self.walk_forward_seq.loop()
+                #self.actor.play("stankyleg")
         else:
             if self.walk_playing:
                 self.walk_playing = False
+                self.actor.stop()
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
     #def crouch(self):
@@ -902,7 +902,7 @@ class Plasma (PhysicalObject):
         p = m.find('**/plasma')
         cf = self.energy
         p.setColor(.9*cf,.5*cf,.5*cf)
-        m.set_scale(.5)
+        m.set_scale(.35)
         m.set_hpr(180,0,0)
         return m
 

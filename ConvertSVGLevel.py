@@ -4,36 +4,50 @@ import os, sys, re, math
 from pavara.utils import drill
 from pavara.utils.drill import XmlWriter
 
-class ConvertSVGLevel():
-    class SVGObject():
-        def __init__(self):
-            self.x = None
-            self.y = None
-            self.fill = None
-            self.stroke = None
-            self.width = None
-            self.height = None
-            self.paths = None
-            self.text = None
+Path, Rect, Text = range(3)
+class SVGObject():
+    def __init__(self, type):
+        self.x = None
+        self.y = None
+        self.fill = None
+        self.stroke = None
+        self.width = None
+        self.height = None
+        self.paths = None
+        self.text = None
+        self.type = type
         
-        def set_pos(self, pos_x, pos_y):
-            self.x = pos_x
-            self.y = pos_y
-        
-        def set_fill_stroke(self, fill, stroke):
-            self.fill = fill
-            self.stroke = stroke
-        
-        def set_box_dim(self, width, height):
-            self.width = width
-            self.height = height
-        
-        def set_paths(self, paths):
-            self.paths = paths
-        
-        def set_text(self, text):
-            self.text = text
+    def __repr__(self):
+        repr = "svg-o:<"+str(self.type)+">"
+        repr += " x:" + self.x if self.x else ""
+        repr += " y:" + self.y if self.y else ""
+        repr += " fill:" + self.fill if self.fill else ""
+        repr += " stroke:" + self.stroke if self.stroke else ""
+        repr += " width:" + self.width if self.width else "" 
+        repr += " height:" + self.width if self.width else ""
+        repr += " paths:" + (self.paths.__repr__()) if self.paths else ""
+        repr += " text: " + self.text if self.text else ""
+        return repr
     
+    def set_pos(self, pos_x, pos_y):
+        self.x = pos_x
+        self.y = pos_y
+    
+    def set_fill_stroke(self, fill, stroke):
+        self.fill = fill
+        self.stroke = stroke
+    
+    def set_box_dim(self, width, height):
+        self.width = width
+        self.height = height
+    
+    def set_paths(self, paths):
+        self.paths = paths
+    
+    def set_text(self, text):
+        self.text = text
+    
+class ConvertSVGLevel():
     def __init__(self, levelpath, outputpath, mapname):
         #self.oldfile = open(levelpath, 'r')
         levelpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), levelpath)
@@ -44,7 +58,7 @@ class ConvertSVGLevel():
         self.newfile.write('<?xml version="1.0" standalone="yes" ?>\n')
         self.xml_writer = XmlWriter(self.newfile)
         
-        print self.svg_doc
+        #print self.svg_doc
         
         doc_width = float(self.svg_doc.attrs['width'].strip('px'))
         doc_height = float(self.svg_doc.attrs['height'].strip('px'))
@@ -56,21 +70,24 @@ class ConvertSVGLevel():
         self.curr_wa = 0
         self.curr_wall_height = 0
         
-        print self.svg_doc.attrs
+        #print self.svg_doc.attrs
         
         for child in self.svg_doc.find('//g'):
             for gchild in child.children():
-                print gchild.attrs
-                print gchild
+                #print gchild.attrs
+                #print gchild
                 if gchild.tagname == "path":
-                    p = new SVGObject()
+                    p = SVGObject(Path)
                     p.set_paths(self.parse_pathdata(gchild.attrs['d']))
-                    p.set_fill_stroke(self.parse_style(gchild.attrs['style']))
+                    p.set_fill_stroke(*self.parse_style(gchild.attrs['style']))
                     self.svg_stack.append(p)
                 elif gchild.tagname == "rect":
-                    r = new SVGObject()
-                    r.set_pos(gchild.attrs['x'], gchild.attrs['y'])
+                    r = SVGObject(Rect)
+                    x = gchild.attrs['x'] if 'x' in gchild.attrs else 0
+                    y = gchild.attrs['y'] if 'y' in gchild.attrs else 0
+                    r.set_pos(x, y)
                     r.set_box_dim(gchild.attrs['width'], gchild.attrs['height'])
+                    self.svg_stack.append(r)
             
             continue
             found_paths = []
@@ -179,11 +196,12 @@ class ConvertSVGLevel():
                 self.parse_script(lines)
                 del(found_script[:])
         #end for each child
+        print self.svg_stack
     
     def parse_style(self, stylestring):
         this_fill = None
         this_stroke = None
-        styles = style.split(";")
+        styles = stylestring.split(";")
         for style in styles:
             s_split = style.split(':')
             if s_split[0] == "fill" and s_split[1] != "none":
