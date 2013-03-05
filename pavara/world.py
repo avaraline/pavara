@@ -283,7 +283,7 @@ class Hector (PhysicalObject):
 
         def get_joint_control(name):
             return self.actor.controlJoint(None, "modelRoot", name)
-        
+
         self.right_top_bone = get_joint_control("rightTopBone")
         self.left_top_bone = get_joint_control("leftTopBone")
         self.right_bottom_bone = get_joint_control("rightBottomBone")
@@ -301,13 +301,13 @@ class Hector (PhysicalObject):
         self.right_foot_joint = get_joint_expose("rightFootBone")
         self.shoulder_bone_joint = get_joint_expose("shoulderBone")
         self.head_bone_joint = get_joint_expose("headBone")
-        
-        
+
+
 
         self.torso_rest_y = [self.shoulder_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
         self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
                                [self.left_top_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
-                               
+
         """the below two functions will get called when the interval starts, allowing us to set the base
             positions for crouching/leg extension etc. currently they return the values without modification."""
         def get_base_leg_rotation(address1, address2, motion = 0):
@@ -346,7 +346,7 @@ class Hector (PhysicalObject):
 
             down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, downbob)) for (idx, bone) in enumerate(bob_parts)]
             up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, upbob)) for (idx, bone) in enumerate(bob_parts)]
-            
+
             #These are completely wrong for 2 segment legs
             top_motion = [Vec3(0, p, 0) for p in    [ 30, -5, -40,  28]]
             bottom_motion = [Vec3(0, p, 0) for p in [-50,  5,  44, -18]]
@@ -378,12 +378,12 @@ class Hector (PhysicalObject):
         self.walk_forward_seq = make_walk_sequence()
 
         self.left_barrel_end = self.actor.attach_new_node("hector_barrel_node_left")
-        self.left_barrel_end.set_pos(self.left_barrel_end, PLASMA_BARREL_OFFSET[0], 
+        self.left_barrel_end.set_pos(self.left_barrel_end, PLASMA_BARREL_OFFSET[0],
         PLASMA_BARREL_OFFSET[1], PLASMA_BARREL_OFFSET[2])
 
         self.right_barrel_end = self.actor.attach_new_node("hector_barrel_node_right")
-        self.right_barrel_end.set_pos(self.right_barrel_end, PLASMA_BARREL_OFFSET[0]*-1, 
-        PLASMA_BARREL_OFFSET[1], PLASMA_BARREL_OFFSET[2]
+        self.right_barrel_end.set_pos(self.right_barrel_end, PLASMA_BARREL_OFFSET[0]*-1,
+        PLASMA_BARREL_OFFSET[1], PLASMA_BARREL_OFFSET[2])
 
         self.loaded_missile = load_model('missile.egg')
         self.body = self.loaded_missile.find('**/bodywings')
@@ -396,7 +396,7 @@ class Hector (PhysicalObject):
         self.main_engines.set_color(.2,.2,.2)
         self.wing_engines.set_color(.2,.2,.2)
         self.loaded_missile.hide()
-		
+
 		#local offset in container node
         self.hector_node = self.world.render.attachNewNode("hector_container_node")
         self.hector_node.set_pos(*self.spawn_point.pos)
@@ -656,7 +656,7 @@ class Dome (PhysicalObject):
 
     def add_solid(self, node):
         mesh = BulletConvexHullShape()
-        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, self.samples, self.planes).get_geom())
+        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, self.samples, self.planes, LRotationf(*self.hpr)).get_geom())
         node.add_shape(mesh)
         return node
 
