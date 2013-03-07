@@ -786,6 +786,47 @@ class Ramp (PhysicalObject):
         self.node.look_at(self.top, self.up)
         self.rotate_by(*self.hpr)
 
+class Wedge (PhysicalObject):
+    """
+    Ramps with some SERIOUS 'tude.
+    """
+
+    def __init__(self, base, top, width, color, mass, hpr, name=None):
+        super(Wedge, self).__init__(name)
+        self.base = Point3(*base)
+        self.top = Point3(*top)
+        self.width = width
+        self.color = color
+        self.mass = mass
+        self.hpr = hpr
+        self.midpoint = Point3((self.base + self.top) / 2.0)
+
+    def create_node(self):
+        rel_base = Point3(self.base - (self.midpoint - Point3(0, 0, 0)))
+        rel_top = Point3(self.top - (self.midpoint - Point3(0, 0, 0)))
+        self.geom = GeomBuilder().add_wedge(self.color, rel_base, rel_top, self.width).get_geom_node()
+        return NodePath(self.geom)
+
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        mesh = BulletConvexHullShape()
+        mesh.add_geom(self.geom.get_geom(0))
+        node.add_shape(mesh)
+        return node
+
+    def add_solid(self, node):
+        mesh = BulletConvexHullShape()
+        mesh.add_geom(GeomBuilder().add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr)).get_geom())
+        node.add_shape(mesh)
+        return node
+
+    def add_to(self, geom_builder):
+        geom_builder.add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr))
+
+    def attached(self):
+        self.move(self.midpoint)
+        self.rotate(*self.hpr)
+
 class Sky (WorldObject):
     """
     The sky is actually just a square re-parented onto the camera, with a shader to handle the coloring and gradient.

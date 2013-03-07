@@ -125,6 +125,56 @@ class GeomBuilder(object):
 
         return self
 
+    def add_wedge(self, color, base, top, width, rot=None):
+        midpoint = Point3((top + base) / 2.0)
+        p3 = Point3(top.get_x(), base.get_y(), top.get_z())
+        rot = LRotationf(0, 0, 0) if rot is None else rot
+
+        # Temporarily move `base` and `top` to positions relative to a midpoint
+        # at (0, 0, 0).
+        if midpoint != Point3(0, 0, 0):
+            base = Point3(base - (midpoint - Point3(0, 0, 0)))
+            top = Point3(top - (midpoint - Point3(0, 0, 0)))
+
+        # Use a third point to calculate an offset vector we can apply to `base`
+        # and `top` in order to find the required vertices.
+        if base.get_y() == top.get_y():
+            offset = (Point3(top + Vec3(0, 1, 0)) - base).cross(top - base)
+        else:
+            offset = (p3 - base).cross(top - base)
+        offset.normalize()
+        offset *= (width / 2.0)
+
+        vertices = (
+            Point3(top - offset),
+            Point3(base - offset),
+            Point3(base + offset),
+            Point3(top + offset),
+            Point3(p3 + offset),
+            Point3(p3 - offset),
+        )
+        vertices = [rot.xform(v) + LVector3f(*midpoint) for v in vertices]
+
+        faces = (
+            # The slope.
+            [vertices[0], vertices[1], vertices[2], vertices[3]],
+            # The bottom.
+            [vertices[5], vertices[4], vertices[2], vertices[1]],
+            # The back.
+            [vertices[0], vertices[3], vertices[4], vertices[5]],
+            # The sides.
+            [vertices[5], vertices[1], vertices[0]],
+            [vertices[4], vertices[3], vertices[2]],
+        )
+
+        self._commit_polygon(Polygon(faces[0]), color)
+        self._commit_polygon(Polygon(faces[1]), color)
+        if base.get_y() != top.get_y():
+            self._commit_polygon(Polygon(faces[2]), color)
+            self._commit_polygon(Polygon(faces[3]), color)
+            self._commit_polygon(Polygon(faces[4]), color)
+
+        return self
 
     def add_dome(self, color, center, radius, samples, planes, rot=None):
         two_pi = pi * 2

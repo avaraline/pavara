@@ -26,6 +26,7 @@
 
     <block size="12,4,20" center="0,2,0" color="0.231,0.384,0.282"/>
     <ramp base="0,0,-40" top="0,25,-15" width="12" color="1,1,0.863"/>
+    <wedge base="20,4,4" top="20,8,-4" width="4" color="0.231,0.384,0.282"/>
     <hologram><static>
         <ramp base="0,0,-42" top="0,25,-17" width="12" color="1,1,0.863"/>
         <block size="12,4,20" center="16,2,0" color="0.231,0.384,0.282"/>
