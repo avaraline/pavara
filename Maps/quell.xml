@@ -50,16 +50,16 @@
 		<block size="0.5,10,8" center="10.25,9,-24" color="0.02,0.05,0.13"/>
 		<block size="0.5,10,8" center="-10.25,9,24" color="0.02,0.05,0.13"/>
 		<block size="0.5,10,8" center="10.25,9,24" color="0.02,0.05,0.13"/>
-		<ramp base="-10.5,13.725,-8" top="-8.085,17,-8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.5,13.725,-8" top="8.085,17,-8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="-10.5,13.725,8" top="-8.085,17,8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.5,13.725,8" top="8.085,17,8" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="-10.5,13.725,-24" top="-8.085,17,-24" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.5,13.725,-24" top="8.085,17,-24" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="-10.5,13.725,24" top="-8.085,17,24" thickness="0.5" color="0.02,0.05,0.13"/>
-		<ramp base="10.5,13.725,24" top="8.085,17,24" thickness="0.5" color="0.02,0.05,0.13"/>
-		<block size="17,0.5,8" center="0,16.75,-24" color="0.02,0.05,0.13"/>
-		<block size="17,0.5,8" center="0,16.75,24" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,14,-8" top="-7.5,17,-8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,14,-8" top="7.5,17,-8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,14,8" top="-7.5,17,8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,14,8" top="7.5,17,8" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,14,-24" top="-7.5,17,-24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,14,-24" top="7.5,17,-24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="-10.5,14,24" top="-7.5,17,24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<ramp base="10.5,14,24" top="7.5,17,24" thickness="0.5" color="0.02,0.05,0.13"/>
+		<block size="15,0.5,8" center="0,16.75,-24" color="0.02,0.05,0.13"/>
+		<block size="15,0.5,8" center="0,16.75,24" color="0.02,0.05,0.13"/>
 
 		<!-- BRIDGES -->
 		<block size="8,0.5,8" center="-22,3.75,0" color="0.14,0.18,0.25"/>

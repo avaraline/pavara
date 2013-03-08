@@ -18,7 +18,7 @@ class Pavara (ShowBase):
         self.render.setShaderAuto()
         # Init Panda3D crap.
         self.initP3D()
-        maps = load_maps('Maps/bodhi.xml', self.cam)
+        maps = load_maps('Maps/stratocaster.xml', self.cam)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]

@@ -597,7 +597,7 @@ class Hector (PhysicalObject):
 
 class Block (PhysicalObject):
     """
-    A block. Blocks with non-zero mass will be treated as freesolids.
+    A block.
     """
 
     def __init__(self, size, color, mass, center, hpr, name=None):
@@ -628,23 +628,26 @@ class Block (PhysicalObject):
         self.move(self.center)
         self.rotate(*self.hpr)
 
-class Dome (PhysicalObject):
+class Ramp (PhysicalObject):
     """
-    A dome.
+    A ramp.
     """
 
-    def __init__(self, radius, samples, planes, color, mass, center, hpr, name=None):
-        super(Dome, self).__init__(name)
-        self.radius = radius
-        self.samples = samples
-        self.planes = planes
+    def __init__(self, base, top, width, thickness, color, mass, hpr, name=None):
+        super(Ramp, self).__init__(name)
+        self.base = Point3(*base)
+        self.top = Point3(*top)
+        self.width = width
+        self.thickness = thickness
         self.color = color
         self.mass = mass
-        self.center = center
         self.hpr = hpr
+        self.midpoint = Point3((self.base + self.top) / 2.0)
 
     def create_node(self):
-        self.geom = GeomBuilder().add_dome(self.color, (0, 0, 0), self.radius, self.samples, self.planes).get_geom_node()
+        rel_base = Point3(self.base - (self.midpoint - Point3(0, 0, 0)))
+        rel_top = Point3(self.top - (self.midpoint - Point3(0, 0, 0)))
+        self.geom = GeomBuilder().add_ramp(self.color, rel_base, rel_top, self.width, self.thickness).get_geom_node()
         return NodePath(self.geom)
 
     def create_solid(self):
@@ -656,44 +659,66 @@ class Dome (PhysicalObject):
 
     def add_solid(self, node):
         mesh = BulletConvexHullShape()
-        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, self.samples, self.planes, LRotationf(*self.hpr)).get_geom())
+        mesh.add_geom(GeomBuilder().add_ramp(self.color, self.base, self.top, self.width, self.thickness, LRotationf(*self.hpr)).get_geom())
         node.add_shape(mesh)
         return node
 
     def add_to(self, geom_builder):
-        rot = LRotationf(*self.hpr)
-        geom_builder.add_dome(self.color, self.center, self.radius, self.samples, self.planes, rot)
+        geom_builder.add_ramp(self.color, self.base, self.top, self.width, self.thickness, LRotationf(*self.hpr))
 
     def attached(self):
-        self.move(self.center)
-        self.rotate_by(*self.hpr)
+        self.move(self.midpoint)
+        self.rotate(*self.hpr)
 
-class Ground (PhysicalObject):
+class Wedge (PhysicalObject):
     """
-    The ground. This is not a visible object, but does create a physical solid.
+    Ramps with some SERIOUS 'tude.
     """
 
-    def __init__(self, radius, color, name=None):
-        super(Ground, self).__init__(name)
+    def __init__(self, base, top, width, color, mass, hpr, name=None):
+        super(Wedge, self).__init__(name)
+        self.base = Point3(*base)
+        self.top = Point3(*top)
+        self.width = width
         self.color = color
+        self.mass = mass
+        self.hpr = hpr
+        self.midpoint = Point3((self.base + self.top) / 2.0)
+
+    def create_node(self):
+        rel_base = Point3(self.base - (self.midpoint - Point3(0, 0, 0)))
+        rel_top = Point3(self.top - (self.midpoint - Point3(0, 0, 0)))
+        self.geom = GeomBuilder().add_wedge(self.color, rel_base, rel_top, self.width).get_geom_node()
+        return NodePath(self.geom)
 
     def create_solid(self):
         node = BulletRigidBodyNode(self.name)
-        node.add_shape(BulletPlaneShape(Vec3(0, 1, 0), 1))
+        mesh = BulletConvexHullShape()
+        mesh.add_geom(self.geom.get_geom(0))
+        node.add_shape(mesh)
         return node
 
-    def attached(self):
-        self.move((0, -1.0, 0))
-        # We need to tell the sky shader what color we are.
-        self.world.sky.set_ground(self.color)
+    def add_solid(self, node):
+        mesh = BulletConvexHullShape()
+        mesh.add_geom(GeomBuilder().add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr)).get_geom())
+        node.add_shape(mesh)
+        return node
 
-class Ramp (PhysicalObject):
+    def add_to(self, geom_builder):
+        geom_builder.add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr))
+
+    def attached(self):
+        self.move(self.midpoint)
+        self.rotate(*self.hpr)
+
+class BlockRamp (PhysicalObject):
     """
-    A ramp. Basically a block that is rotated, and specified differently in XML. Should maybe be a Block subclass?
+    Old-style ramps like in the original game. Basically just a block that is
+    rotated, and specified differently in XML. Should maybe be a Block subclass?
     """
 
     def __init__(self, base, top, width, thickness, color, mass, hpr, name=None):
-        super(Ramp, self).__init__(name)
+        super(BlockRamp, self).__init__(name)
         self.base = Point3(*base)
         self.top = Point3(*top)
         self.width = width
@@ -786,25 +811,23 @@ class Ramp (PhysicalObject):
         self.node.look_at(self.top, self.up)
         self.rotate_by(*self.hpr)
 
-class Wedge (PhysicalObject):
+class Dome (PhysicalObject):
     """
-    Ramps with some SERIOUS 'tude.
+    A dome.
     """
 
-    def __init__(self, base, top, width, color, mass, hpr, name=None):
-        super(Wedge, self).__init__(name)
-        self.base = Point3(*base)
-        self.top = Point3(*top)
-        self.width = width
+    def __init__(self, radius, samples, planes, color, mass, center, hpr, name=None):
+        super(Dome, self).__init__(name)
+        self.radius = radius
+        self.samples = samples
+        self.planes = planes
         self.color = color
         self.mass = mass
+        self.center = center
         self.hpr = hpr
-        self.midpoint = Point3((self.base + self.top) / 2.0)
 
     def create_node(self):
-        rel_base = Point3(self.base - (self.midpoint - Point3(0, 0, 0)))
-        rel_top = Point3(self.top - (self.midpoint - Point3(0, 0, 0)))
-        self.geom = GeomBuilder().add_wedge(self.color, rel_base, rel_top, self.width).get_geom_node()
+        self.geom = GeomBuilder().add_dome(self.color, (0, 0, 0), self.radius, self.samples, self.planes).get_geom_node()
         return NodePath(self.geom)
 
     def create_solid(self):
@@ -816,69 +839,17 @@ class Wedge (PhysicalObject):
 
     def add_solid(self, node):
         mesh = BulletConvexHullShape()
-        mesh.add_geom(GeomBuilder().add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr)).get_geom())
+        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, self.samples, self.planes, LRotationf(*self.hpr)).get_geom())
         node.add_shape(mesh)
         return node
 
     def add_to(self, geom_builder):
-        geom_builder.add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr))
+        rot = LRotationf(*self.hpr)
+        geom_builder.add_dome(self.color, self.center, self.radius, self.samples, self.planes, rot)
 
     def attached(self):
-        self.move(self.midpoint)
-        self.rotate(*self.hpr)
-
-class Sky (WorldObject):
-    """
-    The sky is actually just a square re-parented onto the camera, with a shader to handle the coloring and gradient.
-    """
-
-    def __init__(self, ground=DEFAULT_GROUND_COLOR, color=DEFAULT_SKY_COLOR, horizon=DEFAULT_HORIZON_COLOR, scale=DEFAULT_HORIZON_SCALE):
-        super(Sky, self).__init__('sky')
-        self.ground = ground
-        self.color = color
-        self.horizon = horizon
-        self.scale = scale
-
-    def attached(self):
-        geom = GeomNode('sky')
-        bounds = self.world.camera.node().get_lens().make_bounds()
-        dl = bounds.getMin()
-        ur = bounds.getMax()
-        z = dl.getZ() * 0.99
-
-        geom.add_geom(GeomBuilder('sky').add_rect((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0).get_geom())
-        self.node = self.world.render.attach_new_node(geom)
-        self.node.set_shader(Shader.load('Shaders/Sky.sha'))
-        self.node.set_shader_input('camera', self.world.camera)
-        self.node.set_shader_input('sky', self.node)
-        self.node.set_shader_input('groundColor', *self.ground)
-        self.node.set_shader_input('skyColor', *self.color)
-        self.node.set_shader_input('horizonColor', *self.horizon)
-        self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
-        self.node.reparent_to(self.world.camera)
-        self.node.set_pos(self.world.camera, 0, 0, z)
-
-    def set_ground(self, color):
-        self.ground = color
-        self.node.set_shader_input('groundColor', *self.ground)
-
-    def set_color(self, color):
-        self.color = color
-        self.node.set_shader_input('skyColor', *self.color)
-
-    def set_horizon(self, color):
-        self.horizon = color
-        self.node.set_shader_input('horizonColor', *self.horizon)
-
-    def set_scale(self, height):
-        self.scale = height
-        self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
-
-class Incarnator (WorldObject):
-    def __init__(self, pos, heading, name=None):
-        super(Incarnator, self).__init__(name)
-        self.pos = Vec3(*pos)
-        self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
+        self.move(self.center)
+        self.rotate_by(*self.hpr)
 
 class Goody (PhysicalObject):
     def __init__(self, pos, model, items, respawn, spin, name=None):
@@ -931,6 +902,78 @@ class Goody (PhysicalObject):
                # TODO: identify which player and credit them with the items.
                self.active = False
                self.node.hide()
+
+class Sky (WorldObject):
+    """
+    The sky is actually just a square re-parented onto the camera, with a shader to handle the coloring and gradient.
+    """
+
+    def __init__(self, ground=DEFAULT_GROUND_COLOR, color=DEFAULT_SKY_COLOR, horizon=DEFAULT_HORIZON_COLOR, scale=DEFAULT_HORIZON_SCALE):
+        super(Sky, self).__init__('sky')
+        self.ground = ground
+        self.color = color
+        self.horizon = horizon
+        self.scale = scale
+
+    def attached(self):
+        geom = GeomNode('sky')
+        bounds = self.world.camera.node().get_lens().make_bounds()
+        dl = bounds.getMin()
+        ur = bounds.getMax()
+        z = dl.getZ() * 0.99
+
+        geom.add_geom(GeomBuilder('sky').add_rect((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0).get_geom())
+        self.node = self.world.render.attach_new_node(geom)
+        self.node.set_shader(Shader.load('Shaders/Sky.sha'))
+        self.node.set_shader_input('camera', self.world.camera)
+        self.node.set_shader_input('sky', self.node)
+        self.node.set_shader_input('groundColor', *self.ground)
+        self.node.set_shader_input('skyColor', *self.color)
+        self.node.set_shader_input('horizonColor', *self.horizon)
+        self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
+        self.node.reparent_to(self.world.camera)
+        self.node.set_pos(self.world.camera, 0, 0, z)
+
+    def set_ground(self, color):
+        self.ground = color
+        self.node.set_shader_input('groundColor', *self.ground)
+
+    def set_color(self, color):
+        self.color = color
+        self.node.set_shader_input('skyColor', *self.color)
+
+    def set_horizon(self, color):
+        self.horizon = color
+        self.node.set_shader_input('horizonColor', *self.horizon)
+
+    def set_scale(self, height):
+        self.scale = height
+        self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
+
+class Ground (PhysicalObject):
+    """
+    The ground. This is not a visible object, but does create a physical solid.
+    """
+
+    def __init__(self, radius, color, name=None):
+        super(Ground, self).__init__(name)
+        self.color = color
+
+    def create_solid(self):
+        node = BulletRigidBodyNode(self.name)
+        node.add_shape(BulletPlaneShape(Vec3(0, 1, 0), 1))
+        return node
+
+    def attached(self):
+        self.move((0, -1.0, 0))
+        # We need to tell the sky shader what color we are.
+        self.world.sky.set_ground(self.color)
+
+class Incarnator (WorldObject):
+    def __init__(self, pos, heading, name=None):
+        super(Incarnator, self).__init__(name)
+        self.pos = Vec3(*pos)
+        self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
 
 class Plasma (PhysicalObject):
     def __init__(self, pos, hpr, energy):

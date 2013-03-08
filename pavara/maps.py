@@ -136,6 +136,18 @@ class Map (object):
         roll = parse_float(node['roll'])
         wedge = self.world.attach(self.wrap_object(Wedge(base, top, width, color, mass, (yaw, pitch, roll), name=node['id'])))
 
+    def parse_blockramp(self, node):
+        base = parse_vector(node['base'])
+        top = parse_vector(node['top'], (0, 4, 4))
+        thickness = parse_float(node['thickness'])
+        width = parse_float(node['width'], 8)
+        color = parse_color(node['color'], (1, 1, 1, 1))
+        mass = parse_float(node['mass'])
+        yaw = parse_float(node['yaw'])
+        pitch = parse_float(node['pitch'])
+        roll = parse_float(node['roll'])
+        ramp = self.world.attach(self.wrap_object(BlockRamp(base, top, width, thickness, color, mass, (yaw, pitch, roll), name=node['id'])))
+
     def parse_ground(self, node):
         color = parse_color(node['color'], (1, 1, 1, 1))
         radius = parse_float(node['radius'], 1000)
