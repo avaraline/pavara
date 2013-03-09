@@ -32,10 +32,10 @@
 		<block size="12,4,8" center="14,2,-8" color="0.267,0.439,0.439"/>
 		<block size="8,4,12" center="8,2,14" color="0.267,0.439,0.439"/>
 		<block size="12,4,8" center="-14,2,8" color="0.267,0.439,0.439"/>
-		<block size="5,0,5" center="-8,4.01,-14" yaw="45" color="1,1,1"/>
-		<block size="5,0,5" center="14,4.01,-8" yaw="45" color="1,1,1"/>
-		<block size="5,0,5" center="8,4.01,14" yaw="45" color="1,1,1"/>
-		<block size="5,0,5" center="-14,4.01,8" yaw="45" color="1,1,1"/>
+		<block size="4,0,4" center="-8,4.01,-14" yaw="45" color="1,1,1"/>
+		<block size="4,0,4" center="14,4.01,-8" yaw="45" color="1,1,1"/>
+		<block size="4,0,4" center="8,4.01,14" yaw="45" color="1,1,1"/>
+		<block size="4,0,4" center="-14,4.01,8" yaw="45" color="1,1,1"/>
 
 		<!-- CENTER PILLAR THINGS -->
 		<block size="4,10,4" center="-6,5,-22" color="0.537,0.647,0.643"/>

@@ -39,10 +39,10 @@
 		<block size="4,4.5,24" center="-6,2.25,40" color="0.27,0.27,0.27"/>
 		<block size="20,4.5,4" center="6,2.25,30" color="0.27,0.27,0.27"/>
 		<block size="6,4.5,6" center="-1,2.25,35" color="0.27,0.27,0.27"/>
-		<ramp base="14,0,35" top="2,4.5,35" width="6" thickness="0.25" color="0,0,0.2"/>
-		<ramp base="-14,0,-35" top="-2,4.5,-35" width="6" thickness="0.25" color="0,0,0.2"/>
-		<ramp base="-1,0,50" top="-1,4.5,38" width="6" thickness="0.25" color="0,0,0.2"/>
-		<ramp base="1,0,-50" top="1,4.5,-38" width="6" thickness="0.25" color="0,0,0.2"/>
+		<blockramp base="14,0,35" top="2,4.5,35" width="6" thickness="0.25" color="0,0,0.2"/>
+		<blockramp base="-14,0,-35" top="-2,4.5,-35" width="6" thickness="0.25" color="0,0,0.2"/>
+		<blockramp base="-1,0,50" top="-1,4.5,38" width="6" thickness="0.25" color="0,0,0.2"/>
+		<blockramp base="1,0,-50" top="1,4.5,-38" width="6" thickness="0.25" color="0,0,0.2"/>
 
 		<!-- GRENADE "PITS" -->
 		<block size="4,2,16" center="-22,1,-12" color="0.27,0.27,0.27"/>

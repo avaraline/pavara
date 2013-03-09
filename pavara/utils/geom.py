@@ -125,9 +125,8 @@ class GeomBuilder(object):
 
         return self
 
-    def add_wedge(self, color, base, top, width, rot=None):
+    def add_ramp(self, color, base, top, width, thickness, rot=None):
         midpoint = Point3((top + base) / 2.0)
-        p3 = Point3(top.get_x(), base.get_y(), top.get_z())
         rot = LRotationf(0, 0, 0) if rot is None else rot
 
         # Temporarily move `base` and `top` to positions relative to a midpoint
@@ -135,13 +134,66 @@ class GeomBuilder(object):
         if midpoint != Point3(0, 0, 0):
             base = Point3(base - (midpoint - Point3(0, 0, 0)))
             top = Point3(top - (midpoint - Point3(0, 0, 0)))
+        p3 = Point3(top.get_x(), top.get_y() - thickness, top.get_z())
+        p4 = Point3(base.get_x(), base.get_y() - thickness, base.get_z())
 
-        # Use a third point to calculate an offset vector we can apply to `base`
+        # Use three points to calculate an offset vector we can apply to `base`
         # and `top` in order to find the required vertices.
-        if base.get_y() == top.get_y():
-            offset = (Point3(top + Vec3(0, 1, 0)) - base).cross(top - base)
-        else:
-            offset = (p3 - base).cross(top - base)
+        offset = (Point3(top + Vec3(0, -1000, 0)) - base).cross(top - base)
+        offset.normalize()
+        offset *= (width / 2.0)
+
+        vertices = (
+            Point3(top - offset),
+            Point3(base - offset),
+            Point3(base + offset),
+            Point3(top + offset),
+            Point3(p3 + offset),
+            Point3(p3 - offset),
+            Point3(p4 - offset),
+            Point3(p4 + offset),
+        )
+        vertices = [rot.xform(v) + LVector3f(*midpoint) for v in vertices]
+
+        faces = (
+            # Top and bottom.
+            [vertices[0], vertices[1], vertices[2], vertices[3]],
+            [vertices[7], vertices[6], vertices[5], vertices[4]],
+            # Back and front.
+            [vertices[0], vertices[3], vertices[4], vertices[5]],
+            [vertices[6], vertices[7], vertices[2], vertices[1]],
+            # Left and right.
+            [vertices[0], vertices[5], vertices[6], vertices[1]],
+            [vertices[7], vertices[4], vertices[3], vertices[2]],
+        )
+
+        if width and (p3 - base).length():
+            self._commit_polygon(Polygon(faces[0]), color)
+            self._commit_polygon(Polygon(faces[1]), color)
+        if width and thickness:
+            self._commit_polygon(Polygon(faces[2]), color)
+            self._commit_polygon(Polygon(faces[3]), color)
+        if thickness and (p3 - base).length():
+            self._commit_polygon(Polygon(faces[4]), color)
+            self._commit_polygon(Polygon(faces[5]), color)
+
+        return self
+
+    def add_wedge(self, color, base, top, width, rot=None):
+        delta_y = top.get_y() - base.get_y()
+        midpoint = Point3((top + base) / 2.0)
+        rot = LRotationf(0, 0, 0) if rot is None else rot
+
+        # Temporarily move `base` and `top` to positions relative to a midpoint
+        # at (0, 0, 0).
+        if midpoint != Point3(0, 0, 0):
+            base = Point3(base - (midpoint - Point3(0, 0, 0)))
+            top = Point3(top - (midpoint - Point3(0, 0, 0)))
+        p3 = Point3(top.get_x(), base.get_y(), top.get_z())
+
+        # Use three points to calculate an offset vector we can apply to `base`
+        # and `top` in order to find the required vertices.
+        offset = (Point3(top + Vec3(0, -1000, 0)) - base).cross(top - base)
         offset.normalize()
         offset *= (width / 2.0)
 
@@ -167,10 +219,13 @@ class GeomBuilder(object):
             [vertices[4], vertices[3], vertices[2]],
         )
 
-        self._commit_polygon(Polygon(faces[0]), color)
-        self._commit_polygon(Polygon(faces[1]), color)
-        if base.get_y() != top.get_y():
+        if width or delta_y:
+            self._commit_polygon(Polygon(faces[0]), color)
+        if width and (p3 - base).length():
+            self._commit_polygon(Polygon(faces[1]), color)
+        if width and delta_y:
             self._commit_polygon(Polygon(faces[2]), color)
+        if delta_y and (p3 - base).length():
             self._commit_polygon(Polygon(faces[3]), color)
             self._commit_polygon(Polygon(faces[4]), color)
 
