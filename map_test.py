@@ -27,7 +27,7 @@ class Pavara (ShowBase):
         incarn = self.map.world.get_incarn()
         self.hector = self.map.world.attach(Hector(incarn))
 
-        self.hector.setupColor({
+        self.hector.setup_color({
             "barrel_outer_color": [.7,.7,.7],
             "barrel_inner_color": [.2,.2,.2],
             "visor_color": [2.0/255, 94.0/255, 115.0/255],
