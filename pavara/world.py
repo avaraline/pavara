@@ -19,12 +19,12 @@ MAP_COLLIDE_BIT =   BitMask32.bit(0)
 SOLID_COLLIDE_BIT = BitMask32.bit(1)
 GHOST_COLLIDE_BIT = BitMask32.bit(2)
 
+PLASMA_SCALE = .2
 MIN_PLASMA_CHARGE = .4
 HECTOR_RECHARGE_FACTOR = .23
 HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
 HECTOR_MIN_CHARGE_ENERGY = .2
 PLASMA_LIFESPAN = 900
-PLASMA_BARREL_OFFSET = [.25, 1.47, .82]
 
 MISSILE_ENGINE_COLORS = [
                             [173.0/255.0, 0, 0] #dark red
@@ -33,8 +33,8 @@ MISSILE_ENGINE_COLORS = [
                            ,[247.0/255.0, 76.0/255.0, 42.0/255.0] #brighter red
                         ]
 MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
-MISSILE_SCALE = .28
-MISSILE_OFFSET = [0, 1.8, .55]
+MISSILE_SCALE = .2
+MISSILE_OFFSET = [0, 1.9, .58]
 MISSILE_LIFESPAN = 600
 
 class WorldObject (object):
@@ -290,6 +290,8 @@ class Hector (PhysicalObject):
         self.left_bottom_bone = get_joint_control("leftBottomBone")
         self.shoulder_bone = get_joint_control("shoulderBone")
         self.head_bone = get_joint_control("headBone")
+        self.left_foot_bone = get_joint_control("leftFootBone")
+        self.right_foot_bone = get_joint_control("rightFootBone")
 
         def get_joint_expose(name):
             return self.actor.exposeJoint(None, "modelRoot", name)
@@ -301,6 +303,8 @@ class Hector (PhysicalObject):
         self.right_foot_joint = get_joint_expose("rightFootBone")
         self.shoulder_bone_joint = get_joint_expose("shoulderBone")
         self.head_bone_joint = get_joint_expose("headBone")
+        self.left_barrel_joint = get_joint_expose("leftBarrelBone")
+        self.right_barrel_joint = get_joint_expose("rightBarrelBone")
 
 
 
@@ -340,16 +344,17 @@ class Hector (PhysicalObject):
         def make_walk_sequence():
             walk_cycle_speed = .8
 
-            upbob = Vec3(0, 0.03, 0)
+            upbob = Vec3(0, 0.05, 0)
             downbob = upbob * -1
             bob_parts = (self.shoulder_bone, self.left_top_bone, self.right_top_bone)
 
             down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, downbob)) for (idx, bone) in enumerate(bob_parts)]
             up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, upbob)) for (idx, bone) in enumerate(bob_parts)]
 
-            #These are completely wrong for 2 segment legs
-            top_motion = [Vec3(0, p, 0) for p in    [ 30, -5, -40,  28]]
-            bottom_motion = [Vec3(0, p, 0) for p in [-50,  5,  44, -18]]
+            #TODO: We definitely need more than four segments in the walk loop.
+            # We also need to have separate loops for backwards and forwards walking.
+            top_motion = [Vec3(0, p, 0) for p in    [ 50, -5, -60,  0]]
+            bottom_motion = [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18]]
 
             right_bones = [self.right_top_bone, self.right_bottom_bone]
             left_bones = [self.left_top_bone, self.left_bottom_bone]
@@ -377,14 +382,6 @@ class Hector (PhysicalObject):
 
         self.walk_forward_seq = make_walk_sequence()
 
-        self.left_barrel_end = self.actor.attach_new_node("hector_barrel_node_left")
-        self.left_barrel_end.set_pos(self.left_barrel_end, PLASMA_BARREL_OFFSET[0],
-        PLASMA_BARREL_OFFSET[1], PLASMA_BARREL_OFFSET[2])
-
-        self.right_barrel_end = self.actor.attach_new_node("hector_barrel_node_right")
-        self.right_barrel_end.set_pos(self.right_barrel_end, PLASMA_BARREL_OFFSET[0]*-1,
-        PLASMA_BARREL_OFFSET[1], PLASMA_BARREL_OFFSET[2])
-
         self.loaded_missile = load_model('missile.egg')
         self.body = self.loaded_missile.find('**/bodywings')
         self.body.set_color(*MISSILE_BODY_COLOR)
@@ -396,15 +393,11 @@ class Hector (PhysicalObject):
         self.main_engines.set_color(.2,.2,.2)
         self.wing_engines.set_color(.2,.2,.2)
         self.loaded_missile.hide()
-
-		#local offset in container node
-        self.hector_node = self.world.render.attachNewNode("hector_container_node")
-        self.hector_node.set_pos(*self.spawn_point.pos)
-        self.hector_node.look_at(*self.spawn_point.heading)
-        self.actor.reparent_to(self.hector_node)
-        self.actor.set_pos(self.actor, 0,.75,0)
-        return self.hector_node
-
+        
+        self.actor.set_pos(*self.spawn_point.pos)
+        self.actor.look_at(*self.spawn_point.heading)
+        return self.actor
+        
     def create_solid(self):
         self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
         self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
@@ -432,7 +425,7 @@ class Hector (PhysicalObject):
         self.world.physics.attach_rigid_body(node)
         return np
 
-    def setupColor(self, colordict):
+    def setup_color(self, colordict):
         if colordict.has_key("barrel_outer_color"):
             color = colordict.get("barrel_outer_color")
             self.l_barrel_outer.setColor(*color)
@@ -491,8 +484,8 @@ class Hector (PhysicalObject):
     def handle_fire(self):
         if self.missile_loaded:
             origin = self.loaded_missile.get_pos(self.world.render)
-            hpr = self.hector_node.get_hpr()
-            #hpr += head angle
+            hpr = self.shoulder_bone.get_hpr(self.world.render)
+            #hpr += head_angle
             missile = self.world.attach(Missile(origin, hpr))
             self.missile_loaded = False
             self.loaded_missile.hide()
@@ -500,20 +493,23 @@ class Hector (PhysicalObject):
             pass
         else:
             p_energy = 0
+            hpr = 0
             if self.left_gun_charge > self.right_gun_charge:
-                origin = self.left_barrel_end.get_pos(self.world.render)
+                origin = self.left_barrel_joint.get_pos(self.world.render)
+                hpr = self.left_barrel_joint.get_hpr(self.world.render)
                 p_energy = self.left_gun_charge
                 if p_energy < MIN_PLASMA_CHARGE:
                     return
                 self.left_gun_charge = 0
             else:
-                origin = self.right_barrel_end.get_pos(self.world.render)
+                origin = self.right_barrel_joint.get_pos(self.world.render)
+                hpr = self.right_barrel_joint.get_hpr(self.world.render)
                 p_energy = self.right_gun_charge
                 if p_energy < MIN_PLASMA_CHARGE:
                     return
                 self.right_gun_charge = 0
-            hpr = self.actor.get_hpr()
-            hpr += self.hector_node.get_hpr()
+            
+            hpr.y += 180
             plasma = self.world.attach(Plasma(origin, hpr, p_energy))
 
     def update(self, dt):
@@ -583,11 +579,9 @@ class Hector (PhysicalObject):
             if not self.walk_playing:
                 self.walk_playing = True
                 self.walk_forward_seq.loop()
-                #self.actor.play("stankyleg")
         else:
             if self.walk_playing:
                 self.walk_playing = False
-                self.actor.stop()
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
     #def crouch(self):
@@ -946,8 +940,7 @@ class Plasma (PhysicalObject):
         p = m.find('**/plasma')
         cf = self.energy
         p.setColor(.9*cf,.5*cf,.5*cf)
-        m.set_scale(.35)
-        m.set_hpr(180,0,0)
+        m.set_scale(PLASMA_SCALE)
         return m
 
     def create_solid(self):
