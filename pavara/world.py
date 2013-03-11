@@ -996,13 +996,13 @@ class Plasma (PhysicalObject):
     def attached(self):
         self.node.set_pos(self.pos)
         self.node.set_hpr(self.hpr)
-        light = PointLight(self.name+"_light")
-        cf  = self.energy
-        light.set_color(VBase4(.9*cf,0,0,1))
-        light.set_attenuation(Point3(0.1, 0.1, 0.8))
-        self.light_node = self.node.attach_new_node(light)
+        #light = PointLight(self.name+"_light")
+        #cf  = self.energy
+        #light.set_color(VBase4(.9*cf,0,0,1))
+        #light.set_attenuation(Point3(0.1, 0.1, 0.8))
+        #self.light_node = self.node.attach_new_node(light)
 
-        self.world.render.set_light(self.light_node)
+        #self.world.render.set_light(self.light_node)
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
@@ -1013,8 +1013,10 @@ class Plasma (PhysicalObject):
         result = self.world.physics.contact_test(self.solid)
         self.age += dt*60
         if len(result.getContacts()) > 0 or self.age > PLASMA_LIFESPAN:
-            self.world.render.clear_light(self.light_node)
+            #self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
+            expl = self.world.attach(Shrapnel(self.node.get_pos(self.world.render), .2, [0.2,0.2,0.2,1], Vec3(0,1,0), 8))
+            
 
 class Missile (PhysicalObject):
     def __init__(self, pos, hpr):
@@ -1061,7 +1063,62 @@ class Missile (PhysicalObject):
         if len(result.getContacts()) > 0 or self.age > MISSILE_LIFESPAN:
             self.world.garbage.add(self)
 
+class TriangleExplosion (WorldObject):
+    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=5, color=(1,1,1), size=.2, amount=5):
+        self.name = "expl_"+(''.join(random.choice(string.digits) for x in range(5)))
+        self.pos = Vec3(*pos)
+        self.hit_normal = Vec3(*hit_normal)
+        self.lifetime = lifetime
+        self.color = color
+        self.size = size
+        self.count = count
+        self.tris = []
+        self.bnodes = []
+    
+    def create_node(self):
+        self.pos_node = self.world.render.attachNewNode(self.name+"_node")
+        for _ in xrange(self.count):
+            vector = [random.random().round(3),random.random().round(3),random.random().round(3)]
+            self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime))
+        return self.pos_node
+        
+    def attached(self):
+        pass    
+    
+    def update(self, dt):
+        pass
 
+class Shrapnel (PhysicalObject):
+    def __init__(self, pos, size, color, vector, lifetime):
+        self.name = "shrapnel"
+        self.pos = pos
+        self.vector = vector
+        self.lifetime = lifetime
+        self.size = size
+        self.color = color
+    
+    def create_node(self):
+        gb = GeomBuilder('tri').add_tri(self.color, [Point3(0,0,0), Point3(0,self.size,0), Point3(0,0,self.size)])
+        geom = gb.get_geom()
+        self.node = NodePath(geom)
+        return self.node
+    
+    def create_solid(self):
+        node = BulletRigidBodyNode('shrapnel')
+        node_shape = BulletBoxShape(Vec3(.1, self.size/2, self.size/2))
+        node.add_shape(node_shape)
+        node.setIntoCollideMask(MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        return node
+    
+    def attached(self):
+        self.world.register_collider(self)
+        self.world.register_updater(self)
+        self.node.set_pos(pos)
+        self.solid.applyForce(Vec3(*vector), bnode.get_pos(self.world.render))
+        
+    def update(self, dt):
+        pass
+         
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
