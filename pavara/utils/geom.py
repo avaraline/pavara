@@ -69,6 +69,7 @@ class GeomBuilder(object):
             
     def add_tri(self, color, points):
         self._commit_polygon(Polygon(points), color)
+        self._commit_polygon(Polygon(points[::-1]), color)
         return self
         
     def add_rect(self, color, x1, y1, z1, x2, y2, z2):

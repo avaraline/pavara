@@ -1015,7 +1015,8 @@ class Plasma (PhysicalObject):
         if len(result.getContacts()) > 0 or self.age > PLASMA_LIFESPAN:
             #self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
-            expl = self.world.attach(Shrapnel(self.node.get_pos(self.world.render), .2, [0.2,0.2,0.2,1], Vec3(0,1,0), 8))
+            cf = self.energy
+            expl = self.world.attach(TriangleExplosion(self.node.get_pos(self.world.render), 5, color=[.9*cf, .6*cf, .5*cf, 1]))
             
 
 class Missile (PhysicalObject):
@@ -1064,7 +1065,7 @@ class Missile (PhysicalObject):
             self.world.garbage.add(self)
 
 class TriangleExplosion (WorldObject):
-    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=5, color=(1,1,1), size=.2, amount=5):
+    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=40, color=(1,1,1,1), size=.2, amount=5):
         self.name = "expl_"+(''.join(random.choice(string.digits) for x in range(5)))
         self.pos = Vec3(*pos)
         self.hit_normal = Vec3(*hit_normal)
@@ -1072,52 +1073,58 @@ class TriangleExplosion (WorldObject):
         self.color = color
         self.size = size
         self.count = count
-        self.tris = []
-        self.bnodes = []
+        self.shrapnels = []
+        
     
     def create_node(self):
         self.pos_node = self.world.render.attachNewNode(self.name+"_node")
-        for _ in xrange(self.count):
-            vector = [random.random().round(3),random.random().round(3),random.random().round(3)]
-            self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime))
         return self.pos_node
         
     def attached(self):
-        pass    
+        for i in xrange(self.count):
+            newpos = self.pos
+            newpos.y += i*.02
+            newpos.z += i*.02
+            #need better vectors than this, take into account hit_normal
+            vector = [round(random.random(), 3), round(random.random(), 3), round(random.random(), 3)]
+            #print "vector ", vector
+            self.shrapnels.append(self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime)))   
     
-    def update(self, dt):
-        pass
 
 class Shrapnel (PhysicalObject):
     def __init__(self, pos, size, color, vector, lifetime):
-        self.name = "shrapnel"
+        self.name = "shrapnel_"+(''.join(random.choice(string.digits) for x in range(5)))
         self.pos = pos
         self.vector = vector
         self.lifetime = lifetime
         self.size = size
         self.color = color
+        self.mass = .01
+        self.age = 0
     
     def create_node(self):
-        gb = GeomBuilder('tri').add_tri(self.color, [Point3(0,0,0), Point3(0,self.size,0), Point3(0,0,self.size)])
-        geom = gb.get_geom()
-        self.node = NodePath(geom)
+        geom = GeomBuilder('tri').add_tri(self.color, [Point3(0,0,0), Point3(0,self.size,0), Point3(0,0,self.size)]).get_geom_node()
+        self.node = self.world.render.attach_new_node(geom)
         return self.node
     
     def create_solid(self):
         node = BulletRigidBodyNode('shrapnel')
-        node_shape = BulletBoxShape(Vec3(.1, self.size/2, self.size/2))
+        node_shape = BulletBoxShape(Vec3(.001, self.size/2, self.size/2))
         node.add_shape(node_shape)
-        node.setIntoCollideMask(MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        node.set_mass(3)
         return node
     
     def attached(self):
         self.world.register_collider(self)
-        self.world.register_updater(self)
-        self.node.set_pos(pos)
-        self.solid.applyForce(Vec3(*vector), bnode.get_pos(self.world.render))
+        self.world.register_updater_later(self)
+        self.node.set_pos(self.pos)
+        self.solid.apply_force(Vec3(*self.vector), self.node.get_pos())
         
     def update(self, dt):
-        pass
+        self.age += dt*60
+        #need to fade to black before disappearing
+        if(self.age > self.lifetime):
+            self.world.garbage.add(self)
          
 class World (object):
     """
@@ -1129,6 +1136,7 @@ class World (object):
         self.incarnators = []
         self.collidables = set()
         self.updatables = set()
+        self.updatables_to_add = set()
         self.garbage = set()
         self.render = NodePath('world')
         self.camera = camera
@@ -1239,11 +1247,17 @@ class World (object):
         assert isinstance(obj, WorldObject)
         self.updatables.add(obj)
 
+    def register_updater_later(self, obj):
+        assert isinstance(obj, WorldObject)
+        self.updatables_to_add.add(obj)
+
     def update(self, task):
         """
         Called every frame to update the physics, etc.
         """
         dt = globalClock.getDt()
+        for obj in self.updatables_to_add:
+            self.updatables.add(obj)
         for obj in self.updatables:
             obj.update(dt)
         self.updatables.difference_update(self.garbage)
@@ -1256,7 +1270,7 @@ class World (object):
             if(isinstance(trash.solid, BulletGhostNode)):
                 self.physics.remove_ghost(trash.solid)
             if(isinstance(trash.solid, BulletRigidBodyNode)):
-                self.physics.remove_rigid_body(trash.solid)
+                pass#self.physics.remove_rigid_body(trash.solid)
         self.physics.do_physics(dt)
         for obj in self.collidables:
             result = self.physics.contact_test(obj.node.node())
