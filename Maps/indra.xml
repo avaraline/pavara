@@ -1,0 +1,139 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Indra" tagline="Tossing lightning from the back of an elephant." author="ryan &apos;silverfox&apos; herriman" description="Wow! That's, like, a really nice net. It must have set you back infinity dollars.">
+	<sky color="0.718,0.569,0.569" horizon="0.3,0.15,0" horizonScale="0.15">
+		<celestial azimuth="20" elevation="15" color="1,0.7,0.7" intensity="0.7" size="45" visible="true"/>
+		<celestial azimuth="200" elevation="45" color="1,0.7,0.4" intensity="0.5"/>
+		<starfield seed="14434218" count="77" minSize="0.7" maxSize="0.9" mode="realistic"/>
+	</sky>
+	<ground color="0.2,0.15,0.15"/>
+
+	<!-- INCARNATORS -->
+	<incarnator location="-36,26,-4" heading="90"/>
+	<incarnator location="4,26,-36" heading="180"/>
+	<incarnator location="36,26,4" heading="270"/>
+	<incarnator location="-4,26,36" heading="0"/>
+	<incarnator location="-24,32.25,-32" heading="135"/>
+	<incarnator location="32,32.25,-24" heading="225"/>
+	<incarnator location="24,32.25,32" heading="315"/>
+	<incarnator location="-32,32.25,24" heading="45"/>
+
+	<!-- BUBBLE TELEPORTER -->
+	<teleporter location="0,30,0" group="recenter" disorient="false" model=""/>
+	<teleporter location="0,-30,0" activeRadius="150" deadRadius="85" destination="recenter" disorient="false" model=""/>
+
+	<static>
+		<block center="-36,3,-27.5" size="8,6,9" color="0.325,0.173,0.173"/>
+		<block center="-36,3,-0.5" size="8,6,9" color="0.325,0.173,0.173"/>
+		<block center="-36,5.75,-14" size="8,0.5,18" color="0.325,0.173,0.173"/>
+		<wedge base="-36,0,-8" top="-36,4,-5" width="8" color="0.325,0.173,0.173"/>
+		<wedge base="-36,5.5,-20" top="-36,1.5,-23" width="8" color="0.325,0.173,0.173"/>
+		<block center="-26,5.75,0" size="12,0.5,8" color="0.325,0.173,0.173"/>
+		<block center="-20.5,2.75,0" size="1,5.5,8" color="0.325,0.173,0.173"/>
+		<block center="-27,5.25,0" size="10,0.5,4" color="0.608,0.459,0.459"/>
+		<block center="-21.5,2.75,0" size="1,5.5,4" color="0.608,0.459,0.459"/>
+		<ramp base="-26.5,5,-2" top="-26.5,5.5,-3" width="11.5" color="0.608,0.459,0.459"/>
+		<ramp base="-26.5,5,2" top="-26.5,5.5,3" width="11.5" color="0.608,0.459,0.459"/>
+		<block center="-21.5,2.75,-2.5" size="1.414,5.5,0" yaw="45" color="0.608,0.459,0.459"/>
+		<block center="-21.5,2.75,2.5" size="1.414,5.5,0" yaw="-45" color="0.608,0.459,0.459"/>
+		<wedge base="-16,0,-28" top="-32,6,-28" width="8" color="0.722,0.573,0.573"/>
+		<block center="-28,5.5,-36" size="8,11,8" color="0.384,0.227,0.227"/>
+		<block center="-28,11.5,-36" size="9,1,9" color="0.271,0.114,0.114"/>
+		<block center="-28,12.125,-36" size="11,0.25,11" color="0.553,0.4,0.4"/>
+		<ramp base="-36,6,4" top="-36,12.25,22.5" width="8" thickness="0.25" color="0.831,0.686,0.686"/>
+
+		<block center="27.5,3,-36" size="9,6,8" color="0.325,0.173,0.173"/>
+		<block center="0.5,3,-36" size="9,6,8" color="0.325,0.173,0.173"/>
+		<block center="14,5.75,-36" size="18,0.5,8" color="0.325,0.173,0.173"/>
+		<wedge base="8,0,-36" top="5,4,-36" width="8" color="0.325,0.173,0.173"/>
+		<wedge base="20,5.5,-36" top="23,1.5,-36" width="8" color="0.325,0.173,0.173"/>
+		<block center="0,5.75,-26" size="8,0.5,12" color="0.325,0.173,0.173"/>
+		<block center="0,2.75,-20.5" size="8,5.5,1" color="0.325,0.173,0.173"/>
+		<block center="0,5.25,-27" size="4,0.5,10" color="0.608,0.459,0.459"/>
+		<block center="0,2.75,-21.5" size="4,5.5,1" color="0.608,0.459,0.459"/>
+		<ramp base="2,5,-26.5" top="3,5.5,-26.5" width="11.5" color="0.608,0.459,0.459"/>
+		<ramp base="-2,5,-26.5" top="-3,5.5,-26.5" width="11.5" color="0.608,0.459,0.459"/>
+		<block center="2.5,2.75,-21.5" size="0,5.5,1.414" yaw="45" color="0.608,0.459,0.459"/>
+		<block center="-2.5,2.75,-21.5" size="0,5.5,1.414" yaw="-45" color="0.608,0.459,0.459"/>
+		<wedge base="28,0,-16" top="28,6,-32" width="8" color="0.722,0.573,0.573"/>
+		<block center="36,5.5,-28" size="8,11,8" color="0.384,0.227,0.227"/>
+		<block center="36,11.5,-28" size="9,1,9" color="0.271,0.114,0.114"/>
+		<block center="36,12.125,-28" size="11,0.25,11" color="0.553,0.4,0.4"/>
+		<ramp base="-4,6,-36" top="-22.5,12.25,-36" width="8" thickness="0.25" color="0.831,0.686,0.686"/>
+
+		<block center="36,3,27.5" size="8,6,9" color="0.325,0.173,0.173"/>
+		<block center="36,3,0.5" size="8,6,9" color="0.325,0.173,0.173"/>
+		<block center="36,5.75,14" size="8,0.5,18" color="0.325,0.173,0.173"/>
+		<wedge base="36,0,8" top="36,4,5" width="8" color="0.325,0.173,0.173"/>
+		<wedge base="36,5.5,20" top="36,1.5,23" width="8" color="0.325,0.173,0.173"/>
+		<block center="26,5.75,0" size="12,0.5,8" color="0.325,0.173,0.173"/>
+		<block center="20.5,2.75,0" size="1,5.5,8" color="0.325,0.173,0.173"/>
+		<block center="27,5.25,0" size="10,0.5,4" color="0.608,0.459,0.459"/>
+		<block center="21.5,2.75,0" size="1,5.5,4" color="0.608,0.459,0.459"/>
+		<ramp base="26.5,5,2" top="26.5,5.5,3" width="11.5" color="0.608,0.459,0.459"/>
+		<ramp base="26.5,5,-2" top="26.5,5.5,-3" width="11.5" color="0.608,0.459,0.459"/>
+		<block center="21.5,2.75,2.5" size="1.414,5.5,0" yaw="45" color="0.608,0.459,0.459"/>
+		<block center="21.5,2.75,-2.5" size="1.414,5.5,0" yaw="-45" color="0.608,0.459,0.459"/>
+		<wedge base="16,0,28" top="32,6,28" width="8" color="0.722,0.573,0.573"/>
+		<block center="28,5.5,36" size="8,11,8" color="0.384,0.227,0.227"/>
+		<block center="28,11.5,36" size="9,1,9" color="0.271,0.114,0.114"/>
+		<block center="28,12.125,36" size="11,0.25,11" color="0.553,0.4,0.4"/>
+		<ramp base="36,6,-4" top="36,12.25,-22.5" width="8" thickness="0.25" color="0.831,0.686,0.686"/>
+
+		<block center="-27.5,3,36" size="9,6,8" color="0.325,0.173,0.173"/>
+		<block center="-0.5,3,36" size="9,6,8" color="0.325,0.173,0.173"/>
+		<block center="-14,5.75,36" size="18,0.5,8" color="0.325,0.173,0.173"/>
+		<wedge base="-8,0,36" top="-5,4,36" width="8" color="0.325,0.173,0.173"/>
+		<wedge base="-20,5.5,36" top="-23,1.5,36" width="8" color="0.325,0.173,0.173"/>
+		<block center="0,5.75,26" size="8,0.5,12" color="0.325,0.173,0.173"/>
+		<block center="0,2.75,20.5" size="8,5.5,1" color="0.325,0.173,0.173"/>
+		<block center="0,5.25,27" size="4,0.5,10" color="0.608,0.459,0.459"/>
+		<block center="0,2.75,21.5" size="4,5.5,1" color="0.608,0.459,0.459"/>
+		<ramp base="-2,5,26.5" top="-3,5.5,26.5" width="11.5" color="0.608,0.459,0.459"/>
+		<ramp base="2,5,26.5" top="3,5.5,26.5" width="11.5" color="0.608,0.459,0.459"/>
+		<block center="-2.5,2.75,21.5" size="0,5.5,1.414" yaw="45" color="0.608,0.459,0.459"/>
+		<block center="2.5,2.75,21.5" size="0,5.5,1.414" yaw="-45" color="0.608,0.459,0.459"/>
+		<wedge base="-28,0,16" top="-28,6,32" width="8" color="0.722,0.573,0.573"/>
+		<block center="-36,5.5,28" size="8,11,8" color="0.384,0.227,0.227"/>
+		<block center="-36,11.5,28" size="9,1,9" color="0.271,0.114,0.114"/>
+		<block center="-36,12.125,28" size="11,0.25,11" color="0.553,0.4,0.4"/>
+		<ramp base="4,6,36" top="22.5,12.25,36" width="8" thickness="0.25" color="0.831,0.686,0.686"/>
+	</static>
+
+	<hologram>
+		<static>
+			<!-- CENTER -->
+			<block center="0,0,0" size="8,0,8" color="0.157,0,0"/>
+			<block center="-4.5,0,-4" size="1,0,16" color="0.608,0.459,0.459"/>
+			<block center="4,0,-4.5" size="16,0,1" color="0.608,0.459,0.459"/>
+			<block center="4.5,0,4" size="1,0,16" color="0.608,0.459,0.459"/>
+			<block center="-4,0,4.5" size="16,0,1" color="0.608,0.459,0.459"/>
+			<block center="0,0,-11.5" size="8,0,1" color="0.608,0.459,0.459"/>
+			<block center="11.5,0,0" size="1,0,8" color="0.608,0.459,0.459"/>
+			<block center="0,0,11.5" size="8,0,1" color="0.608,0.459,0.459"/>
+			<block center="-11.5,0,0" size="1,0,8" color="0.608,0.459,0.459"/>
+			<block center="4.5,0,-16.5" size="1,0,11" color="0.608,0.459,0.459"/>
+			<block center="16.5,0,4.5" size="11,0,1" color="0.608,0.459,0.459"/>
+			<block center="-4.5,0,16.5" size="1,0,11" color="0.608,0.459,0.459"/>
+			<block center="-16.5,0,-4.5" size="11,0,1" color="0.608,0.459,0.459"/>
+			<block center="-21.5,0,-3" size="1,0,2" color="0.608,0.459,0.459"/>
+			<block center="3,0,-21.5" size="2,0,1" color="0.608,0.459,0.459"/>
+			<block center="21.5,0,3" size="1,0,2" color="0.608,0.459,0.459"/>
+			<block center="-3,0,21.5" size="2,0,1" color="0.608,0.459,0.459"/>
+		</static>
+	</hologram>
+
+	<!-- GOODIES -->
+	<goody location="0,1.75,0" grenades="8" missiles="4" respawn="25" model="AvaraA" spin="80,0,0"/>
+	<goody location="-28,14,-36" grenades="4" missiles="2" respawn="12.5" model="AvaraA" spin="80,0,0"/>
+	<goody location="36,14,-28" grenades="4" missiles="2" respawn="12.5" model="AvaraA" spin="80,0,0"/>
+	<goody location="28,14,36" grenades="4" missiles="2" respawn="12.5" model="AvaraA" spin="80,0,0"/>
+	<goody location="-36,14,28" grenades="4" missiles="2" respawn="12.5" model="AvaraA" spin="80,0,0"/>
+	<goody location="-27,1.75,0" grenades="8" respawn="15.625" model="Grenade" spin="80,0,0"/>
+	<goody location="0,1.75,-27" grenades="8" respawn="15.625" model="Grenade" spin="80,0,0"/>
+	<goody location="27,1.75,0" grenades="8" respawn="15.625" model="Grenade" spin="80,0,0"/>
+	<goody location="0,1.75,27" grenades="8" respawn="15.625" model="Grenade" spin="80,0,0"/>
+	<goody location="-36,1.75,-14" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+	<goody location="14,1.75,-36" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+	<goody location="36,1.75,14" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+	<goody location="-14,1.75,36" missiles="4" respawn="9.375" model="Missile" spin="80,0,0"/>
+</map>
