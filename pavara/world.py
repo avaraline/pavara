@@ -562,6 +562,7 @@ class Hector (PhysicalObject):
         count = 0
         while sweep_result.has_hit() and count < 10:
             moveby = sweep_result.get_hit_normal()
+            self.xz_velocity = -self.xz_velocity.cross(moveby).cross(moveby)
             moveby.normalize()
             moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
             self.move(self.position() + moveby)
