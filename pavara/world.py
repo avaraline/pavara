@@ -14,7 +14,7 @@ DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
 DEFAULT_SKY_COLOR =     (0, 0, 0.15, 1)
 DEFAULT_HORIZON_COLOR = (0, 0, 0.8, 1)
 DEFAULT_HORIZON_SCALE = 0.05
-DEFAULT_GRAVITY = -9.81
+DEFAULT_GRAVITY = Vec3(0, -9.81, 0)
 
 NO_COLLISION_BITS = BitMask32.all_off()
 MAP_COLLIDE_BIT =   BitMask32.bit(0)
@@ -234,7 +234,7 @@ class Hector (PhysicalObject):
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
         self.xz_velocity = Vec3(0, 0, 0)
-        self.y_velocity = 0
+        self.y_velocity = Vec3(0, 0, 0)
         self.factors = {
             'forward': 0.1,
             'backward': -0.1,
@@ -472,7 +472,7 @@ class Hector (PhysicalObject):
 
     def handle_command(self, cmd, pressed):
         if cmd is 'crouch' and not pressed and self.on_ground:
-            self.y_velocity = 6.8
+            self.y_velocity = Vec3(0, 6.8, 0)
         if cmd is 'fire' and pressed:
             self.handle_fire()
             return
@@ -540,15 +540,16 @@ class Hector (PhysicalObject):
         pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         self.update_legs(walk,dt)
-        if self.y_velocity <= 0 and result.has_hit():
+        if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
-            self.y_velocity = 0
+            self.y_velocity = Vec3(0, 0, 0)
             self.move(result.get_hit_pos())
         else:
             self.on_ground = False
-            current_y = self.position().get_y()
+            current_y = Point3(0, self.position().get_y(), 0)
             y, self.y_velocity = self.integrator.integrate(current_y, self.y_velocity, dt)
-            self.move_by(0, y - current_y, 0)
+
+            self.move(self.position() + (y - current_y))
         goal = self.position()
         adj_dist = abs((start - goal).length())
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
@@ -1088,7 +1089,7 @@ class World (object):
         # Set up the physics world. TODO: let maps set gravity.
         self.gravity = DEFAULT_GRAVITY
         self.physics = BulletWorld()
-        self.physics.set_gravity(Vec3(0, self.gravity, 0))
+        self.physics.set_gravity(self.gravity)
         self.debug = debug
         if debug:
             debug_node = BulletDebugNode('Debug')

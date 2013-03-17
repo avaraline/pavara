@@ -1,3 +1,6 @@
+from panda3d.core import Point3, Vec3
+
+
 class Integrator(object):
     """Integrator is based on a game physics article. It's supposedly much less
        dependent on frame rate than simply adding a multiple of dt to the velocity
@@ -12,21 +15,21 @@ class Integrator(object):
         return self.accel
 
     def evaluate(self, x, v, dt, dx, dv):
-        x += dx * dt
-        v += dv * dt
+        x = x + dx * dt
+        v = v + dv * dt
 
-        dx = v
+        dx = Vec3(v)
         dv = self.acceleration(x, v, dt)
         return dx, dv
 
     def integrate(self, x, v, dt):
-        dxa, dva = self.evaluate(x, v, 0.0, 0, 0)
+        dxa, dva = self.evaluate(x, v, 0.0, Point3(0, 0, 0), Vec3(0,0,0))
         dxb, dvb = self.evaluate(x, v, dt*0.5, dxa, dva)
         dxc, dvc = self.evaluate(x, v, dt*0.5, dxb, dvb)
         dxd, dvd = self.evaluate(x, v, dt, dxc, dvc)
 
-        dxdt = 1.0/6.0 * (dxa + 2.0*(dxb + dxc) + dxd)
-        dvdt = 1.0/6.0 * (dva + 2.0*(dvb + dvc) + dvd)
-        x += dxdt * dt
-        v += dvdt * dt
+        dxdt = (dxa + (dxb + dxc)*2.0 + dxd) * 1.0/6.0
+        dvdt = (dva + (dvb + dvc)*2.0 + dvd) * 1.0/6.0
+        x = x + dxdt * dt
+        v = v + dvdt * dt
         return x, v
