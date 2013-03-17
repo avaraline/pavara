@@ -197,8 +197,18 @@ class GeomBuilder(object):
         p3 = Point3(top.get_x(), base.get_y(), top.get_z())
 
         # Use three points to calculate an offset vector we can apply to `base`
-        # and `top` in order to find the required vertices.
-        offset = (Point3(top + Vec3(0, -1000, 0)) - base).cross(top - base)
+        # and `top` in order to find the required vertices. Ideally we'd use
+        # `p3` as the third point, but `p3` can potentially be the same as `top`
+        # if delta_y is 0, so we'll just calculate a new point relative to top
+        # that differs in elevation by 1000, because that sure seems unlikely.
+        # The "direction" of that point relative to `top` does depend on whether
+        # `base` or `top` is higher. Honestly, I don't know why that's important
+        # for wedges but not for ramps.
+        if base.get_y() > top.get_y():
+            direction = Vec3(0, 1000, 0)
+        else:
+            direction = Vec3(0, -1000, 0)
+        offset = (Point3(top + direction) - base).cross(top - base)
         offset.normalize()
         offset *= (width / 2.0)
 
