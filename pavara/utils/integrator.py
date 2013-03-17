@@ -18,12 +18,13 @@ class Integrator(object):
         x = x + dx * dt
         v = v + dv * dt
 
-        dx = Vec3(v)
+        dx = v
         dv = self.acceleration(x, v, dt)
+
         return dx, dv
 
     def integrate(self, x, v, dt):
-        dxa, dva = self.evaluate(x, v, 0.0, Point3(0, 0, 0), Vec3(0,0,0))
+        dxa, dva = self.evaluate(x, v, 0.0, Vec3(0, 0, 0), Vec3(0,0,0))
         dxb, dvb = self.evaluate(x, v, dt*0.5, dxa, dva)
         dxc, dvc = self.evaluate(x, v, dt*0.5, dxb, dvb)
         dxd, dvd = self.evaluate(x, v, dt, dxc, dvc)
@@ -35,8 +36,16 @@ class Integrator(object):
         return x, v
 
 class Friction(Integrator):
+
     def __init__(self, accel, friction):
         super(Friction, self).__init__(accel)
-        self.friction = friction * 25
+        self.friction = friction
+
+
     def acceleration(self, x, v, dt):
-        return self.accel * self.friction - v * self.friction
+        direction = self.accel - v
+        if direction.length() > self.friction / 5.0:
+            direction.normalize()
+            return direction * self.friction * 70
+        else:
+            return direction * self.friction * 70
