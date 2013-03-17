@@ -1,6 +1,7 @@
 from pandac.PandaModules import *
 from panda3d.bullet import *
 from pavara.utils.geom import GeomBuilder, to_cartesian
+from pavara.utils.integrator import Integrator
 from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
@@ -13,6 +14,7 @@ DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
 DEFAULT_SKY_COLOR =     (0, 0, 0.15, 1)
 DEFAULT_HORIZON_COLOR = (0, 0, 0.8, 1)
 DEFAULT_HORIZON_SCALE = 0.05
+DEFAULT_GRAVITY = -9.81
 
 NO_COLLISION_BITS = BitMask32.all_off()
 MAP_COLLIDE_BIT =   BitMask32.bit(0)
@@ -36,6 +38,7 @@ MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
 MISSILE_SCALE = .2
 MISSILE_OFFSET = [0, 1.9, .58]
 MISSILE_LIFESPAN = 600
+
 
 class WorldObject (object):
     """
@@ -393,11 +396,11 @@ class Hector (PhysicalObject):
         self.main_engines.set_color(.2,.2,.2)
         self.wing_engines.set_color(.2,.2,.2)
         self.loaded_missile.hide()
-        
+
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         return self.actor
-        
+
     def create_solid(self):
         self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
         self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
@@ -459,6 +462,7 @@ class Hector (PhysicalObject):
 
     def attached(self):
         #self.node.set_scale(3.0)
+        self.integrator = Integrator(self.world.gravity)
         self.world.register_collider(self)
         self.world.register_updater(self)
 
@@ -468,7 +472,7 @@ class Hector (PhysicalObject):
 
     def handle_command(self, cmd, pressed):
         if cmd is 'crouch' and not pressed and self.on_ground:
-            self.y_velocity = 0.1
+            self.y_velocity = 6.8
         if cmd is 'fire' and pressed:
             self.handle_fire()
             return
@@ -508,9 +512,11 @@ class Hector (PhysicalObject):
                 if p_energy < MIN_PLASMA_CHARGE:
                     return
                 self.right_gun_charge = 0
-            
+
             hpr.y += 180
             plasma = self.world.attach(Plasma(origin, hpr, p_energy))
+
+
 
     def update(self, dt):
         dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
@@ -540,8 +546,9 @@ class Hector (PhysicalObject):
             self.move(result.get_hit_pos())
         else:
             self.on_ground = False
-            self.y_velocity -= 0.20 * dt
-            self.move_by(0, self.y_velocity * dt * 60, 0)
+            current_y = self.position().get_y()
+            y, self.y_velocity = self.integrator.integrate(current_y, self.y_velocity, dt)
+            self.move_by(0, y - current_y, 0)
         goal = self.position()
         adj_dist = abs((start - goal).length())
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
@@ -1079,8 +1086,9 @@ class World (object):
         self.celestials = CompositeObject()
         self.sky = self.attach(Sky())
         # Set up the physics world. TODO: let maps set gravity.
+        self.gravity = DEFAULT_GRAVITY
         self.physics = BulletWorld()
-        self.physics.set_gravity(Vec3(0, -9.81, 0))
+        self.physics.set_gravity(Vec3(0, self.gravity, 0))
         self.debug = debug
         if debug:
             debug_node = BulletDebugNode('Debug')
