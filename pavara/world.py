@@ -1,7 +1,7 @@
 from pandac.PandaModules import *
 from panda3d.bullet import *
 from pavara.utils.geom import GeomBuilder, to_cartesian
-from pavara.utils.integrator import Integrator
+from pavara.utils.integrator import Integrator, Friction
 from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
@@ -15,6 +15,7 @@ DEFAULT_SKY_COLOR =     (0, 0, 0.15, 1)
 DEFAULT_HORIZON_COLOR = (0, 0, 0.8, 1)
 DEFAULT_HORIZON_SCALE = 0.05
 DEFAULT_GRAVITY = Vec3(0, -9.81, 0)
+DEFAULT_FRICTION = 1
 
 NO_COLLISION_BITS = BitMask32.all_off()
 MAP_COLLIDE_BIT =   BitMask32.bit(0)
@@ -236,8 +237,8 @@ class Hector (PhysicalObject):
         self.xz_velocity = Vec3(0, 0, 0)
         self.y_velocity = Vec3(0, 0, 0)
         self.factors = {
-            'forward': 0.1,
-            'backward': -0.1,
+            'forward': 10.,
+            'backward': -10.,
             'left': 2.0,
             'right': -2.0,
             'crouch': 0.0,
@@ -527,13 +528,16 @@ class Hector (PhysicalObject):
         cur_pos_ts = TransformState.make_pos(self.position() + self.head_height)
         if self.on_ground:
             speed = walk
-            self.xz_velocity = self.position()
-            self.move_by(0, 0, speed * dt * 60)
-            self.xz_velocity -= self.position()
-            self.xz_velocity *= -1
-            self.xz_velocity /= (dt * 60)
+            pos = self.position()
+            self.move_by(0, 0, speed)
+            direction = self.position() - pos
+            self.move(pos)
+            newpos, self.xz_velocity = Friction(direction, DEFAULT_FRICTION).integrate(pos, self.xz_velocity, dt)
+            self.move(newpos)
+
         else:
-            self.move(self.position() + self.xz_velocity * dt * 60)
+            newpos, self.xz_velocity = Integrator(Vec3(0,0,0)).integrate(self.position(), self.xz_velocity, dt)
+            self.move(newpos)
 
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)

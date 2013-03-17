@@ -33,3 +33,10 @@ class Integrator(object):
         x = x + dxdt * dt
         v = v + dvdt * dt
         return x, v
+
+class Friction(Integrator):
+    def __init__(self, accel, friction):
+        super(Friction, self).__init__(accel)
+        self.friction = friction * 25
+    def acceleration(self, x, v, dt):
+        return self.accel * self.friction - v * self.friction
