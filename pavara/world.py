@@ -53,9 +53,9 @@ class WorldObject (object):
 
     def __init__(self, name=None):
         self.name = name
-        self.__class__.last_unique_id += 1
         if not self.name:
             self.name = '%s:%d' % (self.__class__.__name__, self.__class__.last_unique_id)
+        self.__class__.last_unique_id += 1
 
     def __repr__(self):
         return self.name
@@ -604,8 +604,6 @@ class Hector (PhysicalObject):
         if walk != 0:
             if not self.walk_playing:
                 self.walk_playing = True
-                self.lf_played_since = -.5
-                self.rf_played_since = -.5
                 self.walk_forward_seq.loop()
             lf_from = self.left_foot_joint.get_pos(self.world.render)
             lf_to = self.left_foot_joint.get_pos(self.world.render)
@@ -1225,8 +1223,6 @@ class World (object):
 
     def attach(self, obj):
         assert hasattr(obj, 'world') and hasattr(obj, 'name')
-        print self.objects
-        print obj.name
         #assert obj.name not in self.objects
         obj.world = self
         if obj.name.startswith('Incarnator'):
