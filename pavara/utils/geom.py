@@ -66,7 +66,12 @@ class GeomBuilder(object):
             self.tris.close_primitive()
         else:
             raise InvalidPrimitive
-
+            
+    def add_tri(self, color, points):
+        self._commit_polygon(Polygon(points), color)
+        self._commit_polygon(Polygon(points[::-1]), color)
+        return self
+        
     def add_rect(self, color, x1, y1, z1, x2, y2, z2):
         p1 = Point3(x1, y1, z1)
         p3 = Point3(x2, y2, z2)
@@ -282,7 +287,7 @@ class GeomBuilder(object):
             self._commit_polygon(Polygon(vertices), color)
 
         return self
-
+    
     def get_geom(self):
         geom = Geom(self.vdata)
         geom.add_primitive(self.tris)
