@@ -468,10 +468,10 @@ class Hector (PhysicalObject):
         self.integrator = Integrator(self.world.gravity)
         self.world.register_collider(self)
         self.world.register_updater(self)
-        self.lf_sound = self.world.audio3d.loadSfx('Sound/step_mono.wav')
+        self.lf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
         self.world.audio3d.attachSoundToObject(self.lf_sound, self.left_foot_joint)
         self.lf_played_since = 0
-        self.rf_sound = self.world.audio3d.loadSfx('Sound/step_mono.wav')
+        self.rf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
         self.world.audio3d.attachSoundToObject(self.rf_sound, self.right_foot_joint)
         self.rf_played_since = 0
 
@@ -1009,7 +1009,7 @@ class Ground (PhysicalObject):
         self.world.sky.set_ground(self.color)
 
 class Incarnator (PhysicalObject):
-    def __init__(self, pos, heading, name=None):
+    def __init__(self, pos, heading, name="incarn"+(''.join(random.choice(string.digits) for x in range(5)))):
         super(Incarnator, self).__init__(name)
         self.pos = Vec3(*pos)
         self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
@@ -1017,10 +1017,9 @@ class Incarnator (PhysicalObject):
     def attached(self):
         self.dummy_node = self.world.render.attach_new_node("incarnator"+self.name)
         self.dummy_node.set_pos(self.world.render, self.pos)
-        self.sound = self.world.audio3d.loadSfx('Sound/incarnationch1.wav')
+        self.sound = self.world.audio3d.loadSfx('Sounds/incarnation_mono.wav')
 
     def was_used(self):
-        print "in was_used"
         self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
         self.sound.play()
 
@@ -1223,7 +1222,7 @@ class World (object):
 
     def attach(self, obj):
         assert hasattr(obj, 'world') and hasattr(obj, 'name')
-        #assert obj.name not in self.objects
+        assert obj.name not in self.objects
         obj.world = self
         if obj.name.startswith('Incarnator'):
             self.incarnators.append(obj)

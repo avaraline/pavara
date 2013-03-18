@@ -17,7 +17,6 @@ class Pavara (ShowBase):
         self.y = None
         self.filters = CommonFilters(self.win, self.cam)
         self.render.setShaderAuto()
-        # Init Panda3D crap.
         self.initP3D()
         self.audio3d = Audio3DManager.Audio3DManager(self.sfxManagerList[0], self.cam)
         maps = load_maps('Maps/bodhi.xml', self.cam, audio3d=self.audio3d)
@@ -50,9 +49,7 @@ class Pavara (ShowBase):
 
     def initP3D(self):
         self.setBackgroundColor(0, 0, 0)
-        #self.enableParticles()
         self.disableMouse()
-        #self.filters.setBloom()
         render.setAntialias(AntialiasAttrib.MAuto)
         props = WindowProperties()
         props.setCursorHidden(True)

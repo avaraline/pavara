@@ -101,7 +101,6 @@ class Map (object):
         pos = parse_vector(node['location'])
         heading = parse_float(node['heading'])
         incarn = self.world.attach(self.wrap_object(Incarnator(pos, heading, name=node['id'])))
-        self.world.attach(incarn)
 
     def parse_block(self, node):
         center = parse_vector(node['center'])
