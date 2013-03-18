@@ -242,6 +242,8 @@ class Map (object):
                 color = (r, g, b, 1 - (1 - phi/math.pi)**6)
                 size = min_size + random.random() * delta_size
                 self.world.add_celestial(theta, phi, color, 0, size, True)
+            # Reset the seed.
+            random.seed()
 
 def load_maps(path, camera, audio3d=None):
     """
