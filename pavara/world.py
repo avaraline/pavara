@@ -54,8 +54,8 @@ class WorldObject (object):
     def __init__(self, name=None):
         self.name = name
         if not self.name:
-            self.__class__.last_unique_id += 1
             self.name = '%s:%d' % (self.__class__.__name__, self.__class__.last_unique_id)
+        self.__class__.last_unique_id += 1
 
     def __repr__(self):
         return self.name
@@ -401,6 +401,7 @@ class Hector (PhysicalObject):
 
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
+        self.spawn_point.was_used()
         return self.actor
 
     def create_solid(self):
@@ -467,6 +468,13 @@ class Hector (PhysicalObject):
         self.integrator = Integrator(self.world.gravity)
         self.world.register_collider(self)
         self.world.register_updater(self)
+        self.lf_sound = self.world.audio3d.loadSfx('Sound/step_mono.wav')
+        self.world.audio3d.attachSoundToObject(self.lf_sound, self.left_foot_joint)
+        self.lf_played_since = 0
+        self.rf_sound = self.world.audio3d.loadSfx('Sound/step_mono.wav')
+        self.world.audio3d.attachSoundToObject(self.rf_sound, self.right_foot_joint)
+        self.rf_played_since = 0
+
 
     def collision(self, other, manifold, first):
         world_pt = manifold.get_position_world_on_a() if first else manifold.get_position_world_on_b()
@@ -514,7 +522,6 @@ class Hector (PhysicalObject):
                 if p_energy < MIN_PLASMA_CHARGE:
                     return
                 self.right_gun_charge = 0
-
             hpr.y += 180
             plasma = self.world.attach(Plasma(origin, hpr, p_energy))
 
@@ -544,9 +551,12 @@ class Hector (PhysicalObject):
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        
         self.update_legs(walk,dt)
         if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
+            floor_node = result.get_node()
+            #print "standing on: ", floor_node
             self.y_velocity = Vec3(0, 0, 0)
             self.move(result.get_hit_pos())
         else:
@@ -588,16 +598,37 @@ class Hector (PhysicalObject):
             self.energy += HECTOR_RECHARGE_FACTOR * (dt)
         #print "energy: ", self.energy, " right_gun: ", self.right_gun_charge, " left_gun: ", self.left_gun_charge
 
+
+
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
                 self.walk_playing = True
                 self.walk_forward_seq.loop()
+            lf_from = self.left_foot_joint.get_pos(self.world.render)
+            lf_to = self.left_foot_joint.get_pos(self.world.render)
+            lf_to.y -= .3
+            left_foot_result = self.world.physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+            self.lf_played_since += dt
+            if left_foot_result.has_hit() and self.lf_played_since > .7:
+                self.lf_sound.play()
+                self.lf_played_since = 0
+
+            rf_from = self.right_foot_joint.get_pos(self.world.render)
+            rf_to = self.right_foot_joint.get_pos(self.world.render)
+            rf_to.y -= .3
+            right_foot_result = self.world.physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+            self.rf_played_since += dt
+            if right_foot_result.has_hit() and self.rf_played_since > .7:
+                self.rf_sound.play()
+                self.rf_played_since = 0
         else:
             if self.walk_playing:
                 self.walk_playing = False
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
+            self.lf_sound.stop()
+            self.rf_sound.stop()
     #def crouch(self):
 
     #def uncrouch(self):
@@ -977,11 +1008,21 @@ class Ground (PhysicalObject):
         # We need to tell the sky shader what color we are.
         self.world.sky.set_ground(self.color)
 
-class Incarnator (WorldObject):
+class Incarnator (PhysicalObject):
     def __init__(self, pos, heading, name=None):
         super(Incarnator, self).__init__(name)
         self.pos = Vec3(*pos)
         self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
+
+    def attached(self):
+        self.dummy_node = self.world.render.attach_new_node("incarnator"+self.name)
+        self.dummy_node.set_pos(self.world.render, self.pos)
+        self.sound = self.world.audio3d.loadSfx('Sound/incarnationch1.wav')
+
+    def was_used(self):
+        print "in was_used"
+        self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
+        self.sound.play()
 
 class Plasma (PhysicalObject):
     def __init__(self, pos, hpr, energy):
@@ -1010,13 +1051,13 @@ class Plasma (PhysicalObject):
     def attached(self):
         self.node.set_pos(self.pos)
         self.node.set_hpr(self.hpr)
-        light = PointLight(self.name+"_light")
-        cf  = self.energy
-        light.set_color(VBase4(.9*cf,0,0,1))
-        light.set_attenuation(Point3(0.1, 0.1, 0.8))
-        self.light_node = self.node.attach_new_node(light)
+        #light = PointLight(self.name+"_light")
+        #cf  = self.energy
+        #light.set_color(VBase4(.9*cf,0,0,1))
+        #light.set_attenuation(Point3(0.1, 0.1, 0.8))
+        #self.light_node = self.node.attach_new_node(light)
 
-        self.world.render.set_light(self.light_node)
+        #self.world.render.set_light(self.light_node)
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
@@ -1027,8 +1068,11 @@ class Plasma (PhysicalObject):
         result = self.world.physics.contact_test(self.solid)
         self.age += dt*60
         if len(result.getContacts()) > 0 or self.age > PLASMA_LIFESPAN:
-            self.world.render.clear_light(self.light_node)
+            #self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
+            cf = self.energy
+            expl = self.world.attach(TriangleExplosion(self.node.get_pos(self.world.render), 5, color=[.9*cf, .6*cf, .5*cf, 1]))
+            
 
 class Missile (PhysicalObject):
     def __init__(self, pos, hpr):
@@ -1075,20 +1119,83 @@ class Missile (PhysicalObject):
         if len(result.getContacts()) > 0 or self.age > MISSILE_LIFESPAN:
             self.world.garbage.add(self)
 
+class TriangleExplosion (WorldObject):
+    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=40, color=(1,1,1,1), size=.2, amount=5):
+        self.name = "expl_"+(''.join(random.choice(string.digits) for x in range(5)))
+        self.pos = Vec3(*pos)
+        self.hit_normal = Vec3(*hit_normal)
+        self.lifetime = lifetime
+        self.color = color
+        self.size = size
+        self.count = count
+        self.shrapnels = []
+        
+    
+    def create_node(self):
+        self.pos_node = self.world.render.attachNewNode(self.name+"_node")
+        return self.pos_node
+        
+    def attached(self):
+        for i in xrange(self.count):
+            newpos = self.pos
+            newpos.y += i*.02
+            newpos.z += i*.02
+            #need better vectors than this, take into account hit_normal
+            vector = [round(random.random(), 3), round(random.random(), 3), round(random.random(), 3)]
+            #print "vector ", vector
+            self.shrapnels.append(self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime)))   
+    
 
+class Shrapnel (PhysicalObject):
+    def __init__(self, pos, size, color, vector, lifetime):
+        self.name = "shrapnel_"+(''.join(random.choice(string.digits) for x in range(5)))
+        self.pos = pos
+        self.vector = vector
+        self.lifetime = lifetime
+        self.size = size
+        self.color = color
+        self.mass = .01
+        self.age = 0
+    
+    def create_node(self):
+        geom = GeomBuilder('tri').add_tri(self.color, [Point3(0,0,0), Point3(0,self.size,0), Point3(0,0,self.size)]).get_geom_node()
+        self.node = self.world.render.attach_new_node(geom)
+        return self.node
+    
+    def create_solid(self):
+        node = BulletRigidBodyNode('shrapnel')
+        node_shape = BulletBoxShape(Vec3(.001, self.size/2, self.size/2))
+        node.add_shape(node_shape)
+        node.set_mass(3)
+        return node
+    
+    def attached(self):
+        self.world.register_collider(self)
+        self.world.register_updater_later(self)
+        self.node.set_pos(self.pos)
+        self.solid.apply_force(Vec3(*self.vector), self.node.get_pos())
+        
+    def update(self, dt):
+        self.age += dt*60
+        #need to fade to black before disappearing
+        if(self.age > self.lifetime):
+            self.world.garbage.add(self)
+         
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
     """
 
-    def __init__(self, camera, debug=False):
+    def __init__(self, camera, debug=False, audio3d=None):
         self.objects = {}
         self.incarnators = []
         self.collidables = set()
         self.updatables = set()
+        self.updatables_to_add = set()
         self.garbage = set()
         self.render = NodePath('world')
         self.camera = camera
+        self.audio3d = audio3d
         self.ambient = self._make_ambient()
         self.celestials = CompositeObject()
         self.sky = self.attach(Sky())
@@ -1116,7 +1223,7 @@ class World (object):
 
     def attach(self, obj):
         assert hasattr(obj, 'world') and hasattr(obj, 'name')
-        assert obj.name not in self.objects
+        #assert obj.name not in self.objects
         obj.world = self
         if obj.name.startswith('Incarnator'):
             self.incarnators.append(obj)
@@ -1197,11 +1304,17 @@ class World (object):
         assert isinstance(obj, WorldObject)
         self.updatables.add(obj)
 
+    def register_updater_later(self, obj):
+        assert isinstance(obj, WorldObject)
+        self.updatables_to_add.add(obj)
+
     def update(self, task):
         """
         Called every frame to update the physics, etc.
         """
         dt = globalClock.getDt()
+        for obj in self.updatables_to_add:
+            self.updatables.add(obj)
         for obj in self.updatables:
             obj.update(dt)
         self.updatables.difference_update(self.garbage)
@@ -1214,7 +1327,7 @@ class World (object):
             if(isinstance(trash.solid, BulletGhostNode)):
                 self.physics.remove_ghost(trash.solid)
             if(isinstance(trash.solid, BulletRigidBodyNode)):
-                self.physics.remove_rigid_body(trash.solid)
+                pass#self.physics.remove_rigid_body(trash.solid)
         self.physics.do_physics(dt)
         for obj in self.collidables:
             result = self.physics.contact_test(obj.node.node())
