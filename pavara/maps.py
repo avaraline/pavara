@@ -42,12 +42,12 @@ class Map (object):
     has_celestials = False
     effects = []
 
-    def __init__(self, root, camera):
+    def __init__(self, root, camera, audio3d=None):
         self.name = root['name'] or 'Untitled Map'
         self.author = root['author'] or 'Unknown Author'
         self.tagline = root['tagline']
         self.description = root['description'] or 'No description.'
-        self.world = World(camera, debug=parse_bool(root['debug']))
+        self.world = World(camera, debug=parse_bool(root['debug']), audio3d=audio3d)
         self.process_children(root)
         if not self.has_celestials:
             self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 30.0, False)
@@ -100,7 +100,7 @@ class Map (object):
     def parse_incarnator(self, node):
         pos = parse_vector(node['location'])
         heading = parse_float(node['heading'])
-        incarn = self.wrap_object(Incarnator(pos, heading, name=node['id']))
+        incarn = self.world.attach(self.wrap_object(Incarnator(pos, heading, name=node['id'])))
         self.world.attach(incarn)
 
     def parse_block(self, node):
@@ -244,15 +244,15 @@ class Map (object):
                 size = min_size + random.random() * delta_size
                 self.world.add_celestial(theta, phi, color, 0, size, True)
 
-def load_maps(path, camera):
+def load_maps(path, camera, audio3d=None):
     """
     Given a path to an XML file and the camera, returns a list of parsed/populated Map objects.
     """
     root = drill.parse(path)
     if root.tagname.lower() == 'map':
-        return [Map(root, camera)]
+        return [Map(root, camera, audio3d=audio3d)]
     else:
         maps = []
         for map_root in root.find('map'):
-            maps.append(Map(map_root, camera))
+            maps.append(Map(map_root, camera, audio3d=audio3d))
         return maps

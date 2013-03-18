@@ -53,8 +53,8 @@ class WorldObject (object):
 
     def __init__(self, name=None):
         self.name = name
+        self.__class__.last_unique_id += 1
         if not self.name:
-            self.__class__.last_unique_id += 1
             self.name = '%s:%d' % (self.__class__.__name__, self.__class__.last_unique_id)
 
     def __repr__(self):
@@ -401,6 +401,7 @@ class Hector (PhysicalObject):
 
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
+        self.spawn_point.was_used()
         return self.actor
 
     def create_solid(self):
@@ -467,6 +468,13 @@ class Hector (PhysicalObject):
         self.integrator = Integrator(self.world.gravity)
         self.world.register_collider(self)
         self.world.register_updater(self)
+        self.lf_sound = self.world.audio3d.loadSfx('Sound/step_mono.wav')
+        self.world.audio3d.attachSoundToObject(self.lf_sound, self.left_foot_joint)
+        self.lf_played_since = 0
+        self.rf_sound = self.world.audio3d.loadSfx('Sound/step_mono.wav')
+        self.world.audio3d.attachSoundToObject(self.rf_sound, self.right_foot_joint)
+        self.rf_played_since = 0
+
 
     def collision(self, other, manifold, first):
         world_pt = manifold.get_position_world_on_a() if first else manifold.get_position_world_on_b()
@@ -543,9 +551,12 @@ class Hector (PhysicalObject):
         pt_from = self.position() + Vec3(0, 1, 0)
         pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        
         self.update_legs(walk,dt)
         if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
+            floor_node = result.get_node()
+            #print "standing on: ", floor_node
             self.y_velocity = Vec3(0, 0, 0)
             self.move(result.get_hit_pos())
         else:
@@ -587,16 +598,39 @@ class Hector (PhysicalObject):
             self.energy += HECTOR_RECHARGE_FACTOR * (dt)
         #print "energy: ", self.energy, " right_gun: ", self.right_gun_charge, " left_gun: ", self.left_gun_charge
 
+
+
     def update_legs(self, walk, dt):
         if walk != 0:
             if not self.walk_playing:
                 self.walk_playing = True
+                self.lf_played_since = -.5
+                self.rf_played_since = -.5
                 self.walk_forward_seq.loop()
+            lf_from = self.left_foot_joint.get_pos(self.world.render)
+            lf_to = self.left_foot_joint.get_pos(self.world.render)
+            lf_to.y -= .3
+            left_foot_result = self.world.physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+            self.lf_played_since += dt
+            if left_foot_result.has_hit() and self.lf_played_since > .7:
+                self.lf_sound.play()
+                self.lf_played_since = 0
+
+            rf_from = self.right_foot_joint.get_pos(self.world.render)
+            rf_to = self.right_foot_joint.get_pos(self.world.render)
+            rf_to.y -= .3
+            right_foot_result = self.world.physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+            self.rf_played_since += dt
+            if right_foot_result.has_hit() and self.rf_played_since > .7:
+                self.rf_sound.play()
+                self.rf_played_since = 0
         else:
             if self.walk_playing:
                 self.walk_playing = False
                 self.walk_forward_seq.pause()
                 self.return_seq.start()
+            self.lf_sound.stop()
+            self.rf_sound.stop()
     #def crouch(self):
 
     #def uncrouch(self):
@@ -976,11 +1010,21 @@ class Ground (PhysicalObject):
         # We need to tell the sky shader what color we are.
         self.world.sky.set_ground(self.color)
 
-class Incarnator (WorldObject):
+class Incarnator (PhysicalObject):
     def __init__(self, pos, heading, name=None):
         super(Incarnator, self).__init__(name)
         self.pos = Vec3(*pos)
         self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
+
+    def attached(self):
+        self.dummy_node = self.world.render.attach_new_node("incarnator"+self.name)
+        self.dummy_node.set_pos(self.world.render, self.pos)
+        self.sound = self.world.audio3d.loadSfx('Sound/incarnationch1.wav')
+
+    def was_used(self):
+        print "in was_used"
+        self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
+        self.sound.play()
 
 class Plasma (PhysicalObject):
     def __init__(self, pos, hpr, energy):
@@ -1144,7 +1188,7 @@ class World (object):
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
     """
 
-    def __init__(self, camera, debug=False):
+    def __init__(self, camera, debug=False, audio3d=None):
         self.objects = {}
         self.incarnators = []
         self.collidables = set()
@@ -1153,6 +1197,7 @@ class World (object):
         self.garbage = set()
         self.render = NodePath('world')
         self.camera = camera
+        self.audio3d = audio3d
         self.ambient = self._make_ambient()
         self.celestials = CompositeObject()
         self.sky = self.attach(Sky())
@@ -1180,7 +1225,9 @@ class World (object):
 
     def attach(self, obj):
         assert hasattr(obj, 'world') and hasattr(obj, 'name')
-        assert obj.name not in self.objects
+        print self.objects
+        print obj.name
+        #assert obj.name not in self.objects
         obj.world = self
         if obj.name.startswith('Incarnator'):
             self.incarnators.append(obj)
