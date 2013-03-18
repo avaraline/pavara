@@ -16,6 +16,7 @@ DEFAULT_HORIZON_COLOR = (0, 0, 0.8, 1)
 DEFAULT_HORIZON_SCALE = 0.05
 DEFAULT_GRAVITY = Vec3(0, -9.81, 0)
 DEFAULT_FRICTION = 1
+AIR_FRICTION = 0.02
 
 NO_COLLISION_BITS = BitMask32.all_off()
 MAP_COLLIDE_BIT =   BitMask32.bit(0)
@@ -237,8 +238,8 @@ class Hector (PhysicalObject):
         self.xz_velocity = Vec3(0, 0, 0)
         self.y_velocity = Vec3(0, 0, 0)
         self.factors = {
-            'forward': 10.,
-            'backward': -10.,
+            'forward': 7.5,
+            'backward': -7.5,
             'left': 2.0,
             'right': -2.0,
             'crouch': 0.0,
@@ -525,18 +526,18 @@ class Hector (PhysicalObject):
         walk = self.movement['forward'] + self.movement['backward']
         start = self.position()
         cur_pos_ts = TransformState.make_pos(self.position() + self.head_height)
-        if self.on_ground:
-            speed = walk
-            pos = self.position()
-            self.move_by(0, 0, speed)
-            direction = self.position() - pos
-            self.move(pos)
-            newpos, self.xz_velocity = Friction(direction, DEFAULT_FRICTION).integrate(pos, self.xz_velocity, dt)
-            self.move(newpos)
 
+        if self.on_ground:
+            friction = DEFAULT_FRICTION
         else:
-            newpos, self.xz_velocity = Integrator(Vec3(0,0,0)).integrate(self.position(), self.xz_velocity, dt)
-            self.move(newpos)
+            friction = AIR_FRICTION
+
+        speed = walk
+        pos = self.position()
+        self.move_by(0, 0, speed)
+        direction = self.position() - pos
+        newpos, self.xz_velocity = Friction(direction, friction).integrate(pos, self.xz_velocity, dt)
+        self.move(newpos)
 
         # Cast a ray from just above our feet to just below them, see if anything hits.
         pt_from = self.position() + Vec3(0, 1, 0)
@@ -561,6 +562,7 @@ class Hector (PhysicalObject):
         count = 0
         while sweep_result.has_hit() and count < 10:
             moveby = sweep_result.get_hit_normal()
+            self.xz_velocity = -self.xz_velocity.cross(moveby).cross(moveby)
             moveby.normalize()
             moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
             self.move(self.position() + moveby)
