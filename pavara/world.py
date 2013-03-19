@@ -1009,7 +1009,7 @@ class Ground (PhysicalObject):
         self.world.sky.set_ground(self.color)
 
 class Incarnator (PhysicalObject):
-    def __init__(self, pos, heading, name="incarn"+(''.join(random.choice(string.digits) for x in range(5)))):
+    def __init__(self, pos, heading, name=None):
         super(Incarnator, self).__init__(name)
         self.pos = Vec3(*pos)
         self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
@@ -1024,8 +1024,8 @@ class Incarnator (PhysicalObject):
         self.sound.play()
 
 class Plasma (PhysicalObject):
-    def __init__(self, pos, hpr, energy):
-        self.name = "plasma"+(''.join(random.choice(string.digits) for x in range(5)))
+    def __init__(self, pos, hpr, energy, name=None):
+        super(Plasma, self).__init__(name)
         self.pos = Vec3(*pos)
         self.hpr = hpr
         self.energy = energy
@@ -1036,7 +1036,7 @@ class Plasma (PhysicalObject):
         m.set_shader_auto()
         p = m.find('**/plasma')
         cf = self.energy
-        p.setColor(.9*cf,.5*cf,.5*cf)
+        p.setColor(1,(150/255.0)*cf,(150/255.0)*cf)
         m.set_scale(PLASMA_SCALE)
         return m
 
@@ -1070,12 +1070,12 @@ class Plasma (PhysicalObject):
             #self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
             cf = self.energy
-            expl = self.world.attach(TriangleExplosion(self.node.get_pos(self.world.render), 5, color=[.9*cf, .6*cf, .5*cf, 1]))
+            expl = self.world.attach(TriangleExplosion(self.node.get_pos(self.world.render), 5, size=.1, color=[1,(150/255.0)*cf,(150/255.0)*cf, 1]))
             
 
 class Missile (PhysicalObject):
-    def __init__(self, pos, hpr):
-        self.name = "missile"+(''.join(random.choice(string.digits) for x in range(5)))
+    def __init__(self, pos, hpr, name=None):
+        super(Missile, self).__init__(name)
         self.pos = Vec3(*pos)
         self.hpr = hpr
         self.move_divisor = 9
@@ -1119,8 +1119,8 @@ class Missile (PhysicalObject):
             self.world.garbage.add(self)
 
 class TriangleExplosion (WorldObject):
-    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=40, color=(1,1,1,1), size=.2, amount=5):
-        self.name = "expl_"+(''.join(random.choice(string.digits) for x in range(5)))
+    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
+        super(TriangleExplosion, self).__init__(name)
         self.pos = Vec3(*pos)
         self.hit_normal = Vec3(*hit_normal)
         self.lifetime = lifetime
@@ -1146,8 +1146,8 @@ class TriangleExplosion (WorldObject):
     
 
 class Shrapnel (PhysicalObject):
-    def __init__(self, pos, size, color, vector, lifetime):
-        self.name = "shrapnel_"+(''.join(random.choice(string.digits) for x in range(5)))
+    def __init__(self, pos, size, color, vector, lifetime, name=None):
+        super(Shrapnel, self).__init__(name)
         self.pos = pos
         self.vector = vector
         self.lifetime = lifetime
@@ -1157,13 +1157,15 @@ class Shrapnel (PhysicalObject):
         self.age = 0
     
     def create_node(self):
-        geom = GeomBuilder('tri').add_tri(self.color, [Point3(0,0,0), Point3(0,self.size,0), Point3(0,0,self.size)]).get_geom_node()
-        self.node = self.world.render.attach_new_node(geom)
+        extent = self.size/2.0
+        self.geom = GeomBuilder('tri').add_tri(self.color, [Point3(0,-extent,-extent), Point3(0,extent,extent), Point3(0,-extent,extent)]).get_geom_node()
+        self.node = self.world.render.attach_new_node(self.geom)
+        self.colorhandle = self.node.find('**/*')
         return self.node
     
     def create_solid(self):
         node = BulletRigidBodyNode('shrapnel')
-        node_shape = BulletBoxShape(Vec3(.001, self.size/2, self.size/2))
+        node_shape = BulletBoxShape(Vec3(.001, .05, .05))
         node.add_shape(node_shape)
         node.set_mass(3)
         return node
@@ -1172,12 +1174,17 @@ class Shrapnel (PhysicalObject):
         self.world.register_collider(self)
         self.world.register_updater_later(self)
         self.node.set_pos(self.pos)
-        self.solid.apply_force(Vec3(*self.vector), self.node.get_pos())
+        self.solid.apply_force(Vec3(*self.vector)*1000, Point3(*self.pos))
         
     def update(self, dt):
         self.age += dt*60
-        #need to fade to black before disappearing
-        if(self.age > self.lifetime):
+        halflife = self.lifetime/2
+        if self.age > self.lifetime-halflife:
+            newcolor = [x*((self.lifetime-self.age)/halflife) for x in self.color]
+            newcolor[3] = 1 #changing the alpha channel doesn't work
+            if self.node:
+                self.node.set_color(*newcolor)
+        if self.age > self.lifetime:
             self.world.garbage.add(self)
          
 class World (object):
@@ -1314,10 +1321,11 @@ class World (object):
         dt = globalClock.getDt()
         for obj in self.updatables_to_add:
             self.updatables.add(obj)
+        self.updatables_to_add = set()
         for obj in self.updatables:
             obj.update(dt)
-        self.updatables.difference_update(self.garbage)
-        self.collidables.difference_update(self.garbage)
+        self.updatables -= self.garbage
+        self.collidables -= self.garbage
         while True:
             if len(self.garbage) < 1:
                 break;
@@ -1327,6 +1335,7 @@ class World (object):
                 self.physics.remove_ghost(trash.solid)
             if(isinstance(trash.solid, BulletRigidBodyNode)):
                 pass#self.physics.remove_rigid_body(trash.solid)
+            del(trash)
         self.physics.do_physics(dt)
         for obj in self.collidables:
             result = self.physics.contact_test(obj.node.node())
