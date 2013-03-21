@@ -1330,11 +1330,11 @@ class World (object):
             if len(self.garbage) < 1:
                 break;
             trash = self.garbage.pop()
-            trash.node.remove_node()
             if(isinstance(trash.solid, BulletGhostNode)):
                 self.physics.remove_ghost(trash.solid)
             if(isinstance(trash.solid, BulletRigidBodyNode)):
-                pass#self.physics.remove_rigid_body(trash.solid)
+                self.physics.remove_rigid_body(trash.solid)
+            trash.node.remove_node()
             del(trash)
         self.physics.do_physics(dt)
         for obj in self.collidables:
