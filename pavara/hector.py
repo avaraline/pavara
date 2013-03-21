@@ -216,7 +216,7 @@ class Hector (PhysicalObject):
         if colordict.has_key('body_secondary_color'):
             color = colordict['body_secondary_color']
             for part in ['head_secondary', 'shoulders_secondary', 'RB_leg_secondary',
-                         'RT_leg_secondary', 'LB_leg_secondary', 'LB_leg_secondary']:
+                         'RT_leg_secondary', 'LB_leg_secondary', 'LT_leg_secondary']:
                 self.get_model_part(part).setColor(*color)
         if colordict.has_key('engines'):
             color = colordict['engines']
