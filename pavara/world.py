@@ -30,12 +30,12 @@ HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
 HECTOR_MIN_CHARGE_ENERGY = .2
 PLASMA_LIFESPAN = 900
 
-MISSILE_ENGINE_COLORS = [ [173.0/255.0, 0, 0] #dark red
-                        , [237.0/255.0, 118.0/255.0, 21.0/255.0] #bright orange
-                        , [194.0/255.0, 116.0/255.0, 14.0/255.0] #darker orange
-                        , [247.0/255.0, 76.0/255.0, 42.0/255.0] #brighter red
+MISSILE_ENGINE_COLORS = [ [173.0/255.0, 0, 0, 1] #dark red
+                        , [237.0/255.0, 118.0/255.0, 21.0/255.0, 1] #bright orange
+                        , [194.0/255.0, 116.0/255.0, 14.0/255.0, 1] #darker orange
+                        , [247.0/255.0, 76.0/255.0, 42.0/255.0, 1] #brighter red
                         ]
-MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
+MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0, 1]
 MISSILE_SCALE = .2
 MISSILE_OFFSET = [0, 1.9, .58]
 MISSILE_LIFESPAN = 600
@@ -656,11 +656,16 @@ class Plasma (PhysicalObject):
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
         self.age += dt*60
-        if len(result.getContacts()) > 0 or self.age > PLASMA_LIFESPAN:
+        contacts = result.getContacts()
+        if len(contacts) > 0:
             #self.world.render.clear_light(self.light_node)
             self.world.garbage.add(self)
             cf = self.energy
-            expl = self.world.attach(TriangleExplosion(self.node.get_pos(self.world.render), 5, size=.1, color=[1,(150/255.0)*cf,(150/255.0)*cf, 1]))
+            expl_color = [1,(150/255.0)*cf,(150/255.0)*cf, 1]
+            expl_pos = self.node.get_pos(self.world.render)
+            expl = self.world.attach(TriangleExplosion(expl_pos, 5, size=.1, color=expl_color))
+        if self.age > PLASMA_LIFESPAN:
+            self.world.garbage.add(self)
 
 class Missile (PhysicalObject):
     def __init__(self, pos, hpr, name=None):
@@ -704,14 +709,21 @@ class Missile (PhysicalObject):
         self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
         result = self.world.physics.contact_test(self.solid)
         self.age += dt
-        if len(result.getContacts()) > 0 or self.age > MISSILE_LIFESPAN:
+        if len(result.getContacts()) > 0:
+            expl_colors = [MISSILE_BODY_COLOR]
+            expl_colors.extend(MISSILE_ENGINE_COLORS)
+            expl_pos = self.node.get_pos(self.world.render)
+            for c in expl_colors:
+                self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80,))
+            self.world.garbage.add(self)
+        if self.age > MISSILE_LIFESPAN:
             self.world.garbage.add(self)
 
 class TriangleExplosion (WorldObject):
-    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
+    def __init__(self, pos, count, hit_normal=None, lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
         super(TriangleExplosion, self).__init__(name)
         self.pos = Vec3(*pos)
-        self.hit_normal = Vec3(*hit_normal)
+        self.hit_normal = Vec3(*hit_normal) if hit_normal else None
         self.lifetime = lifetime
         self.color = color
         self.size = size
@@ -725,12 +737,10 @@ class TriangleExplosion (WorldObject):
 
     def attached(self):
         for i in xrange(self.count):
-            newpos = self.pos
-            newpos.y += i*.02
-            newpos.z += i*.02
-            #need better vectors than this, take into account hit_normal
-            vector = [round(random.random(), 3), round(random.random(), 3), round(random.random(), 3)]
-            #print "vector ", vector
+            if self.hit_normal:
+                vector = Vec3(*[random.uniform(x+.7, x-.7) for x in self.hit_normal])
+            else:
+                vector = Vec3(*[random.uniform(-1,1) for _ in xrange(3)])
             self.shrapnels.append(self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime)))
 
 
@@ -747,7 +757,8 @@ class Shrapnel (PhysicalObject):
 
     def create_node(self):
         extent = self.size/2.0
-        self.geom = GeomBuilder('tri').add_tri(self.color, [Point3(0,-extent,-extent), Point3(0,extent,extent), Point3(0,-extent,extent)]).get_geom_node()
+        geom_points = [Point3(0,-extent,-extent), Point3(0,extent,extent), Point3(0,-extent,extent)]
+        self.geom = GeomBuilder('tri').add_tri(self.color, geom_points).get_geom_node()
         self.node = self.world.render.attach_new_node(self.geom)
         self.colorhandle = self.node.find('**/*')
         return self.node
@@ -763,7 +774,7 @@ class Shrapnel (PhysicalObject):
         self.world.register_collider(self)
         self.world.register_updater_later(self)
         self.node.set_pos(self.pos)
-        self.solid.apply_force(Vec3(*self.vector)*1000, Point3(*self.pos))
+        self.solid.apply_impulse(Vec3(*self.vector), Point3(*self.pos))
 
     def update(self, dt):
         self.age += dt*60
