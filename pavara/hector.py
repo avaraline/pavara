@@ -166,6 +166,8 @@ class Hector (PhysicalObject):
         self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'shoulderBone'))
         self.left_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'leftFootBone')
         self.right_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'rightFootBone')
+        self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'leftBarrelBone')
+        self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'rightBarrelBone')
         return self.actor
 
     def create_solid(self):
