@@ -7,7 +7,8 @@ from direct.showbase import Audio3DManager
 from direct.filter.CommonFilters import CommonFilters
 
 from pavara.maps import load_maps
-from pavara.world import Block, FreeSolid, Hector
+from pavara.world import Block, FreeSolid
+from pavara.hector import Hector
 
 
 class Pavara (ShowBase):
