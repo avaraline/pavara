@@ -1,7 +1,6 @@
-pavara
-======
-<img src="https://dl.dropbox.com/u/38430353/icebox_thumb.jpg" style="display:block; float:right;" alt="Icebox!"/>
-A game inspired by a classic Mac game.
+pavara |<img src="https://dl.dropbox.com/u/38430353/icebox_thumb.jpg" alt="Indra by rherriman"/>
+====== |
+A game insprired by the classic mac game |
 
 * * *
 how to install dependencies
