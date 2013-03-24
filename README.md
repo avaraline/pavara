@@ -1,6 +1,6 @@
 pavara
 ======
-![Vatnajokull](https://dl.dropbox.com/u/38430353/vatna_small.png)
+<img src="https://dl.dropbox.com/u/38430353/icebox_thumb.jpg" style="display:block; float:right;" alt="Icebox!"/>
 A game inspired by a classic Mac game.
 
 * * *
@@ -8,17 +8,20 @@ how to install dependencies
 ---------------------------
 
 pavara depends on [Panda3d](http://www.panda3d.org/download.php?sdk&version=1.8.0).
+
 Panda3d installer links: [Windows](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe), [Mac](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg), [Linux (Ubuntu)](http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk).
+
 Mac users also need the [NVidia CG toolkit](https://developer.nvidia.com/cg-toolkit). Mac users may also need an [X11 Server](http://xquartz.macosforge.org/trac) if one is not installed.
+
 In Ubuntu 12.04, the `oneiric` version of Panda3d will complain about 2 unmet dependencies during installation. [Download these](http://packages.ubuntu.com/oneiric/allpackages) to install.
 
-running 
+running
 -------
-The python script `map_test.py` must be run with the `ppython` command (provided by Panda3d) inside the source directory. 
+The python script `map_test.py` must be run with the `ppython` command (provided by Panda3d) inside the source directory.
 
 * Windows: open a new `cmd.exe`, `dir \Wherever\You\Saved\pavara` then `ppython map_test.py`
 
-* Mac/Linux: open a new terminal and `cd /path/to/pavara/folder` followed by `ppython map_test.py` 
+* Mac/Linux: open a new terminal and `cd /path/to/pavara/folder` followed by `ppython map_test.py`
 
 * * *
 roadmap
