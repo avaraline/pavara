@@ -1,6 +1,15 @@
-pavara |<img src="https://dl.dropbox.com/u/38430353/icebox_thumb.jpg" alt="Indra by rherriman"/>
-====== |
-A game insprired by the classic mac game |
+<table>
+	<tr>
+		<td>
+			pavara
+			======
+			A game insprired by the classic mac game
+		</td>
+		<td>
+			<img src="https://dl.dropbox.com/u/38430353/icebox_thumb.jpg" alt="Indra by rherriman"/>
+		</td>
+	</tr>
+</table>
 
 * * *
 how to install dependencies
