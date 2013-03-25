@@ -102,7 +102,6 @@ class Skeleton (object):
     def _make_return_seq_(self):
         lerps = self.right_leg.get_return(self.return_speed) + self.left_leg.get_return(self.return_speed)
         lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting[0]))
-        print lerps
         return Parallel(*lerps)
 
     def walk(self):
@@ -151,7 +150,6 @@ class Hector (PhysicalObject):
         self.right_gun_charge = 1.0
 
     def get_model_part(self, obj_name):
-        print obj_name
         return self.actor.find("**/%s" % obj_name)
 
     def create_node(self):
@@ -199,8 +197,6 @@ class Hector (PhysicalObject):
         return np
 
     def setup_color(self, colordict):
-        print "dslkjfadslkjf!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        self.actor.ls()
         if colordict.has_key('barrel_color'):
             color = colordict['barrel_color']
             self.get_model_part('left_barrel').setColor(*color)
