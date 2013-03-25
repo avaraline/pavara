@@ -4,7 +4,7 @@ from world import *
 
 class Hat (object):
 
-    def __init__(self, actor):
+    def __init__(self, actor, color):
         self.missile_loaded = False
         self.loaded_missile = load_model('missile.egg')
         self.loaded_missile.hide()
@@ -15,8 +15,9 @@ class Hat (object):
         main_engines.set_color(.2,.2,.2)
         wing_engines = self.loaded_missile.find('**/wingengines')
         wing_engines.set_color(.2,.2,.2)
-        body = self.loaded_missile.find('**/bodywings')
-        body.set_color(*MISSILE_BODY_COLOR)
+        self.body = self.loaded_missile.find('**/bodywings')
+        self.color = color
+        self.body.set_color(*color)
 
     def toggle_visibility(self):
         self.missile_loaded = not self.missile_loaded
@@ -32,15 +33,15 @@ class Hat (object):
         origin = self.loaded_missile.get_pos(world.render)
         hpr = self.loaded_missile.get_hpr(world.render)
         #hpr += head_angle
-        world.attach(Missile(origin, hpr))
+        world.attach(Missile(origin, hpr, self.color))
         self.missile_loaded = False
         self.loaded_missile.hide()
 
 
 class LegBones (object):
 
-    motion = [ [Vec3(0, p, 0) for p in [ 50, -5, -60,  0]]
-             , [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18]]
+    motion = [ [Vec3(0, p, 0) for p in [ 50, -5, -60,  0, 25, 0]]
+             , [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18, 0, 0]]
              ]
     TOP = 0
     BOTTOM = 1
@@ -71,7 +72,7 @@ class Skeleton (object):
 
     upbob = Vec3(0, 0.05, 0)
     downbob = upbob * -1
-    walk_cycle_speed = 0.8
+    walk_cycle_speed = 1.4
     return_speed = 0.1
 
 
@@ -88,7 +89,7 @@ class Skeleton (object):
         # TODO: We definitely need more than four segments in the walk loop.
         # We also need to have separate loops for backwards and forwards walking.
 
-        ws = self.walk_cycle_speed / 4.0
+        ws = self.walk_cycle_speed / 6.0
         up_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.upbob)]
         down_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.downbob)]
         steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob) + self.left_leg.get_walk_seq(2,ws, self.upbob) + up_interval
@@ -120,7 +121,7 @@ class Hector (PhysicalObject):
 
     collide_bits = SOLID_COLLIDE_BIT
 
-    def __init__(self, incarnator):
+    def __init__(self, incarnator, colordict=None):
         super(Hector, self).__init__()
 
         self.spawn_point = incarnator
@@ -148,16 +149,20 @@ class Hector (PhysicalObject):
         self.energy = 1.0
         self.left_gun_charge = 1.0
         self.right_gun_charge = 1.0
+        self.primary_color = [1,1,1,1]
+        self.colordict = colordict if colordict else None
 
     def get_model_part(self, obj_name):
         return self.actor.find("**/%s" % obj_name)
 
     def create_node(self):
         self.actor = Actor('walker.egg')
+        if self.colordict:
+            self.setup_color(self.colordict)
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         self.spawn_point.was_used()
-        self.loaded_missile = Hat(self.actor)
+        self.loaded_missile = Hat(self.actor, self.primary_color)
 
         left_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['left_top_bone', 'left_bottom_bone']])
         right_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['right_top_bone', 'right_bottom_bone']])
@@ -205,6 +210,7 @@ class Hector (PhysicalObject):
             self.get_model_part('visor').setColor(*colordict['visor_color'])
         if colordict.has_key('body_primary_color'):
             color = colordict['body_primary_color']
+            self.primary_color = color
             for part in ['hull_primary', 'rt_leg_primary',
                          'lt_leg_primary', 'lb_leg_primary', 'rb_leg_primary',
                          'left_barrel_ring', 'right_barrel_ring', 'hull_bottom']:

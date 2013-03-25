@@ -35,9 +35,8 @@ MISSILE_ENGINE_COLORS = [ [173.0/255.0, 0, 0, 1] #dark red
                         , [194.0/255.0, 116.0/255.0, 14.0/255.0, 1] #darker orange
                         , [247.0/255.0, 76.0/255.0, 42.0/255.0, 1] #brighter red
                         ]
-MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0, 1]
 MISSILE_SCALE = .2
-MISSILE_OFFSET = [0, 1.9, .58]
+MISSILE_OFFSET = [0, 2.1, .58]
 MISSILE_LIFESPAN = 600
 
 
@@ -668,17 +667,18 @@ class Plasma (PhysicalObject):
             self.world.garbage.add(self)
 
 class Missile (PhysicalObject):
-    def __init__(self, pos, hpr, name=None):
+    def __init__(self, pos, hpr, color, name=None):
         super(Missile, self).__init__(name)
         self.pos = Vec3(*pos)
         self.hpr = hpr
         self.move_divisor = 9
         self.age = 0
+        self.color = color
 
     def create_node(self):
         self.model = load_model('missile.egg')
         self.body = self.model.find('**/bodywings')
-        self.body.set_color(*MISSILE_BODY_COLOR)
+        self.body.set_color(*self.color)
         self.main_engines = self.model.find('**/mainengines')
         self.wing_engines = self.model.find('**/wingengines')
         self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
@@ -710,7 +710,9 @@ class Missile (PhysicalObject):
         result = self.world.physics.contact_test(self.solid)
         self.age += dt
         if len(result.getContacts()) > 0:
-            expl_colors = [MISSILE_BODY_COLOR]
+            clist = list(self.color)
+            clist.extend([1])
+            expl_colors = [clist]
             expl_colors.extend(MISSILE_ENGINE_COLORS)
             expl_pos = self.node.get_pos(self.world.render)
             for c in expl_colors:
@@ -774,7 +776,7 @@ class Shrapnel (PhysicalObject):
         self.world.register_collider(self)
         self.world.register_updater_later(self)
         self.node.set_pos(self.pos)
-        self.solid.apply_impulse(Vec3(*self.vector), Point3(*self.pos))
+        self.solid.apply_impulse(Vec3(*self.vector)*12, Point3(*self.pos))
 
     def update(self, dt):
         self.age += dt*60

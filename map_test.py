@@ -27,14 +27,13 @@ class Pavara (ShowBase):
 
         # Testing physical hector.
         incarn = self.map.world.get_incarn()
-        self.hector = self.map.world.attach(Hector(incarn))
-
-        self.hector.setup_color({
+        hector_color_dict = {
             "barrel_color": [.7,.7,.7],
             "visor_color": [2.0/255, 94.0/255, 115.0/255],
             "body_primary_color": [3.0/255, 127.0/255, 140.0/255],
             "body_secondary_color": [217.0/255, 213.0/255, 154.0/255]
-        })
+        }
+        self.hector = self.map.world.attach(Hector(incarn, colordict=hector_color_dict))
 
         self.setupInput()
 
