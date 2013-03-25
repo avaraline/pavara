@@ -151,6 +151,7 @@ class Hector (PhysicalObject):
         self.right_gun_charge = 1.0
 
     def get_model_part(self, obj_name):
+        print obj_name
         return self.actor.find("**/%s" % obj_name)
 
     def create_node(self):
@@ -160,14 +161,14 @@ class Hector (PhysicalObject):
         self.spawn_point.was_used()
         self.loaded_missile = Hat(self.actor)
 
-        left_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['leftTopBone', 'leftBottomBone']])
-        right_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['rightTopBone', 'rightBottomBone']])
+        left_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['left_top_bone', 'left_bottom_bone']])
+        right_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['right_top_bone', 'right_bottom_bone']])
 
-        self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'shoulderBone'))
-        self.left_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'leftFootBone')
-        self.right_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'rightFootBone')
-        self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'leftBarrelBone')
-        self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'rightBarrelBone')
+        self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'head_bone'))
+        self.left_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_foot_bone')
+        self.right_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_foot_bone')
+        self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_barrel_bone')
+        self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_barrel_bone')
         return self.actor
 
     def create_solid(self):
@@ -198,29 +199,25 @@ class Hector (PhysicalObject):
         return np
 
     def setup_color(self, colordict):
-        if colordict.has_key('barrel_outer_color'):
-            color = colordict['barrel_outer_color']
-            self.get_model_part('L_barrel_outer').setColor(*color)
-            self.get_model_part('R_barrel_outer').setColor(*color)
-        if colordict.has_key('barrel_inner_color'):
-            color = colordict['barrel_inner_color']
-            self.get_model_part('R_barrel_inner').setColor(*color)
-            self.get_model_part('L_barrel_inner').setColor(*color)
+        print "dslkjfadslkjf!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        self.actor.ls()
+        if colordict.has_key('barrel_color'):
+            color = colordict['barrel_color']
+            self.get_model_part('left_barrel').setColor(*color)
+            self.get_model_part('right_barrel').setColor(*color)
         if colordict.has_key('visor_color'):
             self.get_model_part('visor').setColor(*colordict['visor_color'])
         if colordict.has_key('body_primary_color'):
             color = colordict['body_primary_color']
-            for part in ['head_primary', 'shoulders_primary', 'RT_leg_primary',
-                         'LT_leg_primary', 'LB_leg_primary', 'RB_leg_primary']:
+            for part in ['hull_primary', 'rt_leg_primary',
+                         'lt_leg_primary', 'lb_leg_primary', 'rb_leg_primary',
+                         'left_barrel_ring', 'right_barrel_ring', 'hull_bottom']:
                 self.get_model_part(part).setColor(*color)
         if colordict.has_key('body_secondary_color'):
             color = colordict['body_secondary_color']
-            for part in ['head_secondary', 'shoulders_secondary', 'RB_leg_secondary',
-                         'RT_leg_secondary', 'LB_leg_secondary', 'LT_leg_secondary']:
+            for part in ['hull_secondary', 'visor_stripe', 'rb_leg_secondary',
+                         'rt_leg_secondary', 'lb_leg_secondary', 'lt_leg_secondary']:
                 self.get_model_part(part).setColor(*color)
-        if colordict.has_key('engines'):
-            color = colordict['engines']
-            self.get_model_part('engines').setColor(*color)
         return
 
     def attached(self):
