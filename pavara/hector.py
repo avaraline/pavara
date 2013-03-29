@@ -43,11 +43,14 @@ class LegBones (object):
     motion = [ [Vec3(0, p, 0) for p in [ 50, -5, -60,  0, 25, 0]]
              , [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18, 0, 0]]
              ]
+
     TOP = 0
     BOTTOM = 1
 
-    def __init__(self, top, bottom):
+    def __init__(self, hip, foot, top, bottom):
         self.bones = [(bone, bone.get_hpr(), bone.get_pos(), motions) for (bone, motions) in zip([top, bottom], self.motion)]
+        self.foot_bone = foot
+        self.hip_bone = hip
 
     def bottom_resting_pos(self):
         return self.bones[self.BOTTOM][2]
@@ -66,6 +69,7 @@ class LegBones (object):
         return_pos = LerpPosInterval(self.bones[self.TOP][0], return_speed, self.bones[self.TOP][2])
         lerps.append(return_pos)
         return lerps
+
 
 
 class Skeleton (object):
@@ -116,6 +120,43 @@ class Skeleton (object):
             self.walk_seq.pause()
             self.return_seq.start()
 
+    def setup_footsteps(self, audio3d):
+        self.lf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
+        self.lf_sound.set_balance(0)
+        audio3d.attachSoundToObject(self.lf_sound, self.left_leg.foot_bone)
+        self.lf_played_since = 0
+        self.rf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
+        self.rf_sound.set_balance(0)
+        audio3d.attachSoundToObject(self.rf_sound, self.right_leg.foot_bone)
+        self.rf_played_since = 0
+
+    def update_legs(self, walk, dt, render, physics):
+        if walk != 0:
+            self.walk()
+            print self.left_leg
+            print self.left_leg.foot_bone
+            lf_from = self.left_leg.foot_bone.get_pos(render)
+            lf_to = self.left_leg.foot_bone.get_pos(render)
+            lf_to.y -= .3
+            left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+            self.lf_played_since += dt
+            if left_foot_result.has_hit() and self.lf_played_since > .7:
+                self.lf_sound.play()
+                self.lf_played_since = 0
+
+            rf_from = self.right_leg.foot_bone.get_pos(render)
+            rf_to = self.right_leg.foot_bone.get_pos(render)
+            rf_to.y -= .3
+            right_foot_result = physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+            self.rf_played_since += dt
+            if right_foot_result.has_hit() and self.rf_played_since > .7:
+                self.rf_sound.play()
+                self.rf_played_since = 0
+        else:
+            self.stop()
+            self.lf_sound.stop()
+            self.rf_sound.stop()
+
 
 class Hector (PhysicalObject):
 
@@ -157,6 +198,7 @@ class Hector (PhysicalObject):
 
     def create_node(self):
         self.actor = Actor('walker.egg')
+        self.actor.listJoints()
         if self.colordict:
             self.setup_color(self.colordict)
         self.actor.set_pos(*self.spawn_point.pos)
@@ -164,12 +206,18 @@ class Hector (PhysicalObject):
         self.spawn_point.was_used()
         self.loaded_missile = Hat(self.actor, self.primary_color)
 
-        left_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['left_top_bone', 'left_bottom_bone']])
-        right_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['right_top_bone', 'right_bottom_bone']])
+        left_bones = LegBones(
+            self.actor.exposeJoint(None, 'modelRoot', 'left_hip_bone'),
+            self.actor.exposeJoint(None, 'modelRoot', 'left_foot_bone'),
+            *[self.actor.controlJoint(None, 'modelRoot', name) for name in ['left_top_bone', 'left_bottom_bone']]
+        )
+        right_bones = LegBones(
+            self.actor.exposeJoint(None, 'modelRoot', 'right_hip_bone'),
+            self.actor.exposeJoint(None, 'modelRoot', 'right_foot_bone'),
+            *[self.actor.controlJoint(None, 'modelRoot', name) for name in  ['right_top_bone', 'right_bottom_bone']]
+        )
 
         self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'head_bone'))
-        self.left_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_foot_bone')
-        self.right_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_foot_bone')
         self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_barrel_bone')
         self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_barrel_bone')
         return self.actor
@@ -226,14 +274,7 @@ class Hector (PhysicalObject):
         self.integrator = Integrator(self.world.gravity)
         self.world.register_collider(self)
         self.world.register_updater(self)
-        self.lf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
-        self.lf_sound.set_balance(0)
-        self.world.audio3d.attachSoundToObject(self.lf_sound, self.left_foot_joint)
-        self.lf_played_since = 0
-        self.rf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
-        self.rf_sound.set_balance(0)
-        self.world.audio3d.attachSoundToObject(self.rf_sound, self.right_foot_joint)
-        self.rf_played_since = 0
+        self.skeleton.setup_footsteps(self.world.audio3d)
 
 
     def collision(self, other, manifold, first):
@@ -303,7 +344,9 @@ class Hector (PhysicalObject):
         pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
 
-        self.update_legs(walk,dt)
+        #this should return 'on ground' information
+        self.skeleton.update_legs(walk, dt, self.world.render, self.world.physics)
+
         if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
             floor_node = result.get_node()
@@ -349,27 +392,6 @@ class Hector (PhysicalObject):
             self.energy += HECTOR_RECHARGE_FACTOR * (dt)
 
 
-    def update_legs(self, walk, dt):
-        if walk != 0:
-            self.skeleton.walk()
-            lf_from = self.left_foot_joint.get_pos(self.world.render)
-            lf_to = self.left_foot_joint.get_pos(self.world.render)
-            lf_to.y -= .3
-            left_foot_result = self.world.physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            self.lf_played_since += dt
-            if left_foot_result.has_hit() and self.lf_played_since > .7:
-                self.lf_sound.play()
-                self.lf_played_since = 0
 
-            rf_from = self.right_foot_joint.get_pos(self.world.render)
-            rf_to = self.right_foot_joint.get_pos(self.world.render)
-            rf_to.y -= .3
-            right_foot_result = self.world.physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            self.rf_played_since += dt
-            if right_foot_result.has_hit() and self.rf_played_since > .7:
-                self.rf_sound.play()
-                self.rf_played_since = 0
-        else:
-            self.skeleton.stop()
-            self.lf_sound.stop()
-            self.rf_sound.stop()
+
+
