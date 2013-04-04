@@ -2,6 +2,9 @@ from panda3d.core import *
 from direct.actor.Actor import Actor
 from world import *
 
+TOP_LEG_LENGTH = .8302
+BOTTOM_LEG_LENGTH = 1.2122
+
 class Hat (object):
 
     def __init__(self, actor, color):
@@ -50,7 +53,10 @@ class LegBones (object):
     def __init__(self, hip, foot, top, bottom):
         self.bones = [(bone, bone.get_hpr(), bone.get_pos(), motions) for (bone, motions) in zip([top, bottom], self.motion)]
         self.foot_bone = foot
+        self.top_bone = top
+        self.bottom_bone = bottom
         self.hip_bone = hip
+        self.is_on_ground = False
 
     def bottom_resting_pos(self):
         return self.bones[self.BOTTOM][2]
@@ -132,13 +138,39 @@ class Skeleton (object):
 
     def update_legs(self, walk, dt, render, physics):
         if walk != 0:
-            self.walk()
-            print self.left_leg
-            print self.left_leg.foot_bone
+           # self.walk()
+            #print self.left_leg
+            #print self.left_leg.foot_bone
             lf_from = self.left_leg.foot_bone.get_pos(render)
             lf_to = self.left_leg.foot_bone.get_pos(render)
-            lf_to.y -= .3
+            lf_to.y -= 1
             left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+
+            if left_foot_result.has_hit() and (self.left_leg.is_on_ground or True):
+                hip_pos = self.left_leg.hip_bone.get_pos(render)
+                hit_pos = left_foot_result.get_hit_pos()
+                hit_pos.x += .3
+                target_vector =  hit_pos - hip_pos
+                #current_vector = self.left_leg.left_foot_bone - hip_pos
+                print "v length: ", target_vector.length()
+                tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
+                print "argument for acos: ", tt_angle_cos
+                try:
+                    target_top_angle = rad2Deg(math.acos(math.abs(tt_angle_cos)))
+                except:
+                    target_top_angle = None
+                tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
+                print "argument for acos 2: ", tb_angle_cos
+                try:
+                    target_bottom_angle = rad2Deg(math.acos(math.abs(tb_angle_cos)))
+                except:
+                    target_bottom_angle = None
+                print "target angles: ", target_top_angle, " ", target_bottom_angle
+                if target_top_angle:
+                    self.left_leg.top_bone.set_p(target_top_angle)
+                if target_bottom_angle:
+                    self.left_leg.bottom_bone.set_p((180-target_bottom_angle)*-1)
+
             self.lf_played_since += dt
             if left_foot_result.has_hit() and self.lf_played_since > .7:
                 self.lf_sound.play()
