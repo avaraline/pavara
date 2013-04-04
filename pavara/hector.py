@@ -138,14 +138,13 @@ class Skeleton (object):
 
     def update_legs(self, walk, dt, render, physics):
         if walk != 0:
-           # self.walk()
-            #print self.left_leg
-            #print self.left_leg.foot_bone
+            self.walk()
             lf_from = self.left_leg.foot_bone.get_pos(render)
             lf_to = self.left_leg.foot_bone.get_pos(render)
             lf_to.y -= 1
             left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-
+            #broken IK for left leg
+            """
             if left_foot_result.has_hit() and (self.left_leg.is_on_ground or True):
                 hip_pos = self.left_leg.hip_bone.get_pos(render)
                 hit_pos = left_foot_result.get_hit_pos()
@@ -155,22 +154,20 @@ class Skeleton (object):
                 print "v length: ", target_vector.length()
                 tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
                 print "argument for acos: ", tt_angle_cos
-                try:
-                    target_top_angle = rad2Deg(math.acos(math.abs(tt_angle_cos)))
-                except:
-                    target_top_angle = None
+
+                target_top_angle = rad2Deg(math.acos(tt_angle_cos))
+
                 tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
                 print "argument for acos 2: ", tb_angle_cos
-                try:
-                    target_bottom_angle = rad2Deg(math.acos(math.abs(tb_angle_cos)))
-                except:
-                    target_bottom_angle = None
-                print "target angles: ", target_top_angle, " ", target_bottom_angle
-                if target_top_angle:
-                    self.left_leg.top_bone.set_p(target_top_angle)
-                if target_bottom_angle:
-                    self.left_leg.bottom_bone.set_p((180-target_bottom_angle)*-1)
 
+                target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
+
+                print "target angles: ", target_top_angle, " ", target_bottom_angle
+                if target_top_angle and target_top_angle == target_top_angle:
+                    self.left_leg.top_bone.set_p(target_top_angle)
+                if target_bottom_angle and target_bottom_angle == target_bottom_angle:
+                    self.left_leg.bottom_bone.set_p((180-target_bottom_angle)*-1)
+            """
             self.lf_played_since += dt
             if left_foot_result.has_hit() and self.lf_played_since > .7:
                 self.lf_sound.play()
