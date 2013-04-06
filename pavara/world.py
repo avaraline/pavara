@@ -678,7 +678,7 @@ class Plasma (PhysicalObject):
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
 
     def update(self, dt):
-        self.move_by(0,0,(dt*60)/4)
+        self.move_by(0,0,(dt*60)/5)
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
         self.age += dt*60

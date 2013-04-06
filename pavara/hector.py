@@ -2,8 +2,10 @@ from panda3d.core import *
 from direct.actor.Actor import Actor
 from world import *
 
-TOP_LEG_LENGTH = .8302
+TOP_LEG_LENGTH = 1
 BOTTOM_LEG_LENGTH = 1.2122
+TOP_LEG_EXTENDED_P = 60
+BOTTOM_LEG_EXTENDED_P = -70
 
 class Hat (object):
 
@@ -65,6 +67,8 @@ class LegBones (object):
         return self.bones[self.TOP][2]
 
     def get_walk_seq(self, stage, walk_cycle_speed, bob):
+        #add bakeInStart=0 to the LerpHprInterval arguments to attempt IK during interval
+        #this does not look very good at all
         lerps = [LerpHprInterval(bone, walk_cycle_speed, resting_hpr + motions[stage]) for (bone, resting_hpr, resting_pos, motions) in self.bones]
         bob = LerpPosInterval(self.bones[self.TOP][0], walk_cycle_speed, self.bones[self.TOP][2] + bob)
         lerps.append(bob)
@@ -102,17 +106,31 @@ class Skeleton (object):
         ws = self.walk_cycle_speed / 6.0
         up_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.upbob)]
         down_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.downbob)]
-        steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob) + self.left_leg.get_walk_seq(2,ws, self.upbob) + up_interval
-                , self.right_leg.get_walk_seq(1,ws, self.downbob) + self.left_leg.get_walk_seq(3,ws, self.downbob) + down_interval
-                , self.right_leg.get_walk_seq(2,ws, self.upbob) + self.left_leg.get_walk_seq(0,ws,self.upbob) + up_interval
-                , self.right_leg.get_walk_seq(3,ws, self.downbob) + self.left_leg.get_walk_seq(1,ws,self.downbob) + down_interval
+        left_leg_on_ground = [LerpFunc(self._left_leg_on_ground)]
+        right_leg_on_ground = [LerpFunc(self._right_leg_on_ground)]
+        steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob) + self.left_leg.get_walk_seq(2,ws, self.upbob) + up_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(1,ws, self.downbob) + self.left_leg.get_walk_seq(3,ws, self.downbob) + down_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(2,ws, self.upbob) + self.left_leg.get_walk_seq(0,ws,self.upbob) + up_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(3,ws, self.downbob) + self.left_leg.get_walk_seq(1,ws,self.downbob) + down_interval + left_leg_on_ground
                 ]
         steps = [Parallel(*step) for step in steps]
         return Sequence(*steps)
 
+    def _left_leg_on_ground(self, data):
+        if not self.left_leg.is_on_ground:
+            self.lf_sound.play()
+        self.left_leg.is_on_ground = True
+        self.right_leg.is_on_ground = False
+
+    def _right_leg_on_ground(self, data):
+        if not self.right_leg.is_on_ground:
+            self.rf_sound.play()
+        self.left_leg.is_on_ground = False
+        self.right_leg.is_on_ground = True
+
     def _make_return_seq_(self):
         lerps = self.right_leg.get_return(self.return_speed) + self.left_leg.get_return(self.return_speed)
-        lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting[0]))
+        lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting[0], bakeInStart=0))
         return Parallel(*lerps)
 
     def walk(self):
@@ -124,7 +142,9 @@ class Skeleton (object):
         if self.walk_playing:
             self.walk_playing = False
             self.walk_seq.pause()
-            self.return_seq.start()
+            self.left_leg.is_on_ground = True
+            self.right_leg.is_on_ground = True
+            #self.return_seq.start()
 
     def setup_footsteps(self, audio3d):
         self.lf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
@@ -139,52 +159,54 @@ class Skeleton (object):
     def update_legs(self, walk, dt, render, physics):
         if walk != 0:
             self.walk()
-            lf_from = self.left_leg.foot_bone.get_pos(render)
-            lf_to = self.left_leg.foot_bone.get_pos(render)
-            lf_to.y -= 1
-            left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            #broken IK for left leg
-            """
-            if left_foot_result.has_hit() and (self.left_leg.is_on_ground or True):
-                hip_pos = self.left_leg.hip_bone.get_pos(render)
-                hit_pos = left_foot_result.get_hit_pos()
-                hit_pos.x += .3
-                target_vector =  hit_pos - hip_pos
-                #current_vector = self.left_leg.left_foot_bone - hip_pos
-                print "v length: ", target_vector.length()
-                tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
-                print "argument for acos: ", tt_angle_cos
-
-                target_top_angle = rad2Deg(math.acos(tt_angle_cos))
-
-                tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
-                print "argument for acos 2: ", tb_angle_cos
-
-                target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
-
-                print "target angles: ", target_top_angle, " ", target_bottom_angle
-                if target_top_angle and target_top_angle == target_top_angle:
-                    self.left_leg.top_bone.set_p(target_top_angle)
-                if target_bottom_angle and target_bottom_angle == target_bottom_angle:
-                    self.left_leg.bottom_bone.set_p((180-target_bottom_angle)*-1)
-            """
-            self.lf_played_since += dt
-            if left_foot_result.has_hit() and self.lf_played_since > .7:
-                self.lf_sound.play()
-                self.lf_played_since = 0
-
-            rf_from = self.right_leg.foot_bone.get_pos(render)
-            rf_to = self.right_leg.foot_bone.get_pos(render)
-            rf_to.y -= .3
-            right_foot_result = physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            self.rf_played_since += dt
-            if right_foot_result.has_hit() and self.rf_played_since > .7:
-                self.rf_sound.play()
-                self.rf_played_since = 0
         else:
             self.stop()
-            self.lf_sound.stop()
-            self.rf_sound.stop()
+
+        lf_from = self.left_leg.foot_bone.get_pos(render)
+        lf_to = self.left_leg.foot_bone.get_pos(render)
+        lf_from.y += .5
+        lf_to.y -= 1
+        left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+
+        if self.left_leg.is_on_ground:
+            self.update_leg(self.left_leg, left_foot_result, render)
+
+        rf_from = self.right_leg.foot_bone.get_pos(render)
+        rf_to = self.right_leg.foot_bone.get_pos(render)
+        rf_from.y += .5
+        rf_to.y -= 1
+        right_foot_result = physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+
+        if self.right_leg.is_on_ground:
+            self.update_leg(self.right_leg, right_foot_result, render)
+
+    def update_leg(self, leg, result, render):
+        hip_pos = leg.hip_bone.get_pos(render)
+        hit_pos = result.get_hit_pos()
+        target_vector =  hip_pos - hit_pos
+
+        if not result.has_hit():
+            #TODO: animate
+            leg.top_bone.set_p(TOP_LEG_EXTENDED_P)
+            leg.bottom_bone.set_p(BOTTOM_LEG_EXTENDED_P)
+            return
+        #if we try to stretch the legs out farther than they go, acos will throw a domain error
+        if .2 < target_vector.length() < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
+            #law of cosines
+            tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
+            target_top_angle = rad2Deg(math.acos(tt_angle_cos))
+            tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
+            target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
+            #sensible constraints
+            if target_top_angle and target_top_angle == target_top_angle and 20 < target_top_angle < 120:
+                #TODO: animate
+                leg.top_bone.set_p(90 - target_top_angle)
+
+            if target_bottom_angle and target_bottom_angle == target_bottom_angle and 20 < target_bottom_angle < 140:
+                #TODO: animate
+                leg.bottom_bone.set_p((180-target_bottom_angle)*-1)
+        else:
+            return
 
 
 class Hector (PhysicalObject):
