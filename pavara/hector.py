@@ -383,6 +383,14 @@ class Hector (PhysicalObject):
                 self.loaded_missile.toggle_visibility()
             self.loaded_grenade.toggle_visibility()
             return
+        if cmd is 'grenade_fire':
+            if not pressed: return
+            if self.loaded_missile.can_fire():
+                self.loaded_missile.toggle_visibility()
+            if not self.loaded_grenade.can_fire():
+                self.loaded_grenade.toggle_visibility()
+            self.loaded_grenade.fire(self.world)
+            return
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def handle_fire(self):
