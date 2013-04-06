@@ -42,6 +42,40 @@ class Hat (object):
         self.missile_loaded = False
         self.loaded_missile.hide()
 
+class Sack (object):
+
+    def __init__(self, actor, color):
+        self.grenade_loaded = False
+        self.loaded_grenade = load_model('grenade.egg')
+        self.loaded_grenade.hide()
+        self.loaded_grenade.reparentTo(actor)
+        self.loaded_grenade.set_pos(self.loaded_grenade, *GRENADE_OFFSET)
+        self.loaded_grenade.set_scale(GRENADE_SCALE)
+        inner_top = self.loaded_grenade.find('**/inner_top')
+        inner_top.set_color(.2,.2,.2)
+        inner_bottom = self.loaded_grenade.find('**/inner_bottom')
+        inner_bottom.set_color(.2,.2,.2)
+        shell = self.loaded_grenade.find('**/shell')
+        self.color = color
+        shell.set_color(*color)
+
+    def toggle_visibility(self):
+        self.grenade_loaded = not self.grenade_loaded
+        if self.grenade_loaded:
+            self.loaded_grenade.show()
+        else:
+            self.loaded_grenade.hide()
+
+    def can_fire(self):
+        return self.grenade_loaded
+
+    def fire(self, world):
+        origin = self.loaded_grenade.get_pos(world.render)
+        hpr = self.loaded_grenade.get_hpr(world.render)
+        world.attach(Grenade(origin, hpr, self.color))
+        self.grenade_loaded = False
+        self.loaded_grenade.hide()
+
 
 class LegBones (object):
 
@@ -256,6 +290,7 @@ class Hector (PhysicalObject):
         self.actor.look_at(*self.spawn_point.heading)
         self.spawn_point.was_used()
         self.loaded_missile = Hat(self.actor, self.primary_color)
+        self.loaded_grenade = Sack(self.actor, self.primary_color)
 
         left_bones = LegBones(
             self.actor.exposeJoint(None, 'modelRoot', 'left_hip_bone'),
@@ -339,15 +374,22 @@ class Hector (PhysicalObject):
             self.handle_fire()
             return
         if cmd is 'missile' and pressed:
+            if self.loaded_grenade.can_fire():
+                self.loaded_grenade.toggle_visibility()
             self.loaded_missile.toggle_visibility()
+            return
+        if cmd is 'grenade' and pressed:
+            if self.loaded_missile.can_fire():
+                self.loaded_missile.toggle_visibility()
+            self.loaded_grenade.toggle_visibility()
             return
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def handle_fire(self):
         if self.loaded_missile.can_fire():
             self.loaded_missile.fire(self.world)
-        elif self.grenade_loaded:
-            pass
+        elif self.loaded_grenade.can_fire():
+            self.loaded_grenade.fire(self.world)
         else:
             p_energy = 0
             hpr = 0

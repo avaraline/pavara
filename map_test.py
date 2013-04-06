@@ -79,6 +79,7 @@ class Pavara (ShowBase):
                       , 'crouch': 0
                       , 'fire': 0
                       , 'missile': 0
+                      , 'grenade': 0
                       }
         self.accept('escape', sys.exit)
         self.accept('p', self.drop_blocks)
@@ -105,6 +106,8 @@ class Pavara (ShowBase):
         self.accept('mouse1-up',self.hector.handle_command, ['fire', False])
         self.accept('u',        self.hector.handle_command, ['missile', True])
         self.accept('u-up',     self.hector.handle_command, ['missile', False])
+        self.accept('o',        self.hector.handle_command, ['grenade', True])
+        self.accept('o-up',     self.hector.handle_command, ['grenade', False])
 
     def move(self, task):
         dt = globalClock.getDt()
