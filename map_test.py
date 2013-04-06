@@ -20,23 +20,20 @@ class Pavara (ShowBase):
         self.render.setShaderAuto()
         self.initP3D()
         self.audio3d = Audio3DManager.Audio3DManager(self.sfxManagerList[0], self.cam)
-        maps = load_maps('Maps/bodhi.xml', self.cam, audio3d=self.audio3d)
+        maps = load_maps('Maps/indra.xml', self.cam, audio3d=self.audio3d)
         for map in maps:
             print map.name, '--', map.author
         self.map = maps[0]
 
         # Testing physical hector.
         incarn = self.map.world.get_incarn()
-        self.hector = self.map.world.attach(Hector(incarn))
-
-        self.hector.setup_color({
-            "barrel_outer_color": [.7,.7,.7],
-            "barrel_inner_color": [.2,.2,.2],
+        hector_color_dict = {
+            "barrel_color": [.7,.7,.7],
             "visor_color": [2.0/255, 94.0/255, 115.0/255],
             "body_primary_color": [3.0/255, 127.0/255, 140.0/255],
-            "body_secondary_color": [217.0/255, 213.0/255, 154.0/255],
-            "engines": [89.0/255, 2.0/255, 2.0/255]
-        })
+            "body_secondary_color": [217.0/255, 213.0/255, 154.0/255]
+        }
+        self.hector = self.map.world.attach(Hector(incarn, colordict=hector_color_dict))
 
         self.setupInput()
 

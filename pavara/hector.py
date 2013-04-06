@@ -2,9 +2,14 @@ from panda3d.core import *
 from direct.actor.Actor import Actor
 from world import *
 
+TOP_LEG_LENGTH = 1
+BOTTOM_LEG_LENGTH = 1.2122
+TOP_LEG_EXTENDED_P = 60
+BOTTOM_LEG_EXTENDED_P = -70
+
 class Hat (object):
 
-    def __init__(self, actor):
+    def __init__(self, actor, color):
         self.missile_loaded = False
         self.loaded_missile = load_model('missile.egg')
         self.loaded_missile.hide()
@@ -15,8 +20,9 @@ class Hat (object):
         main_engines.set_color(.2,.2,.2)
         wing_engines = self.loaded_missile.find('**/wingengines')
         wing_engines.set_color(.2,.2,.2)
-        body = self.loaded_missile.find('**/bodywings')
-        body.set_color(*MISSILE_BODY_COLOR)
+        self.body = self.loaded_missile.find('**/bodywings')
+        self.color = color
+        self.body.set_color(*color)
 
     def toggle_visibility(self):
         self.missile_loaded = not self.missile_loaded
@@ -32,21 +38,27 @@ class Hat (object):
         origin = self.loaded_missile.get_pos(world.render)
         hpr = self.loaded_missile.get_hpr(world.render)
         #hpr += head_angle
-        world.attach(Missile(origin, hpr))
+        world.attach(Missile(origin, hpr, self.color))
         self.missile_loaded = False
         self.loaded_missile.hide()
 
 
 class LegBones (object):
 
-    motion = [ [Vec3(0, p, 0) for p in [ 50, -5, -60,  0]]
-             , [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18]]
+    motion = [ [Vec3(0, p, 0) for p in [ 50, -5, -60,  0, 25, 0]]
+             , [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18, 0, 0]]
              ]
+
     TOP = 0
     BOTTOM = 1
 
-    def __init__(self, top, bottom):
+    def __init__(self, hip, foot, top, bottom):
         self.bones = [(bone, bone.get_hpr(), bone.get_pos(), motions) for (bone, motions) in zip([top, bottom], self.motion)]
+        self.foot_bone = foot
+        self.top_bone = top
+        self.bottom_bone = bottom
+        self.hip_bone = hip
+        self.is_on_ground = False
 
     def bottom_resting_pos(self):
         return self.bones[self.BOTTOM][2]
@@ -55,6 +67,8 @@ class LegBones (object):
         return self.bones[self.TOP][2]
 
     def get_walk_seq(self, stage, walk_cycle_speed, bob):
+        #add bakeInStart=0 to the LerpHprInterval arguments to attempt IK during interval
+        #this does not look very good at all
         lerps = [LerpHprInterval(bone, walk_cycle_speed, resting_hpr + motions[stage]) for (bone, resting_hpr, resting_pos, motions) in self.bones]
         bob = LerpPosInterval(self.bones[self.TOP][0], walk_cycle_speed, self.bones[self.TOP][2] + bob)
         lerps.append(bob)
@@ -67,11 +81,12 @@ class LegBones (object):
         return lerps
 
 
+
 class Skeleton (object):
 
     upbob = Vec3(0, 0.05, 0)
     downbob = upbob * -1
-    walk_cycle_speed = 0.8
+    walk_cycle_speed = 1.4
     return_speed = 0.1
 
 
@@ -88,21 +103,34 @@ class Skeleton (object):
         # TODO: We definitely need more than four segments in the walk loop.
         # We also need to have separate loops for backwards and forwards walking.
 
-        ws = self.walk_cycle_speed / 4.0
+        ws = self.walk_cycle_speed / 6.0
         up_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.upbob)]
         down_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.downbob)]
-        steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob) + self.left_leg.get_walk_seq(2,ws, self.upbob) + up_interval
-                , self.right_leg.get_walk_seq(1,ws, self.downbob) + self.left_leg.get_walk_seq(3,ws, self.downbob) + down_interval
-                , self.right_leg.get_walk_seq(2,ws, self.upbob) + self.left_leg.get_walk_seq(0,ws,self.upbob) + up_interval
-                , self.right_leg.get_walk_seq(3,ws, self.downbob) + self.left_leg.get_walk_seq(1,ws,self.downbob) + down_interval
+        left_leg_on_ground = [LerpFunc(self._left_leg_on_ground)]
+        right_leg_on_ground = [LerpFunc(self._right_leg_on_ground)]
+        steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob) + self.left_leg.get_walk_seq(2,ws, self.upbob) + up_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(1,ws, self.downbob) + self.left_leg.get_walk_seq(3,ws, self.downbob) + down_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(2,ws, self.upbob) + self.left_leg.get_walk_seq(0,ws,self.upbob) + up_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(3,ws, self.downbob) + self.left_leg.get_walk_seq(1,ws,self.downbob) + down_interval + left_leg_on_ground
                 ]
         steps = [Parallel(*step) for step in steps]
         return Sequence(*steps)
 
+    def _left_leg_on_ground(self, data):
+        if not self.left_leg.is_on_ground:
+            self.lf_sound.play()
+        self.left_leg.is_on_ground = True
+        self.right_leg.is_on_ground = False
+
+    def _right_leg_on_ground(self, data):
+        if not self.right_leg.is_on_ground:
+            self.rf_sound.play()
+        self.left_leg.is_on_ground = False
+        self.right_leg.is_on_ground = True
+
     def _make_return_seq_(self):
         lerps = self.right_leg.get_return(self.return_speed) + self.left_leg.get_return(self.return_speed)
-        lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting[0]))
-        print lerps
+        lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting[0], bakeInStart=0))
         return Parallel(*lerps)
 
     def walk(self):
@@ -114,14 +142,78 @@ class Skeleton (object):
         if self.walk_playing:
             self.walk_playing = False
             self.walk_seq.pause()
-            self.return_seq.start()
+            self.left_leg.is_on_ground = True
+            self.right_leg.is_on_ground = True
+            #self.return_seq.start()
+
+    def setup_footsteps(self, audio3d):
+        self.lf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
+        self.lf_sound.set_balance(0)
+        audio3d.attachSoundToObject(self.lf_sound, self.left_leg.foot_bone)
+        self.lf_played_since = 0
+        self.rf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
+        self.rf_sound.set_balance(0)
+        audio3d.attachSoundToObject(self.rf_sound, self.right_leg.foot_bone)
+        self.rf_played_since = 0
+
+    def update_legs(self, walk, dt, render, physics):
+        if walk != 0:
+            self.walk()
+        else:
+            self.stop()
+
+        lf_from = self.left_leg.foot_bone.get_pos(render)
+        lf_to = self.left_leg.foot_bone.get_pos(render)
+        lf_from.y += .5
+        lf_to.y -= 1
+        left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+
+        if self.left_leg.is_on_ground:
+            self.update_leg(self.left_leg, left_foot_result, render)
+
+        rf_from = self.right_leg.foot_bone.get_pos(render)
+        rf_to = self.right_leg.foot_bone.get_pos(render)
+        rf_from.y += .5
+        rf_to.y -= 1
+        right_foot_result = physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+
+        if self.right_leg.is_on_ground:
+            self.update_leg(self.right_leg, right_foot_result, render)
+
+    def update_leg(self, leg, result, render):
+        hip_pos = leg.hip_bone.get_pos(render)
+        hit_pos = result.get_hit_pos()
+        target_vector =  hip_pos - hit_pos
+
+        if not result.has_hit():
+            #TODO: animate
+            leg.top_bone.set_p(TOP_LEG_EXTENDED_P)
+            leg.bottom_bone.set_p(BOTTOM_LEG_EXTENDED_P)
+            return
+        #if we try to stretch the legs out farther than they go, acos will throw a domain error
+        if .2 < target_vector.length() < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
+            #law of cosines
+            tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
+            target_top_angle = rad2Deg(math.acos(tt_angle_cos))
+            tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
+            target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
+            #sensible constraints
+            if target_top_angle and target_top_angle == target_top_angle and 20 < target_top_angle < 120:
+                #TODO: animate
+                leg.top_bone.set_p(90 - target_top_angle)
+
+            if target_bottom_angle and target_bottom_angle == target_bottom_angle and 20 < target_bottom_angle < 140:
+                #TODO: animate
+                leg.bottom_bone.set_p((180-target_bottom_angle)*-1)
+        else:
+            return
 
 
 class Hector (PhysicalObject):
 
     collide_bits = SOLID_COLLIDE_BIT
 
-    def __init__(self, incarnator):
+    def __init__(self, incarnator, colordict=None):
         super(Hector, self).__init__()
 
         self.spawn_point = incarnator
@@ -149,25 +241,36 @@ class Hector (PhysicalObject):
         self.energy = 1.0
         self.left_gun_charge = 1.0
         self.right_gun_charge = 1.0
+        self.primary_color = [1,1,1,1]
+        self.colordict = colordict if colordict else None
 
     def get_model_part(self, obj_name):
         return self.actor.find("**/%s" % obj_name)
 
     def create_node(self):
         self.actor = Actor('walker.egg')
+        self.actor.listJoints()
+        if self.colordict:
+            self.setup_color(self.colordict)
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         self.spawn_point.was_used()
-        self.loaded_missile = Hat(self.actor)
+        self.loaded_missile = Hat(self.actor, self.primary_color)
 
-        left_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['leftTopBone', 'leftBottomBone']])
-        right_bones = LegBones(*[self.actor.controlJoint(None, 'modelRoot', name) for name in ['rightTopBone', 'rightBottomBone']])
+        left_bones = LegBones(
+            self.actor.exposeJoint(None, 'modelRoot', 'left_hip_bone'),
+            self.actor.exposeJoint(None, 'modelRoot', 'left_foot_bone'),
+            *[self.actor.controlJoint(None, 'modelRoot', name) for name in ['left_top_bone', 'left_bottom_bone']]
+        )
+        right_bones = LegBones(
+            self.actor.exposeJoint(None, 'modelRoot', 'right_hip_bone'),
+            self.actor.exposeJoint(None, 'modelRoot', 'right_foot_bone'),
+            *[self.actor.controlJoint(None, 'modelRoot', name) for name in  ['right_top_bone', 'right_bottom_bone']]
+        )
 
-        self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'shoulderBone'))
-        self.left_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'leftFootBone')
-        self.right_foot_joint = self.actor.exposeJoint(None, 'modelRoot', 'rightFootBone')
-        self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'leftBarrelBone')
-        self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'rightBarrelBone')
+        self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'head_bone'))
+        self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_barrel_bone')
+        self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_barrel_bone')
         return self.actor
 
     def create_solid(self):
@@ -198,43 +301,31 @@ class Hector (PhysicalObject):
         return np
 
     def setup_color(self, colordict):
-        if colordict.has_key('barrel_outer_color'):
-            color = colordict['barrel_outer_color']
-            self.get_model_part('L_barrel_outer').setColor(*color)
-            self.get_model_part('R_barrel_outer').setColor(*color)
-        if colordict.has_key('barrel_inner_color'):
-            color = colordict['barrel_inner_color']
-            self.get_model_part('R_barrel_inner').setColor(*color)
-            self.get_model_part('L_barrel_inner').setColor(*color)
+        if colordict.has_key('barrel_color'):
+            color = colordict['barrel_color']
+            self.get_model_part('left_barrel').setColor(*color)
+            self.get_model_part('right_barrel').setColor(*color)
         if colordict.has_key('visor_color'):
             self.get_model_part('visor').setColor(*colordict['visor_color'])
         if colordict.has_key('body_primary_color'):
             color = colordict['body_primary_color']
-            for part in ['head_primary', 'shoulders_primary', 'RT_leg_primary',
-                         'LT_leg_primary', 'LB_leg_primary', 'RB_leg_primary']:
+            self.primary_color = color
+            for part in ['hull_primary', 'rt_leg_primary',
+                         'lt_leg_primary', 'lb_leg_primary', 'rb_leg_primary',
+                         'left_barrel_ring', 'right_barrel_ring', 'hull_bottom']:
                 self.get_model_part(part).setColor(*color)
         if colordict.has_key('body_secondary_color'):
             color = colordict['body_secondary_color']
-            for part in ['head_secondary', 'shoulders_secondary', 'RB_leg_secondary',
-                         'RT_leg_secondary', 'LB_leg_secondary', 'LT_leg_secondary']:
+            for part in ['hull_secondary', 'visor_stripe', 'rb_leg_secondary',
+                         'rt_leg_secondary', 'lb_leg_secondary', 'lt_leg_secondary']:
                 self.get_model_part(part).setColor(*color)
-        if colordict.has_key('engines'):
-            color = colordict['engines']
-            self.get_model_part('engines').setColor(*color)
         return
 
     def attached(self):
         self.integrator = Integrator(self.world.gravity)
         self.world.register_collider(self)
         self.world.register_updater(self)
-        self.lf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
-        self.lf_sound.set_balance(0)
-        self.world.audio3d.attachSoundToObject(self.lf_sound, self.left_foot_joint)
-        self.lf_played_since = 0
-        self.rf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
-        self.rf_sound.set_balance(0)
-        self.world.audio3d.attachSoundToObject(self.rf_sound, self.right_foot_joint)
-        self.rf_played_since = 0
+        self.skeleton.setup_footsteps(self.world.audio3d)
 
 
     def collision(self, other, manifold, first):
@@ -304,7 +395,9 @@ class Hector (PhysicalObject):
         pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
 
-        self.update_legs(walk,dt)
+        #this should return 'on ground' information
+        self.skeleton.update_legs(walk, dt, self.world.render, self.world.physics)
+
         if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
             floor_node = result.get_node()
@@ -350,27 +443,6 @@ class Hector (PhysicalObject):
             self.energy += HECTOR_RECHARGE_FACTOR * (dt)
 
 
-    def update_legs(self, walk, dt):
-        if walk != 0:
-            self.skeleton.walk()
-            lf_from = self.left_foot_joint.get_pos(self.world.render)
-            lf_to = self.left_foot_joint.get_pos(self.world.render)
-            lf_to.y -= .3
-            left_foot_result = self.world.physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            self.lf_played_since += dt
-            if left_foot_result.has_hit() and self.lf_played_since > .7:
-                self.lf_sound.play()
-                self.lf_played_since = 0
 
-            rf_from = self.right_foot_joint.get_pos(self.world.render)
-            rf_to = self.right_foot_joint.get_pos(self.world.render)
-            rf_to.y -= .3
-            right_foot_result = self.world.physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            self.rf_played_since += dt
-            if right_foot_result.has_hit() and self.rf_played_since > .7:
-                self.rf_sound.play()
-                self.rf_played_since = 0
-        else:
-            self.skeleton.stop()
-            self.lf_sound.stop()
-            self.rf_sound.stop()
+
+

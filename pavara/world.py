@@ -5,6 +5,7 @@ from pavara.utils.integrator import Integrator, Friction
 from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
+from direct.actor.Actor import Actor
 import math
 import random
 import string
@@ -35,11 +36,11 @@ MISSILE_ENGINE_COLORS = [ [173.0/255.0, 0, 0, 1] #dark red
                         , [194.0/255.0, 116.0/255.0, 14.0/255.0, 1] #darker orange
                         , [247.0/255.0, 76.0/255.0, 42.0/255.0, 1] #brighter red
                         ]
-MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0, 1]
 MISSILE_SCALE = .2
-MISSILE_OFFSET = [0, 1.9, .58]
+MISSILE_OFFSET = [0, 2.1, .58]
 MISSILE_LIFESPAN = 600
 
+GRENADE_SCALE = .25
 
 class WorldObject (object):
     """
@@ -493,11 +494,34 @@ class Goody (PhysicalObject):
         self.geom = None
         self.active = True
         self.timeout = 0
+        self.spin_bone = None
 
     def create_node(self):
-        m = load_model('misc/rgbCube')
-        m.set_scale(.5)
-        m.set_hpr(45,45,45)
+        if self.model == "Grenade":
+            m = Actor('grenade.egg')
+            shell = m.find('**/shell')
+            shell.setColor(1,.3,.3,1)
+            m.ls()
+            inner_top = m.find('**/inner_top')
+            inner_bottom = m.find('**/inner_bottom')
+            inner_top.setColor(.4,.4,.4,1)
+            inner_bottom.setColor(.4,.4,.4,1)
+            self.spin_bone = m.controlJoint(None, 'modelRoot', 'grenade_bone')
+            m.set_scale(GRENADE_SCALE)
+
+        elif self.model == "Missile":
+            m = load_model('missile.egg')
+            body = m.find('**/bodywings')
+            body.set_color(.3,.3,1,1)
+            main_engines = m.find('**/mainengines')
+            wing_engines = m.find('**/wingengines')
+            main_engines.set_color(.1,.1,.1,1)
+            wing_engines.set_color(.1,.1,.1,1)
+            m.set_scale(MISSILE_SCALE)
+        else:
+            m = load_model('misc/rgbCube')
+            m.set_scale(.5)
+            m.set_hpr(45,45,45)
         return m
 
     def create_solid(self):
@@ -521,8 +545,10 @@ class Goody (PhysicalObject):
                 self.node.show()
                 self.timeout = 0
             return
-
-        self.rotate_by(*[x * dt for x in self.spin])
+        if self.spin_bone:
+            self.spin_bone.set_hpr(self.spin_bone, self.spin[2]*dt, self.spin[1]*dt, self.spin[0]*dt)
+        else:
+            self.rotate_by(*[x * dt for x in self.spin])
         result = self.world.physics.contact_test(self.solid)
         for contact in result.getContacts():
             node_1 = contact.getNode0()
@@ -652,7 +678,7 @@ class Plasma (PhysicalObject):
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
 
     def update(self, dt):
-        self.move_by(0,0,(dt*60)/4)
+        self.move_by(0,0,(dt*60)/5)
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
         self.age += dt*60
@@ -668,17 +694,18 @@ class Plasma (PhysicalObject):
             self.world.garbage.add(self)
 
 class Missile (PhysicalObject):
-    def __init__(self, pos, hpr, name=None):
+    def __init__(self, pos, hpr, color, name=None):
         super(Missile, self).__init__(name)
         self.pos = Vec3(*pos)
         self.hpr = hpr
         self.move_divisor = 9
         self.age = 0
+        self.color = color
 
     def create_node(self):
         self.model = load_model('missile.egg')
         self.body = self.model.find('**/bodywings')
-        self.body.set_color(*MISSILE_BODY_COLOR)
+        self.body.set_color(*self.color)
         self.main_engines = self.model.find('**/mainengines')
         self.wing_engines = self.model.find('**/wingengines')
         self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
@@ -710,7 +737,9 @@ class Missile (PhysicalObject):
         result = self.world.physics.contact_test(self.solid)
         self.age += dt
         if len(result.getContacts()) > 0:
-            expl_colors = [MISSILE_BODY_COLOR]
+            clist = list(self.color)
+            clist.extend([1])
+            expl_colors = [clist]
             expl_colors.extend(MISSILE_ENGINE_COLORS)
             expl_pos = self.node.get_pos(self.world.render)
             for c in expl_colors:
@@ -774,7 +803,7 @@ class Shrapnel (PhysicalObject):
         self.world.register_collider(self)
         self.world.register_updater_later(self)
         self.node.set_pos(self.pos)
-        self.solid.apply_impulse(Vec3(*self.vector), Point3(*self.pos))
+        self.solid.apply_impulse(Vec3(*self.vector)*12, Point3(*self.pos))
 
     def update(self, dt):
         self.age += dt*60

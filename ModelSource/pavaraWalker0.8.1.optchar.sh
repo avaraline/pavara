@@ -1,0 +1,2 @@
+#!/bin/sh
+egg-optchar -inplace -keepall -flag hull_primary -flag hull_secondary -flag hull_bottom -flag lb_leg_primary -flag lb_leg_secondary -flag left_barrel -flag left_barrel_ring -flag lt_leg_primary -flag lt_leg_secondary -flag right_barrel -flag right_barrel_ring -flag rb_leg_primary -flag rb_leg_secondary -flag rt_leg_primary -flag rt_leg_secondary -flag visor_stripe -flag visor $1
