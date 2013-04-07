@@ -8,7 +8,7 @@ from direct.filter.CommonFilters import CommonFilters
 
 from pavara.maps import load_maps
 from pavara.world import Block, FreeSolid
-from pavara.hector import Hector
+from pavara.walker import Walker
 
 
 class Pavara (ShowBase):
@@ -25,15 +25,15 @@ class Pavara (ShowBase):
             print map.name, '--', map.author
         self.map = maps[0]
 
-        # Testing physical hector.
+        # Test walker
         incarn = self.map.world.get_incarn()
-        hector_color_dict = {
+        walker_color_dict = {
             "barrel_color": [.7,.7,.7],
             "visor_color": [2.0/255, 94.0/255, 115.0/255],
             "body_primary_color": [3.0/255, 127.0/255, 140.0/255],
             "body_secondary_color": [217.0/255, 213.0/255, 154.0/255]
         }
-        self.hector = self.map.world.attach(Hector(incarn, colordict=hector_color_dict))
+        self.walker = self.map.world.attach(Walker(incarn, colordict=walker_color_dict))
 
         self.setupInput()
 
@@ -92,25 +92,25 @@ class Pavara (ShowBase):
         self.accept('s-up', self.setKey, ['backward', 0])
         self.accept('d', self.setKey, ['right', 1])
         self.accept('d-up', self.setKey, ['right', 0])
-        # Hector movement.
-        self.accept('i',        self.hector.handle_command, ['forward', True])
-        self.accept('i-up',     self.hector.handle_command, ['forward', False])
-        self.accept('j',        self.hector.handle_command, ['left', True])
-        self.accept('j-up',     self.hector.handle_command, ['left', False])
-        self.accept('k',        self.hector.handle_command, ['backward', True])
-        self.accept('k-up',     self.hector.handle_command, ['backward', False])
-        self.accept('l',        self.hector.handle_command, ['right', True])
-        self.accept('l-up',     self.hector.handle_command, ['right', False])
-        self.accept('shift',    self.hector.handle_command, ['crouch', True])
-        self.accept('shift-up', self.hector.handle_command, ['crouch', False])
-        self.accept('mouse1',   self.hector.handle_command, ['fire', True])
-        self.accept('mouse1-up',self.hector.handle_command, ['fire', False])
-        self.accept('u',        self.hector.handle_command, ['missile', True])
-        self.accept('u-up',     self.hector.handle_command, ['missile', False])
-        self.accept('o',        self.hector.handle_command, ['grenade_fire', True])
-        self.accept('o-up',     self.hector.handle_command, ['grenade_fire', False])
-        self.accept('m',        self.hector.handle_command, ['grenade', True])
-        self.accept('m-up',     self.hector.handle_command, ['grenade', False])
+        # Test walker movement
+        self.accept('i',        self.walker.handle_command, ['forward', True])
+        self.accept('i-up',     self.walker.handle_command, ['forward', False])
+        self.accept('j',        self.walker.handle_command, ['left', True])
+        self.accept('j-up',     self.walker.handle_command, ['left', False])
+        self.accept('k',        self.walker.handle_command, ['backward', True])
+        self.accept('k-up',     self.walker.handle_command, ['backward', False])
+        self.accept('l',        self.walker.handle_command, ['right', True])
+        self.accept('l-up',     self.walker.handle_command, ['right', False])
+        self.accept('shift',    self.walker.handle_command, ['crouch', True])
+        self.accept('shift-up', self.walker.handle_command, ['crouch', False])
+        self.accept('mouse1',   self.walker.handle_command, ['fire', True])
+        self.accept('mouse1-up',self.walker.handle_command, ['fire', False])
+        self.accept('u',        self.walker.handle_command, ['missile', True])
+        self.accept('u-up',     self.walker.handle_command, ['missile', False])
+        self.accept('o',        self.walker.handle_command, ['grenade_fire', True])
+        self.accept('o-up',     self.walker.handle_command, ['grenade_fire', False])
+        self.accept('m',        self.walker.handle_command, ['grenade', True])
+        self.accept('m-up',     self.walker.handle_command, ['grenade', False])
 
     def move(self, task):
         dt = globalClock.getDt()
