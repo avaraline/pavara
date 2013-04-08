@@ -23,7 +23,7 @@ class Map_Test (ShowBase):
         self.initP3D()
         self.audio3d = Audio3DManager.Audio3DManager(self.sfxManagerList[0], self.cam)
 
-
+        self.doc = False
         self.map = False
 
         if len(sys.argv) > 1:
@@ -47,25 +47,26 @@ class Map_Test (ShowBase):
 
     def show_selection_screen(self):
         LoadFontFace("Ui/assets/MunroSmall.otf")
+        LoadFontFace("Ui/assets/Munro.otf")
         self.r_region = RocketRegion.make('pandaRocket', base.win)
         self.r_region.setActive(1)
         context = self.r_region.getContext()
-        doc = context.LoadDocument('Ui/rml/map_test.rml')
+        self.doc = context.LoadDocument('Ui/rml/map_test.rml')
 
-        mlist = doc.GetElementById('map_select')
+        mlist = self.doc.GetElementById('map_select')
 
         for idx,item in enumerate(os.listdir('Maps')):
             if idx == 0:
                 self.switch_map(item)
-            item_div = doc.CreateElement("div")
+            item_div = self.doc.CreateElement("div")
             item_div.SetAttribute("map", item)
             item_div.AddEventListener('click', self.map_selected, True)
-            item_div.AppendChild(doc.CreateTextNode(item))
+            item_div.AppendChild(self.doc.CreateTextNode(item))
             mlist.AppendChild(item_div)
 
-        doc.GetElementById('go').AddEventListener('click', self.start_map, True)
-        doc.GetElementById('quit').AddEventListener('click', self.quit_clicked, True)
-        doc.Show()
+        self.doc.GetElementById('go').AddEventListener('click', self.start_map, True)
+        self.doc.GetElementById('quit').AddEventListener('click', self.quit_clicked, True)
+        self.doc.Show()
 
         self.ih = RocketInputHandler()
         self.ih_node = base.mouseWatcher.attachNewNode(self.ih)
@@ -77,10 +78,10 @@ class Map_Test (ShowBase):
         self.switch_map(in_map)
         return
 
-    def switch_map(self, mapname):
+    def switch_map(self, mapname, show_info=False):
         if self.map:
             self.map.remove(self.render)
-        del(self.map)
+            del(self.map)
         maps = load_maps('Maps/%s' % mapname, self.cam, audio3d=self.audio3d)
         for map in maps:
             print map.name, '--', map.author
@@ -88,6 +89,17 @@ class Map_Test (ShowBase):
         self.map.show(self.render)
         self.camera.setPos(0, 20, 40)
         self.camera.setHpr(0, 0, 0)
+        if self.doc:
+            title_e = self.doc.GetElementById('info_title')
+            title_txt = title_e.first_child
+            title_e.RemoveChild(title_txt)
+            new_txt = self.map.name + " -- " + self.map.author
+            new_txt = new_txt.encode('ascii', 'ignore')
+            title_e.AppendChild(self.doc.CreateTextNode(new_txt))
+            desc_e = self.doc.GetElementById('info_content')
+            desc_txt = desc_e.first_child
+            desc_e.RemoveChild(desc_txt)
+            desc_e.AppendChild(self.doc.CreateTextNode(self.map.description.encode('ascii', 'ignore')))
 
     def start_map(self):
         try:

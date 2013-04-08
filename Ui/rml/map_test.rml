@@ -12,8 +12,14 @@
 				<p>Select a map to test:</p>
 				<div id="map_select">
 				</div>
+
+				<br/>
 				<input type="button" id="go">Start</input>
 				<input type="button" id="quit">Quit</input>
+			</div>
+			<div class="info" id="info_box">
+				<h3 id="info_title">adsf</h3>
+				<p id="info_content">adsf</p>
 			</div>
 		</div>
 	</body>

@@ -502,7 +502,6 @@ class Goody (PhysicalObject):
             m = Actor('grenade.egg')
             shell = m.find('**/shell')
             shell.setColor(1,.3,.3,1)
-            m.ls()
             inner_top = m.find('**/inner_top')
             inner_bottom = m.find('**/inner_bottom')
             inner_top.setColor(.4,.4,.4,1)
