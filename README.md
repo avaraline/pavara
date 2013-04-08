@@ -142,7 +142,7 @@ Physics (Bullet)
 *	**ballistics**
 	*	grenade lobbing
 	*	"smart" missle tracking
-	*	hector energy, cannons, shield charging
+	*	walker energy, cannons, shield charging
 	*	laser cannons
 		*	less energy = less shot power
 		*	add something for the opposite situation? *arcing charge shot*: if cannons at 100% power, hold down button to charge a large 'arcing' shot, which, scaling with charge time, has the effect of 'jumping' to other players within range of the player struck by the original arc shot, doing a fraction of the damage for each 'jump'. this would drain your cannons completely and overcharging (and self-destruction) would be possible. could be 'skill'

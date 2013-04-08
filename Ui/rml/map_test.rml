@@ -1,0 +1,20 @@
+<rml>
+	<head>
+		<title>Map_test</title>
+		<link type="text/rcss" href="../rcss/ui.rcss"/>
+	</head>
+	<body>
+		<div id="content">
+			<handle move_target="#document">
+				<div class="bar"><h3>Map Test</h3></div>
+			</handle>
+			<div class="box">
+				<p>Select a map to test:</p>
+				<div id="map_select">
+				</div>
+				<input type="button" id="go">Start</input>
+				<input type="button" id="quit">Quit</input>
+			</div>
+		</div>
+	</body>
+</rml>

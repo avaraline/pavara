@@ -42,6 +42,40 @@ class Hat (object):
         self.missile_loaded = False
         self.loaded_missile.hide()
 
+class Sack (object):
+
+    def __init__(self, actor, color):
+        self.grenade_loaded = False
+        self.loaded_grenade = load_model('grenade.egg')
+        self.loaded_grenade.hide()
+        self.loaded_grenade.reparentTo(actor)
+        self.loaded_grenade.set_pos(self.loaded_grenade, *GRENADE_OFFSET)
+        self.loaded_grenade.set_scale(GRENADE_SCALE)
+        inner_top = self.loaded_grenade.find('**/inner_top')
+        inner_top.set_color(.2,.2,.2)
+        inner_bottom = self.loaded_grenade.find('**/inner_bottom')
+        inner_bottom.set_color(.2,.2,.2)
+        shell = self.loaded_grenade.find('**/shell')
+        self.color = color
+        shell.set_color(*color)
+
+    def toggle_visibility(self):
+        self.grenade_loaded = not self.grenade_loaded
+        if self.grenade_loaded:
+            self.loaded_grenade.show()
+        else:
+            self.loaded_grenade.hide()
+
+    def can_fire(self):
+        return self.grenade_loaded
+
+    def fire(self, world, walker_v):
+        origin = self.loaded_grenade.get_pos(world.render)
+        hpr = self.loaded_grenade.get_hpr(world.render)
+        world.attach(Grenade(origin, hpr, self.color, walker_v))
+        self.grenade_loaded = False
+        self.loaded_grenade.hide()
+
 
 class LegBones (object):
 
@@ -164,7 +198,7 @@ class Skeleton (object):
 
         lf_from = self.left_leg.foot_bone.get_pos(render)
         lf_to = self.left_leg.foot_bone.get_pos(render)
-        lf_from.y += .5
+        lf_from.y += 1
         lf_to.y -= 1
         left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
 
@@ -173,7 +207,7 @@ class Skeleton (object):
 
         rf_from = self.right_leg.foot_bone.get_pos(render)
         rf_to = self.right_leg.foot_bone.get_pos(render)
-        rf_from.y += .5
+        rf_from.y += 1
         rf_to.y -= 1
         right_foot_result = physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
 
@@ -190,7 +224,7 @@ class Skeleton (object):
             leg.top_bone.set_p(TOP_LEG_EXTENDED_P)
             leg.bottom_bone.set_p(BOTTOM_LEG_EXTENDED_P)
             return
-        #if we try to stretch the legs out farther than they go, acos will throw a domain error
+        #if we try to stretch the legs out farther than they are long, acos will throw a domain error
         if .2 < target_vector.length() < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
             #law of cosines
             tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
@@ -209,13 +243,12 @@ class Skeleton (object):
             return
 
 
-class Hector (PhysicalObject):
+class Walker (PhysicalObject):
 
     collide_bits = SOLID_COLLIDE_BIT
 
     def __init__(self, incarnator, colordict=None):
-        super(Hector, self).__init__()
-
+        super(Walker, self).__init__()
         self.spawn_point = incarnator
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy
@@ -249,13 +282,13 @@ class Hector (PhysicalObject):
 
     def create_node(self):
         self.actor = Actor('walker.egg')
-        self.actor.listJoints()
         if self.colordict:
             self.setup_color(self.colordict)
+        self.loaded_missile = Hat(self.actor, self.primary_color)
+        self.loaded_grenade = Sack(self.actor, self.primary_color)
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         self.spawn_point.was_used()
-        self.loaded_missile = Hat(self.actor, self.primary_color)
 
         left_bones = LegBones(
             self.actor.exposeJoint(None, 'modelRoot', 'left_hip_bone'),
@@ -274,15 +307,15 @@ class Hector (PhysicalObject):
         return self.actor
 
     def create_solid(self):
-        hector_capsule = BulletGhostNode(self.name + "_hect_cap")
-        self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
-        hector_bullet_np = self.actor.attach_new_node(hector_capsule)
-        hector_bullet_np.node().add_shape(self.hector_capsule_shape)
-        hector_bullet_np.node().set_kinematic(True)
-        hector_bullet_np.set_pos(0,1.5,0)
-        hector_bullet_np.wrt_reparent_to(self.actor)
-        self.world.physics.attach_ghost(hector_capsule)
-        hector_bullet_np.node().setIntoCollideMask(GHOST_COLLIDE_BIT)
+        walker_capsule = BulletGhostNode(self.name + "_walker_cap")
+        self.walker_capsule_shape = BulletCylinderShape(.7, .2, YUp)
+        walker_bullet_np = self.actor.attach_new_node(walker_capsule)
+        walker_bullet_np.node().add_shape(self.walker_capsule_shape)
+        walker_bullet_np.node().set_kinematic(True)
+        walker_bullet_np.set_pos(0,1.5,0)
+        walker_bullet_np.wrt_reparent_to(self.actor)
+        self.world.physics.attach_ghost(walker_capsule)
+        walker_bullet_np.node().setIntoCollideMask(GHOST_COLLIDE_BIT)
         return None
 
     def setup_shape(self, gnodepath, bone, pname):
@@ -339,15 +372,33 @@ class Hector (PhysicalObject):
             self.handle_fire()
             return
         if cmd is 'missile' and pressed:
+            if self.loaded_grenade.can_fire():
+                self.loaded_grenade.toggle_visibility()
             self.loaded_missile.toggle_visibility()
+            return
+        if cmd is 'grenade' and pressed:
+            if self.loaded_missile.can_fire():
+                self.loaded_missile.toggle_visibility()
+            self.loaded_grenade.toggle_visibility()
+            return
+        if cmd is 'grenade_fire' and pressed:
+            if self.loaded_missile.can_fire():
+                self.loaded_missile.toggle_visibility()
+            if not self.loaded_grenade.can_fire():
+                self.loaded_grenade.toggle_visibility()
+            walker_v = self.xz_velocity
+            walker_v.y = self.y_velocity.y
+            self.loaded_grenade.fire(self.world, walker_v)
             return
         self.movement[cmd] = self.factors[cmd] if pressed else 0.0
 
     def handle_fire(self):
         if self.loaded_missile.can_fire():
             self.loaded_missile.fire(self.world)
-        elif self.grenade_loaded:
-            pass
+        elif self.loaded_grenade.can_fire():
+            walker_v = self.xz_velocity
+            walker_v.y = self.y_velocity.y
+            self.loaded_grenade.fire(self.world, walker_v)
         else:
             p_energy = 0
             hpr = 0
@@ -368,7 +419,8 @@ class Hector (PhysicalObject):
             hpr.y += 180
             plasma = self.world.attach(Plasma(origin, hpr, p_energy))
 
-
+    def st_result(self, cur_pos, new_pos):
+        return self.world.physics.sweepTestClosest(self.walker_capsule_shape, cur_pos, new_pos, self.collides_with, 0)
 
     def update(self, dt):
         dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
@@ -400,8 +452,6 @@ class Hector (PhysicalObject):
 
         if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
-            floor_node = result.get_node()
-            #print "standing on: ", floor_node
             self.y_velocity = Vec3(0, 0, 0)
             self.move(result.get_hit_pos())
         else:
@@ -414,7 +464,7 @@ class Hector (PhysicalObject):
         adj_dist = abs((start - goal).length())
         new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
 
-        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
+        sweep_result = self.st_result(cur_pos_ts, new_pos_ts)
         count = 0
         while sweep_result.has_hit() and count < 10:
             moveby = sweep_result.get_hit_normal()
@@ -423,24 +473,24 @@ class Hector (PhysicalObject):
             moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
             self.move(self.position() + moveby)
             new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
-            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
+            sweep_result = self.st_result(cur_pos_ts, new_pos_ts)
             count += 1
 
-        if self.energy > HECTOR_MIN_CHARGE_ENERGY:
+        if self.energy > WALKER_MIN_CHARGE_ENERGY:
             if self.left_gun_charge < 1:
-                self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
-                self.left_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
+                self.energy -= WALKER_ENERGY_TO_GUN_CHARGE[0]
+                self.left_gun_charge += WALKER_ENERGY_TO_GUN_CHARGE[1]
             else:
                 self.left_gun_charge = math.floor(self.left_gun_charge)
 
             if self.right_gun_charge < 1:
-                self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
-                self.right_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
+                self.energy -= WALKER_ENERGY_TO_GUN_CHARGE[0]
+                self.right_gun_charge += WALKER_ENERGY_TO_GUN_CHARGE[1]
             else:
                 self.right_gun_charge = math.floor(self.right_gun_charge)
 
         if self.energy < 1:
-            self.energy += HECTOR_RECHARGE_FACTOR * (dt)
+            self.energy += WALKER_RECHARGE_FACTOR * (dt)
 
 
 
