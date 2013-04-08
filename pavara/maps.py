@@ -62,6 +62,11 @@ class Map (object):
         self.world.render.node().setAttrib(ColorAttrib.makeVertex())
         self.world.render.reparent_to(render)
 
+    def remove(self, render):
+        self.world.sky.detach()
+        self.world.render.detach_node()
+        self.world.render.remove_node()
+
     def process_children(self, node):
         for child in node.children():
             func_name = 'parse_%s' % child.tagname.lower()

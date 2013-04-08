@@ -249,7 +249,6 @@ class Walker (PhysicalObject):
 
     def __init__(self, incarnator, colordict=None):
         super(Walker, self).__init__()
-
         self.spawn_point = incarnator
         self.on_ground = False
         self.mass = 150.0 # 220.0 for heavy

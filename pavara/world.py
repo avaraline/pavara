@@ -606,6 +606,9 @@ class Sky (WorldObject):
         self.scale = height
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
 
+    def detach(self):
+        self.node.detach_node()
+
 class Ground (PhysicalObject):
     """
     The ground. This is not a visible object, but does create a physical solid.
@@ -702,12 +705,15 @@ class Missile (PhysicalObject):
         self.age = 0
         self.color = color
         self.velocity = Vec3(0,0,0)
+        self.integrator = Integrator(self.get_forward_vec(render))
+
+    def get_forward_vec(self, render):
         dummy_node = NodePath('tmp')
         dummy_node.set_hpr(self.hpr)
         dummy_node.set_pos(self.pos)
-        forward_vec = render.get_relative_vector(dummy_node, Vec3(0,0,30))
-        self.integrator = Integrator(forward_vec)
+        f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,30))
         del(dummy_node)
+        return f_vec
 
     def create_node(self):
         self.model = load_model('missile.egg')
@@ -740,6 +746,8 @@ class Missile (PhysicalObject):
         pos, self.velocity = self.integrator.integrate(self.node.get_pos(), self.velocity, dt)
         if self.velocity.length() > 30:
             self.integrator.accel = Vec3(0,0,0)
+        else:
+            self.integrator.accel = self.get_forward_vec(self.world.render)
         self.move(self.position() + (pos - self.node.get_pos()))
 
         self.main_engines.set_color(*random.choice(ENGINE_COLORS))
