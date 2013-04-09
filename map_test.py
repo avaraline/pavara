@@ -153,6 +153,7 @@ class Map_Test (ShowBase):
                       , 'missile': 0
                       , 'grenade_fire': 0
                       , 'grenade': 0
+                      , 'print_cam': 0
                       }
         self.accept('escape', sys.exit)
         self.accept('p', self.drop_blocks)
@@ -164,6 +165,8 @@ class Map_Test (ShowBase):
         self.accept('s-up', self.set_key, ['backward', 0])
         self.accept('d', self.set_key, ['right', 1])
         self.accept('d-up', self.set_key, ['right', 0])
+        self.accept('/', self.set_key, ['print_cam', True])
+        self.accept('/-up', self.set_key, ['print_cam', False])
         # Test walker movement
         self.accept('i',        self.walker.handle_command, ['forward', True])
         self.accept('i-up',     self.walker.handle_command, ['forward', False])
@@ -221,6 +224,8 @@ class Map_Test (ShowBase):
             self.camera.setX(self.camera, -25 * dt)
         if (self.key_map['right']):
             self.camera.setX(self.camera, 25 * dt)
+        if (self.key_map['print_cam']):
+            print "CAMERA: Pos - %s, Hpr - %s" % (self.camera.get_pos(), self.camera.get_hpr())
 
         return task.cont
 
