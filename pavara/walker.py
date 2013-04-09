@@ -386,7 +386,7 @@ class Walker (PhysicalObject):
                 self.loaded_missile.toggle_visibility()
             if not self.loaded_grenade.can_fire():
                 self.loaded_grenade.toggle_visibility()
-            walker_v = self.xz_velocity
+            walker_v = Vec3(self.xz_velocity)
             walker_v.y = self.y_velocity.y
             self.loaded_grenade.fire(self.world, walker_v)
             return

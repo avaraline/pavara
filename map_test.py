@@ -54,10 +54,14 @@ class Map_Test (ShowBase):
         self.doc = context.LoadDocument('Ui/rml/map_test.rml')
 
         mlist = self.doc.GetElementById('map_select')
-
+        initial_loaded = False
         for idx,item in enumerate(os.listdir('Maps')):
-            if idx == 0:
+            fn_split = item.split('.')
+            if len(fn_split) < 2 or fn_split[0] == "" or fn_split[1] != "xml":
+                continue
+            if not initial_loaded:
                 self.switch_map(item)
+                initial_loaded = True
             item_div = self.doc.CreateElement("div")
             item_div.SetAttribute("map", item)
             item_div.AddEventListener('click', self.map_selected, True)
@@ -82,6 +86,7 @@ class Map_Test (ShowBase):
         if self.map:
             self.map.remove(self.render)
             del(self.map)
+        print mapname
         maps = load_maps('Maps/%s' % mapname, self.cam, audio3d=self.audio3d)
         self.map = maps[0]
         self.map.show(self.render)
