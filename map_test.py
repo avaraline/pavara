@@ -59,7 +59,7 @@ class Map_Test (ShowBase):
             if idx == 0:
                 self.switch_map(item)
             fn_split = item.split('.')
-            if len(fn_split) < 2 or fn_split[1] != "xml":
+            if len(fn_split) < 2 or fn_split[0] == "":
                 continue
             item_div = self.doc.CreateElement("div")
             item_div.SetAttribute("map", item)
@@ -85,6 +85,7 @@ class Map_Test (ShowBase):
         if self.map:
             self.map.remove(self.render)
             del(self.map)
+        print mapname
         maps = load_maps('Maps/%s' % mapname, self.cam, audio3d=self.audio3d)
         self.map = maps[0]
         self.map.show(self.render)
