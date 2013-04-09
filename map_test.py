@@ -83,8 +83,6 @@ class Map_Test (ShowBase):
             self.map.remove(self.render)
             del(self.map)
         maps = load_maps('Maps/%s' % mapname, self.cam, audio3d=self.audio3d)
-        for map in maps:
-            print map.name, '--', map.author
         self.map = maps[0]
         self.map.show(self.render)
         self.camera.setPos(0, 20, 40)
@@ -94,12 +92,12 @@ class Map_Test (ShowBase):
             title_txt = title_e.first_child
             title_e.RemoveChild(title_txt)
             new_txt = self.map.name + " -- " + self.map.author
-            new_txt = new_txt.encode('ascii', 'ignore')
+            new_txt = new_txt.encode('latin2', 'ignore')
             title_e.AppendChild(self.doc.CreateTextNode(new_txt))
             desc_e = self.doc.GetElementById('info_content')
             desc_txt = desc_e.first_child
             desc_e.RemoveChild(desc_txt)
-            desc_e.AppendChild(self.doc.CreateTextNode(self.map.description.encode('ascii', 'ignore')))
+            desc_e.AppendChild(self.doc.CreateTextNode(self.map.description.encode('latin2', 'ignore')))
 
     def start_map(self):
         try:

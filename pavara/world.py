@@ -43,6 +43,8 @@ MISSILE_LIFESPAN = 600
 GRENADE_SCALE = .35
 GRENADE_OFFSET = [0, 1.55, .9]
 
+EXPLOSIONS_DONT_PUSH = ["expl", "ground", "grenade", "missile", "shrapnel", "Walker:0_walker_cap", "plasma"]
+
 class WorldObject (object):
     """
     Base class for anything attached to a World.
@@ -688,11 +690,15 @@ class Plasma (PhysicalObject):
         contacts = result.getContacts()
         if len(contacts) > 0:
             #self.world.render.clear_light(self.light_node)
-            self.world.garbage.add(self)
             cf = self.energy
             expl_color = [1,(150/255.0)*cf,(150/255.0)*cf, 1]
             expl_pos = self.node.get_pos(self.world.render)
             expl = self.world.attach(TriangleExplosion(expl_pos, 5, size=.1, color=expl_color))
+            contact = contacts[0]
+            contact.getManifoldPoint().getLocalPointB()
+            n1_name = contact.getNode1().get_name()
+            self.world.do_plasma_push(self, n1_name, self.energy)
+            self.world.garbage.add(self)
         if self.age > PLASMA_LIFESPAN:
             self.world.garbage.add(self)
 
@@ -760,7 +766,8 @@ class Missile (PhysicalObject):
             expl_colors.extend(ENGINE_COLORS)
             expl_pos = self.node.get_pos(self.world.render)
             for c in expl_colors:
-                self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80,))
+                self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80))
+            self.world.do_explosion(self.node, 1.5, 30)
             self.world.garbage.add(self)
         if self.age > MISSILE_LIFESPAN:
             self.world.garbage.add(self)
@@ -820,7 +827,9 @@ class Grenade (PhysicalObject):
             expl_pos = self.node.get_pos(self.world.render)
             for c in expl_colors:
                 self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80,))
+            self.world.do_explosion(self.node, 3, 100)
             self.world.garbage.add(self)
+
 
 class TriangleExplosion (WorldObject):
     def __init__(self, pos, count, hit_normal=None, lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
@@ -1018,6 +1027,51 @@ class World (object):
     def register_updater_later(self, obj):
         assert isinstance(obj, WorldObject)
         self.updatables_to_add.add(obj)
+
+    def do_explosion(self, node, radius, force):
+        center = node.get_pos(self.render);
+        expl_body = BulletGhostNode("expl")
+        expl_shape = BulletSphereShape(radius)
+        expl_body.add_shape(expl_shape)
+        expl_bodyNP = self.render.attach_new_node(expl_body)
+        expl_bodyNP.set_pos(center)
+        self.physics.attach_ghost(expl_body)
+        result = self.physics.contact_test(expl_body)
+        for contact in result.getContacts():
+            n0_name = contact.getNode0().get_name()
+            n1_name = contact.getNode1().get_name()
+            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH:
+                obj = self.objects[n1_name]
+                #repeat contact test with just this pair of objects
+                #otherwise all manifold point values will be the same
+                #for all objects in original result
+                real_c = self.physics.contact_test_pair(expl_body, obj.solid)
+                mpoint = real_c.getContacts()[0].getManifoldPoint()
+                distance = mpoint.getDistance()
+                if distance < 0:
+                    expl_vec = Vec3(mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB())
+                    expl_vec.normalize()
+                    magnitude = force * 1.0/math.sqrt(abs(radius - abs(distance)))
+                    obj.solid.set_active(True)
+                    obj.solid.apply_impulse(expl_vec*magnitude, mpoint.getLocalPointB())
+        self.physics.remove_ghost(expl_body)
+        expl_bodyNP.detach_node()
+        del(expl_body, expl_bodyNP)
+
+    def do_plasma_push(self, plasma, node, energy):
+        if node not in EXPLOSIONS_DONT_PUSH:
+            obj = self.objects[node]
+            solid = obj.solid
+            dummy_node = NodePath('tmp')
+            dummy_node.set_hpr(plasma.hpr)
+            dummy_node.set_pos(plasma.pos)
+            f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,1))
+            local_point = (obj.node.get_pos() - dummy_node.get_pos()) *-1
+            f_vec.normalize()
+            solid.set_active(True)
+            solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
+            del(dummy_node)
+
 
     def update(self, task):
         """
