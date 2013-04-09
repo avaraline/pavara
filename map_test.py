@@ -58,7 +58,8 @@ class Map_Test (ShowBase):
         for idx,item in enumerate(os.listdir('Maps')):
             if idx == 0:
                 self.switch_map(item)
-            if item[0] == ".":
+            fn_split = item.split('.')
+            if len(fn_split) < 2 or fn_split[1] != "xml":
                 continue
             item_div = self.doc.CreateElement("div")
             item_div.SetAttribute("map", item)
