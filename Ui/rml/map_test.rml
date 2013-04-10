@@ -4,9 +4,10 @@
 		<link type="text/rcss" href="../rcss/ui.rcss"/>
 	</head>
 	<body>
+		<h1 id="gametitle">pavara</h1>
 		<div id="content">
 			<handle move_target="#document">
-				<div class="bar"><h3>Map Test</h3></div>
+				<div class="bar"><h3 class="shadow">Map Test</h3></div>
 			</handle>
 			<div class="box">
 				<p>Select a map to test:</p>
@@ -18,8 +19,8 @@
 				<input type="button" id="quit">Quit</input>
 			</div>
 			<div class="info" id="info_box">
-				<h3 id="info_title">adsf</h3>
-				<p id="info_content">adsf</p>
+				<h3 id="info_title" class="shadow"></h3>
+				<p id="info_content"></p>
 			</div>
 		</div>
 	</body>
