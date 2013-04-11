@@ -219,12 +219,10 @@ class Transparent (Effect):
 
     def create_node(self):
         node = self.effected.create_node()
-        node.setTwoSided(True)
-        node.setDepthWrite(False)
         node.set_transparency(TransparencyAttrib.MAlpha)
-        node.setTwoSided(True)
-        node.setDepthWrite(False)
-        node.setAlphaScale(self.alpha)
+        node.set_two_sided(True)
+        node.set_depth_write(False)
+        node.set_alpha_scale(self.alpha)
         return node
 
 
