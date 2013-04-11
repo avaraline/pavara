@@ -5,6 +5,7 @@ from pavara.utils.integrator import Integrator, Friction
 from pavara.assets import load_model
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
+from direct.actor.Actor import Actor
 import math
 import random
 import string
@@ -23,24 +24,26 @@ MAP_COLLIDE_BIT =   BitMask32.bit(0)
 SOLID_COLLIDE_BIT = BitMask32.bit(1)
 GHOST_COLLIDE_BIT = BitMask32.bit(2)
 
-PLASMA_SCALE = .2
+PLASMA_SCALE = .3
 MIN_PLASMA_CHARGE = .4
-HECTOR_RECHARGE_FACTOR = .23
-HECTOR_ENERGY_TO_GUN_CHARGE = (.10,.36)
-HECTOR_MIN_CHARGE_ENERGY = .2
+WALKER_RECHARGE_FACTOR = .23
+WALKER_ENERGY_TO_GUN_CHARGE = (.10,.36)
+WALKER_MIN_CHARGE_ENERGY = .2
 PLASMA_LIFESPAN = 900
 
-MISSILE_ENGINE_COLORS = [
-                            [173.0/255.0, 0, 0] #dark red
-                           ,[237.0/255.0, 118.0/255.0, 21.0/255.0] #bright orange
-                           ,[194.0/255.0, 116.0/255.0, 14.0/255.0] #darker orange
-                           ,[247.0/255.0, 76.0/255.0, 42.0/255.0] #brighter red
+ENGINE_COLORS = [ [173.0/255.0, 0, 0, 1] #dark red
+                        , [237.0/255.0, 118.0/255.0, 21.0/255.0, 1] #bright orange
+                        , [194.0/255.0, 116.0/255.0, 14.0/255.0, 1] #darker orange
+                        , [247.0/255.0, 76.0/255.0, 42.0/255.0, 1] #brighter red
                         ]
-MISSILE_BODY_COLOR = [42.0/255.0,42.0/255.0,247.0/255.0]
-MISSILE_SCALE = .2
-MISSILE_OFFSET = [0, 1.9, .58]
+MISSILE_SCALE = .29
+MISSILE_OFFSET = [0, 2.1, .58]
 MISSILE_LIFESPAN = 600
 
+GRENADE_SCALE = .35
+GRENADE_OFFSET = [0, 1.55, .9]
+
+EXPLOSIONS_DONT_PUSH = ["expl", "ground", "grenade", "missile", "shrapnel", "Walker:0_walker_cap", "plasma"]
 
 class WorldObject (object):
     """
@@ -223,415 +226,6 @@ class Transparent (Effect):
         node.setDepthWrite(False)
         node.setAlphaScale(self.alpha)
         return node
-
-
-class Hector (PhysicalObject):
-
-    collide_bits = SOLID_COLLIDE_BIT
-
-    def __init__(self, incarnator):
-        super(Hector, self).__init__()
-
-        self.spawn_point = incarnator
-        self.on_ground = False
-        self.mass = 150.0 # 220.0 for heavy
-        self.xz_velocity = Vec3(0, 0, 0)
-        self.y_velocity = Vec3(0, 0, 0)
-        self.factors = {
-            'forward': 7.5,
-            'backward': -7.5,
-            'left': 2.0,
-            'right': -2.0,
-            'crouch': 0.0,
-        }
-        self.movement = {
-            'forward': 0.0,
-            'backward': 0.0,
-            'left': 0.0,
-            'right': 0.0,
-            'crouch': 0.0,
-        }
-        self.walk_phase = 0
-        self.placing = False
-        self.head_height = Vec3(0, 1.5, 0)
-        self.collides_with = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
-        self.missile_loaded = False
-        self.grenade_loaded = False
-        self.energy = 1.0
-        self.left_gun_charge = 1.0
-        self.right_gun_charge = 1.0
-
-    def create_node(self):
-        from direct.actor.Actor import Actor
-        self.actor = Actor('walker.egg')
-        def m_expose(obj_name):
-            return self.actor.find("**/%s" % obj_name)
-        self.l_barrel_inner = m_expose("L_barrel_inner")
-        self.l_barrel_outer = m_expose("L_barrel_outer")
-        self.r_barrel_inner = m_expose("R_barrel_inner")
-        self.r_barrel_outer = m_expose("R_barrel_outer")
-        self.visor = m_expose("visor")
-        self.head_primary = m_expose("head_primary")
-        self.head_secondary = m_expose("head_secondary")
-        self.lb_primary = m_expose("LB_leg_primary")
-        self.lb_secondary = m_expose("LB_leg_secondary")
-        self.lt_primary = m_expose("LT_leg_primary")
-        self.lt_secondary = m_expose("LT_leg_secondary")
-        self.rb_primary = m_expose("RB_leg_primary")
-        self.rb_secondary = m_expose("RB_leg_secondary")
-        self.rt_primary = m_expose("RT_leg_primary")
-        self.rt_secondary = m_expose("RT_leg_secondary")
-        self.shoulders_primary = m_expose("shoulders_primary")
-        self.shoulders_secondary = m_expose("shoulders_secondary")
-        self.engines = m_expose("engines")
-        self.walk_playing = False
-
-        def get_joint_control(name):
-            return self.actor.controlJoint(None, "modelRoot", name)
-
-        self.right_top_bone = get_joint_control("rightTopBone")
-        self.left_top_bone = get_joint_control("leftTopBone")
-        self.right_bottom_bone = get_joint_control("rightBottomBone")
-        self.left_bottom_bone = get_joint_control("leftBottomBone")
-        self.shoulder_bone = get_joint_control("shoulderBone")
-        self.head_bone = get_joint_control("headBone")
-        self.left_foot_bone = get_joint_control("leftFootBone")
-        self.right_foot_bone = get_joint_control("rightFootBone")
-
-        def get_joint_expose(name):
-            return self.actor.exposeJoint(None, "modelRoot", name)
-        self.right_top_bone_joint = get_joint_expose("rightTopBone")
-        self.left_top_bone_joint = get_joint_expose("leftTopBone")
-        self.right_bottom_bone_joint = get_joint_expose("rightBottomBone")
-        self.left_bottom_bone_joint = get_joint_expose("leftBottomBone")
-        self.left_foot_joint = get_joint_expose("leftFootBone")
-        self.right_foot_joint = get_joint_expose("rightFootBone")
-        self.shoulder_bone_joint = get_joint_expose("shoulderBone")
-        self.head_bone_joint = get_joint_expose("headBone")
-        self.left_barrel_joint = get_joint_expose("leftBarrelBone")
-        self.right_barrel_joint = get_joint_expose("rightBarrelBone")
-
-
-
-        self.torso_rest_y = [self.shoulder_bone.get_pos(), self.left_top_bone.get_pos(), self.right_top_bone.get_pos()]
-        self.legs_rest_mat = [ [self.right_top_bone.get_hpr(), self.right_bottom_bone.get_hpr()],
-                               [self.left_top_bone.get_hpr(), self.left_bottom_bone.get_hpr()] ]
-
-        """the below two functions will get called when the interval starts, allowing us to set the base
-            positions for crouching/leg extension etc. currently they return the values without modification."""
-        def get_base_leg_rotation(address1, address2, motion = 0):
-            rest_rot = self.legs_rest_mat[address1][address2]
-            return rest_rot + motion
-
-        def get_base_torso_y(address, motion = 0):
-            rest_y = self.torso_rest_y[address]
-            return rest_y + motion
-
-        def make_return_sequence():
-            return_speed = .1
-            y_return_torso_int = LerpPosInterval(self.shoulder_bone, return_speed, get_base_torso_y(0))
-            y_return_left_int = LerpPosInterval(self.left_top_bone, return_speed, get_base_torso_y(1))
-            y_return_right_int = LerpPosInterval(self.right_top_bone, return_speed, get_base_torso_y(2))
-
-            r_top_return_int = LerpHprInterval(self.right_top_bone, return_speed, get_base_leg_rotation(0,0))
-            r_bot_return_int = LerpHprInterval(self.right_bottom_bone, return_speed, get_base_leg_rotation(0,1))
-
-            l_top_return_int = LerpHprInterval(self.left_top_bone, return_speed, get_base_leg_rotation(1,0))
-            l_bot_return_int = LerpHprInterval(self.left_bottom_bone, return_speed, get_base_leg_rotation(1,1))
-
-            return Parallel(r_top_return_int, r_bot_return_int,
-                            l_top_return_int, l_bot_return_int,
-                            y_return_torso_int, y_return_left_int, y_return_right_int)
-
-        self.return_seq = make_return_sequence()
-
-
-        def make_walk_sequence():
-            walk_cycle_speed = .8
-
-            upbob = Vec3(0, 0.05, 0)
-            downbob = upbob * -1
-            bob_parts = (self.shoulder_bone, self.left_top_bone, self.right_top_bone)
-
-            down_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, downbob)) for (idx, bone) in enumerate(bob_parts)]
-            up_interval = [LerpPosInterval(bone, walk_cycle_speed/4.0, get_base_torso_y(idx, upbob)) for (idx, bone) in enumerate(bob_parts)]
-
-            #TODO: We definitely need more than four segments in the walk loop.
-            # We also need to have separate loops for backwards and forwards walking.
-            top_motion = [Vec3(0, p, 0) for p in    [ 50, -5, -60,  0]]
-            bottom_motion = [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18]]
-
-            right_bones = [self.right_top_bone, self.right_bottom_bone]
-            left_bones = [self.left_top_bone, self.left_bottom_bone]
-
-            right_top_forward = [LerpHprInterval(right_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(0, 0, motion)) for motion in top_motion]
-            right_bottom_forward = [LerpHprInterval(right_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(0, 1, motion)) for motion in bottom_motion]
-
-            left_top_forward = [LerpHprInterval(left_bones[0], walk_cycle_speed/4.0, get_base_leg_rotation(1, 0, motion)) for motion in top_motion]
-            left_bottom_forward = [LerpHprInterval(left_bones[1], walk_cycle_speed/4.0, get_base_leg_rotation(1, 1, motion)) for motion in bottom_motion]
-
-            return Sequence(
-                            Parallel(right_top_forward[0], right_bottom_forward[0],
-                                    left_top_forward[2], left_bottom_forward[2],
-                                    down_interval[0], down_interval[1], down_interval[2]),
-                            Parallel(right_top_forward[1], right_bottom_forward[1],
-                                    left_top_forward[3], left_bottom_forward[3],
-                                    up_interval[0], up_interval[1], up_interval[2]),
-                            Parallel(right_top_forward[2], right_bottom_forward[2],
-                                    left_top_forward[0], left_bottom_forward[0],
-                                    down_interval[0], down_interval[1], down_interval[2]),
-                            Parallel(right_top_forward[3], right_bottom_forward[3],
-                                    left_top_forward[1], left_bottom_forward[1],
-                                    up_interval[0], up_interval[1], up_interval[2]),
-                           )
-
-        self.walk_forward_seq = make_walk_sequence()
-
-        self.loaded_missile = load_model('missile.egg')
-        self.body = self.loaded_missile.find('**/bodywings')
-        self.body.set_color(*MISSILE_BODY_COLOR)
-        self.main_engines = self.loaded_missile.find('**/mainengines')
-        self.wing_engines = self.loaded_missile.find('**/wingengines')
-        self.loaded_missile.reparentTo(self.actor)
-        self.loaded_missile.set_pos(self.loaded_missile, *MISSILE_OFFSET)
-        self.loaded_missile.set_scale(MISSILE_SCALE)
-        self.main_engines.set_color(.2,.2,.2)
-        self.wing_engines.set_color(.2,.2,.2)
-        self.loaded_missile.hide()
-
-        self.actor.set_pos(*self.spawn_point.pos)
-        self.actor.look_at(*self.spawn_point.heading)
-        self.spawn_point.was_used()
-        return self.actor
-
-    def create_solid(self):
-        self.hector_capsule = BulletGhostNode(self.name + "_hect_cap")
-        self.hector_capsule_shape = BulletCylinderShape(.7, .2, YUp)
-        self.hector_bullet_np = self.actor.attach_new_node(self.hector_capsule)
-        self.hector_bullet_np.node().add_shape(self.hector_capsule_shape)
-        self.hector_bullet_np.node().set_kinematic(True)
-        self.hector_bullet_np.set_pos(0,1.5,0)
-        self.hector_bullet_np.wrt_reparent_to(self.actor)
-        self.world.physics.attach_ghost(self.hector_capsule)
-        self.hector_bullet_np.node().setIntoCollideMask(GHOST_COLLIDE_BIT)
-        return None
-
-    def setup_shape(self, gnodepath, bone, pname):
-        shape = BulletConvexHullShape()
-
-        gnode = gnodepath.node()
-        geom = gnode.get_geom(0)
-        shape.add_geom(geom)
-
-        node = BulletRigidBodyNode(self.name + pname)
-        np = self.actor.attach_new_node(node)
-        np.node().add_shape(shape)
-        np.node().set_kinematic(True)
-        np.wrt_reparent_to(bone)
-        self.world.physics.attach_rigid_body(node)
-        return np
-
-    def setup_color(self, colordict):
-        if colordict.has_key("barrel_outer_color"):
-            color = colordict.get("barrel_outer_color")
-            self.l_barrel_outer.setColor(*color)
-            self.r_barrel_outer.setColor(*color)
-        if colordict.has_key("barrel_inner_color"):
-            color = colordict.get("barrel_inner_color")
-            self.l_barrel_inner.setColor(*color)
-            self.r_barrel_inner.setColor(*color)
-        if colordict.has_key("visor_color"):
-            self.visor.setColor(*colordict.get("visor_color"))
-        if colordict.has_key("body_primary_color"):
-            color = colordict.get("body_primary_color")
-            self.head_primary.setColor(*color)
-            self.shoulders_primary.setColor(*color)
-            self.lt_primary.setColor(*color)
-            self.rt_primary.setColor(*color)
-            self.lb_primary.setColor(*color)
-            self.rb_primary.setColor(*color)
-        if colordict.has_key("body_secondary_color"):
-            color = colordict.get("body_secondary_color")
-            self.head_secondary.setColor(*color)
-            self.shoulders_secondary.setColor(*color)
-            self.lt_secondary.setColor(*color)
-            self.rt_secondary.setColor(*color)
-            self.lb_secondary.setColor(*color)
-            self.rb_secondary.setColor(*color)
-        if colordict.has_key("engines"):
-            color = colordict.get("engines")
-            self.engines.setColor(*color)
-        return
-
-    def attached(self):
-        #self.node.set_scale(3.0)
-        self.integrator = Integrator(self.world.gravity)
-        self.world.register_collider(self)
-        self.world.register_updater(self)
-        self.lf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
-        self.world.audio3d.attachSoundToObject(self.lf_sound, self.left_foot_joint)
-        self.lf_played_since = 0
-        self.rf_sound = self.world.audio3d.loadSfx('Sounds/step_mono.wav')
-        self.world.audio3d.attachSoundToObject(self.rf_sound, self.right_foot_joint)
-        self.rf_played_since = 0
-
-
-    def collision(self, other, manifold, first):
-        world_pt = manifold.get_position_world_on_a() if first else manifold.get_position_world_on_b()
-        print self, 'HIT BY', other, 'AT', world_pt
-
-    def handle_command(self, cmd, pressed):
-        if cmd is 'crouch' and not pressed and self.on_ground:
-            self.y_velocity = Vec3(0, 6.8, 0)
-        if cmd is 'fire' and pressed:
-            self.handle_fire()
-            return
-        if cmd is 'missile' and pressed:
-            self.missile_loaded = not self.missile_loaded
-            if self.missile_loaded:
-                self.loaded_missile.show()
-            else:
-                self.loaded_missile.hide()
-            return
-        self.movement[cmd] = self.factors[cmd] if pressed else 0.0
-
-    def handle_fire(self):
-        if self.missile_loaded:
-            origin = self.loaded_missile.get_pos(self.world.render)
-            hpr = self.shoulder_bone.get_hpr(self.world.render)
-            #hpr += head_angle
-            missile = self.world.attach(Missile(origin, hpr))
-            self.missile_loaded = False
-            self.loaded_missile.hide()
-        elif self.grenade_loaded:
-            pass
-        else:
-            p_energy = 0
-            hpr = 0
-            if self.left_gun_charge > self.right_gun_charge:
-                origin = self.left_barrel_joint.get_pos(self.world.render)
-                hpr = self.left_barrel_joint.get_hpr(self.world.render)
-                p_energy = self.left_gun_charge
-                if p_energy < MIN_PLASMA_CHARGE:
-                    return
-                self.left_gun_charge = 0
-            else:
-                origin = self.right_barrel_joint.get_pos(self.world.render)
-                hpr = self.right_barrel_joint.get_hpr(self.world.render)
-                p_energy = self.right_gun_charge
-                if p_energy < MIN_PLASMA_CHARGE:
-                    return
-                self.right_gun_charge = 0
-            hpr.y += 180
-            plasma = self.world.attach(Plasma(origin, hpr, p_energy))
-
-
-
-    def update(self, dt):
-        dt = min(dt, 0.2) # let's just temporarily assume that if we're getting less than 5 fps, dt must be wrong.
-        yaw = self.movement['left'] + self.movement['right']
-        self.rotate_by(yaw * dt * 60, 0, 0)
-        walk = self.movement['forward'] + self.movement['backward']
-        start = self.position()
-        cur_pos_ts = TransformState.make_pos(self.position() + self.head_height)
-
-        if self.on_ground:
-            friction = DEFAULT_FRICTION
-        else:
-            friction = AIR_FRICTION
-
-        speed = walk
-        pos = self.position()
-        self.move_by(0, 0, speed)
-        direction = self.position() - pos
-        newpos, self.xz_velocity = Friction(direction, friction).integrate(pos, self.xz_velocity, dt)
-        self.move(newpos)
-
-        # Cast a ray from just above our feet to just below them, see if anything hits.
-        pt_from = self.position() + Vec3(0, 1, 0)
-        pt_to = pt_from + Vec3(0, -1.1, 0)
-        result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-        
-        self.update_legs(walk,dt)
-        if self.y_velocity.get_y() <= 0 and result.has_hit():
-            self.on_ground = True
-            floor_node = result.get_node()
-            #print "standing on: ", floor_node
-            self.y_velocity = Vec3(0, 0, 0)
-            self.move(result.get_hit_pos())
-        else:
-            self.on_ground = False
-            current_y = Point3(0, self.position().get_y(), 0)
-            y, self.y_velocity = self.integrator.integrate(current_y, self.y_velocity, dt)
-
-            self.move(self.position() + (y - current_y))
-        goal = self.position()
-        adj_dist = abs((start - goal).length())
-        new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
-
-        sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
-        count = 0
-        while sweep_result.has_hit() and count < 10:
-            moveby = sweep_result.get_hit_normal()
-            self.xz_velocity = -self.xz_velocity.cross(moveby).cross(moveby)
-            moveby.normalize()
-            moveby *= adj_dist * (1 - sweep_result.get_hit_fraction())
-            self.move(self.position() + moveby)
-            new_pos_ts = TransformState.make_pos(self.position() + self.head_height)
-            sweep_result = self.world.physics.sweepTestClosest(self.hector_capsule_shape, cur_pos_ts, new_pos_ts, self.collides_with, 0)
-            count += 1
-
-        if self.energy > HECTOR_MIN_CHARGE_ENERGY:
-            if self.left_gun_charge < 1:
-                self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
-                self.left_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
-            else:
-                self.left_gun_charge = math.floor(self.left_gun_charge)
-
-            if self.right_gun_charge < 1:
-                self.energy -= HECTOR_ENERGY_TO_GUN_CHARGE[0]
-                self.right_gun_charge += HECTOR_ENERGY_TO_GUN_CHARGE[1]
-            else:
-                self.right_gun_charge = math.floor(self.right_gun_charge)
-
-        if self.energy < 1:
-            self.energy += HECTOR_RECHARGE_FACTOR * (dt)
-        #print "energy: ", self.energy, " right_gun: ", self.right_gun_charge, " left_gun: ", self.left_gun_charge
-
-
-
-    def update_legs(self, walk, dt):
-        if walk != 0:
-            if not self.walk_playing:
-                self.walk_playing = True
-                self.walk_forward_seq.loop()
-            lf_from = self.left_foot_joint.get_pos(self.world.render)
-            lf_to = self.left_foot_joint.get_pos(self.world.render)
-            lf_to.y -= .3
-            left_foot_result = self.world.physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            self.lf_played_since += dt
-            if left_foot_result.has_hit() and self.lf_played_since > .7:
-                self.lf_sound.play()
-                self.lf_played_since = 0
-
-            rf_from = self.right_foot_joint.get_pos(self.world.render)
-            rf_to = self.right_foot_joint.get_pos(self.world.render)
-            rf_to.y -= .3
-            right_foot_result = self.world.physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
-            self.rf_played_since += dt
-            if right_foot_result.has_hit() and self.rf_played_since > .7:
-                self.rf_sound.play()
-                self.rf_played_since = 0
-        else:
-            if self.walk_playing:
-                self.walk_playing = False
-                self.walk_forward_seq.pause()
-                self.return_seq.start()
-            self.lf_sound.stop()
-            self.rf_sound.stop()
-    #def crouch(self):
-
-    #def uncrouch(self):
 
 
 class Block (PhysicalObject):
@@ -903,11 +497,33 @@ class Goody (PhysicalObject):
         self.geom = None
         self.active = True
         self.timeout = 0
+        self.spin_bone = None
 
     def create_node(self):
-        m = load_model('misc/rgbCube')
-        m.set_scale(.5)
-        m.set_hpr(45,45,45)
+        if self.model == "Grenade":
+            m = Actor('grenade.egg')
+            shell = m.find('**/shell')
+            shell.setColor(1,.3,.3,1)
+            inner_top = m.find('**/inner_top')
+            inner_bottom = m.find('**/inner_bottom')
+            inner_top.setColor(.4,.4,.4,1)
+            inner_bottom.setColor(.4,.4,.4,1)
+            self.spin_bone = m.controlJoint(None, 'modelRoot', 'grenade_bone')
+            m.set_scale(GRENADE_SCALE)
+
+        elif self.model == "Missile":
+            m = load_model('missile.egg')
+            body = m.find('**/bodywings')
+            body.set_color(.3,.3,1,1)
+            main_engines = m.find('**/mainengines')
+            wing_engines = m.find('**/wingengines')
+            main_engines.set_color(.1,.1,.1,1)
+            wing_engines.set_color(.1,.1,.1,1)
+            m.set_scale(MISSILE_SCALE)
+        else:
+            m = load_model('misc/rgbCube')
+            m.set_scale(.5)
+            m.set_hpr(45,45,45)
         return m
 
     def create_solid(self):
@@ -931,13 +547,15 @@ class Goody (PhysicalObject):
                 self.node.show()
                 self.timeout = 0
             return
-
-        self.rotate_by(*[x * dt for x in self.spin])
+        if self.spin_bone:
+            self.spin_bone.set_hpr(self.spin_bone, self.spin[2]*dt, self.spin[1]*dt, self.spin[0]*dt)
+        else:
+            self.rotate_by(*[x * dt for x in self.spin])
         result = self.world.physics.contact_test(self.solid)
         for contact in result.getContacts():
             node_1 = contact.getNode0()
             node_2 = contact.getNode1()
-            if "Hector" in node_2.get_name():
+            if "Walker" in node_2.get_name():
                # TODO: identify which player and credit them with the items.
                self.active = False
                self.node.hide()
@@ -989,6 +607,9 @@ class Sky (WorldObject):
         self.scale = height
         self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
 
+    def detach(self):
+        self.node.detach_node()
+
 class Ground (PhysicalObject):
     """
     The ground. This is not a visible object, but does create a physical solid.
@@ -1017,11 +638,14 @@ class Incarnator (PhysicalObject):
     def attached(self):
         self.dummy_node = self.world.render.attach_new_node("incarnator"+self.name)
         self.dummy_node.set_pos(self.world.render, self.pos)
-        self.sound = self.world.audio3d.loadSfx('Sounds/incarnation_mono.wav')
+        if self.world.audio3d:
+            self.sound = self.world.audio3d.loadSfx('Sounds/incarnation_mono.wav')
+        else: self.sound = False
 
     def was_used(self):
-        self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
-        self.sound.play()
+        if self.sound:
+            self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
+            self.sound.play()
 
 class Plasma (PhysicalObject):
     def __init__(self, pos, hpr, energy, name=None):
@@ -1062,33 +686,51 @@ class Plasma (PhysicalObject):
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
 
     def update(self, dt):
-        self.move_by(0,0,(dt*60)/4)
+        self.move_by(0,0,(dt*60)/5)
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
         self.age += dt*60
-        if len(result.getContacts()) > 0 or self.age > PLASMA_LIFESPAN:
+        contacts = result.getContacts()
+        if len(contacts) > 0:
             #self.world.render.clear_light(self.light_node)
-            self.world.garbage.add(self)
             cf = self.energy
-            expl = self.world.attach(TriangleExplosion(self.node.get_pos(self.world.render), 5, size=.1, color=[1,(150/255.0)*cf,(150/255.0)*cf, 1]))
-            
+            expl_color = [1,(150/255.0)*cf,(150/255.0)*cf, 1]
+            expl_pos = self.node.get_pos(self.world.render)
+            expl = self.world.attach(TriangleExplosion(expl_pos, 5, size=.1, color=expl_color))
+            contact = contacts[0]
+            contact.getManifoldPoint().getLocalPointB()
+            n1_name = contact.getNode1().get_name()
+            self.world.do_plasma_push(self, n1_name, self.energy)
+            self.world.garbage.add(self)
+        if self.age > PLASMA_LIFESPAN:
+            self.world.garbage.add(self)
 
 class Missile (PhysicalObject):
-    def __init__(self, pos, hpr, name=None):
+    def __init__(self, pos, hpr, color, name=None):
         super(Missile, self).__init__(name)
         self.pos = Vec3(*pos)
         self.hpr = hpr
-        self.move_divisor = 9
         self.age = 0
+        self.color = color
+        self.velocity = Vec3(0,0,0)
+        self.integrator = Integrator(self.get_forward_vec(render))
+
+    def get_forward_vec(self, render):
+        dummy_node = NodePath('tmp')
+        dummy_node.set_hpr(self.hpr)
+        dummy_node.set_pos(self.pos)
+        f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,30))
+        del(dummy_node)
+        return f_vec
 
     def create_node(self):
         self.model = load_model('missile.egg')
         self.body = self.model.find('**/bodywings')
-        self.body.set_color(*MISSILE_BODY_COLOR)
+        self.body.set_color(*self.color)
         self.main_engines = self.model.find('**/mainengines')
         self.wing_engines = self.model.find('**/wingengines')
-        self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
-        self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
+        self.main_engines.set_color(*random.choice(ENGINE_COLORS))
+        self.wing_engines.set_color(*random.choice(ENGINE_COLORS))
         self.model.set_scale(MISSILE_SCALE)
         self.model.set_hpr(0,0,0)
         return self.model
@@ -1108,42 +750,118 @@ class Missile (PhysicalObject):
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
 
     def update(self, dt):
-        self.move_by(0,0,(dt*60)/self.move_divisor)
-        if self.move_divisor > 2:
-            self.move_divisor -= .25
-        self.main_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
-        self.wing_engines.set_color(*random.choice(MISSILE_ENGINE_COLORS))
+        current_pos = Point3(0, self.position().get_y(), 0)
+        pos, self.velocity = self.integrator.integrate(self.node.get_pos(), self.velocity, dt)
+        if self.velocity.length() > 30:
+            self.integrator.accel = Vec3(0,0,0)
+        else:
+            self.integrator.accel = self.get_forward_vec(self.world.render)
+        self.move(self.position() + (pos - self.node.get_pos()))
+
+        self.main_engines.set_color(*random.choice(ENGINE_COLORS))
+        self.wing_engines.set_color(*random.choice(ENGINE_COLORS))
         result = self.world.physics.contact_test(self.solid)
         self.age += dt
-        if len(result.getContacts()) > 0 or self.age > MISSILE_LIFESPAN:
+        if len(result.getContacts()) > 0:
+            clist = list(self.color)
+            clist.extend([1])
+            expl_colors = [clist]
+            expl_colors.extend(ENGINE_COLORS)
+            expl_pos = self.node.get_pos(self.world.render)
+            for c in expl_colors:
+                self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80))
+            self.world.do_explosion(self.node, 1.5, 30)
+            self.world.garbage.add(self)
+        if self.age > MISSILE_LIFESPAN:
             self.world.garbage.add(self)
 
+class Grenade (PhysicalObject):
+    def __init__(self, pos, hpr, color, walker_v, name=None):
+        super(Grenade, self).__init__(name)
+        self.pos = Vec3(*pos)
+        self.hpr = hpr
+        self.move_divisor = 9
+        self.color = color
+        self.forward_m = .25
+        self.walker_v = walker_v
+
+    def create_node(self):
+        self.model = Actor('grenade.egg')
+        self.shell = self.model.find('**/shell')
+        self.shell.set_color(*self.color)
+        self.inner_top = self.model.find('**/inner_top')
+        self.inner_bottom = self.model.find('**/inner_bottom')
+        self.inner_top.set_color(*random.choice(ENGINE_COLORS))
+        self.inner_bottom.set_color(*random.choice(ENGINE_COLORS))
+        self.model.set_scale(GRENADE_SCALE)
+        self.model.set_hpr(0,0,0)
+        self.spin_bone = self.model.controlJoint(None, 'modelRoot', 'grenade_bone')
+        return self.model
+
+    def create_solid(self):
+        node = BulletRigidBodyNode("grenade")
+        node.set_angular_damping(.9)
+        node_shape = BulletSphereShape(.08)
+        node.add_shape(node_shape)
+        node.set_mass(9)
+        return node
+
+    def attached(self):
+        self.node.set_pos(self.pos)
+        self.node.set_hpr(self.hpr)
+        self.world.register_updater(self)
+        self.world.register_collider(self)
+        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
+        grenade_iv = render.get_relative_vector(self.node, Vec3(0,84,104))
+        grenade_iv += self.walker_v
+        self.solid.apply_impulse(grenade_iv, Point3(*self.pos))
+
+
+    def update(self, dt):
+        self.inner_top.set_color(*random.choice(ENGINE_COLORS))
+        self.inner_bottom.set_color(*random.choice(ENGINE_COLORS))
+        result = self.world.physics.contact_test(self.solid)
+        self.spin_bone.set_hpr(self.spin_bone, 0,0,10)
+        contacts = result.getContacts()
+        if len(contacts) > 0:
+            hit_node = contacts[0].get_node1().get_name()
+            if hit_node.endswith("_walker_cap"):
+                return
+            clist = list(self.color)
+            clist.extend([1])
+            expl_colors = [clist]
+            expl_colors.extend(ENGINE_COLORS)
+            expl_pos = self.node.get_pos(self.world.render)
+            for c in expl_colors:
+                self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80,))
+            self.world.do_explosion(self.node, 3, 100)
+            self.world.garbage.add(self)
+
+
 class TriangleExplosion (WorldObject):
-    def __init__(self, pos, count, hit_normal=(0,0,0), lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
+    def __init__(self, pos, count, hit_normal=None, lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
         super(TriangleExplosion, self).__init__(name)
         self.pos = Vec3(*pos)
-        self.hit_normal = Vec3(*hit_normal)
+        self.hit_normal = Vec3(*hit_normal) if hit_normal else None
         self.lifetime = lifetime
         self.color = color
         self.size = size
         self.count = count
         self.shrapnels = []
-        
-    
+
+
     def create_node(self):
         self.pos_node = self.world.render.attachNewNode(self.name+"_node")
         return self.pos_node
-        
+
     def attached(self):
         for i in xrange(self.count):
-            newpos = self.pos
-            newpos.y += i*.02
-            newpos.z += i*.02
-            #need better vectors than this, take into account hit_normal
-            vector = [round(random.random(), 3), round(random.random(), 3), round(random.random(), 3)]
-            #print "vector ", vector
-            self.shrapnels.append(self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime)))   
-    
+            if self.hit_normal:
+                vector = Vec3(*[random.uniform(x+.7, x-.7) for x in self.hit_normal])
+            else:
+                vector = Vec3(*[random.uniform(-1,1) for _ in xrange(3)])
+            self.shrapnels.append(self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime)))
+
 
 class Shrapnel (PhysicalObject):
     def __init__(self, pos, size, color, vector, lifetime, name=None):
@@ -1155,27 +873,30 @@ class Shrapnel (PhysicalObject):
         self.color = color
         self.mass = .01
         self.age = 0
-    
+
     def create_node(self):
         extent = self.size/2.0
-        self.geom = GeomBuilder('tri').add_tri(self.color, [Point3(0,-extent,-extent), Point3(0,extent,extent), Point3(0,-extent,extent)]).get_geom_node()
+        geom_points = [Point3(0,-extent,-extent), Point3(0,extent,extent), Point3(0,-extent,extent)]
+        self.geom = GeomBuilder('tri').add_tri(self.color, geom_points).get_geom_node()
         self.node = self.world.render.attach_new_node(self.geom)
         self.colorhandle = self.node.find('**/*')
         return self.node
-    
+
     def create_solid(self):
         node = BulletRigidBodyNode('shrapnel')
         node_shape = BulletBoxShape(Vec3(.001, .05, .05))
         node.add_shape(node_shape)
         node.set_mass(3)
+        node.set_angular_damping(.7)
         return node
-    
+
     def attached(self):
         self.world.register_collider(self)
         self.world.register_updater_later(self)
         self.node.set_pos(self.pos)
-        self.solid.apply_force(Vec3(*self.vector)*1000, Point3(*self.pos))
-        
+        self.solid.apply_impulse(Vec3(*self.vector)*12, Point3(*self.pos))
+        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
+
     def update(self, dt):
         self.age += dt*60
         halflife = self.lifetime/2
@@ -1186,7 +907,7 @@ class Shrapnel (PhysicalObject):
                 self.node.set_color(*newcolor)
         if self.age > self.lifetime:
             self.world.garbage.add(self)
-         
+
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
@@ -1313,6 +1034,51 @@ class World (object):
     def register_updater_later(self, obj):
         assert isinstance(obj, WorldObject)
         self.updatables_to_add.add(obj)
+
+    def do_explosion(self, node, radius, force):
+        center = node.get_pos(self.render);
+        expl_body = BulletGhostNode("expl")
+        expl_shape = BulletSphereShape(radius)
+        expl_body.add_shape(expl_shape)
+        expl_bodyNP = self.render.attach_new_node(expl_body)
+        expl_bodyNP.set_pos(center)
+        self.physics.attach_ghost(expl_body)
+        result = self.physics.contact_test(expl_body)
+        for contact in result.getContacts():
+            n0_name = contact.getNode0().get_name()
+            n1_name = contact.getNode1().get_name()
+            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH:
+                obj = self.objects[n1_name]
+                #repeat contact test with just this pair of objects
+                #otherwise all manifold point values will be the same
+                #for all objects in original result
+                real_c = self.physics.contact_test_pair(expl_body, obj.solid)
+                mpoint = real_c.getContacts()[0].getManifoldPoint()
+                distance = mpoint.getDistance()
+                if distance < 0:
+                    expl_vec = Vec3(mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB())
+                    expl_vec.normalize()
+                    magnitude = force * 1.0/math.sqrt(abs(radius - abs(distance)))
+                    obj.solid.set_active(True)
+                    obj.solid.apply_impulse(expl_vec*magnitude, mpoint.getLocalPointB())
+        self.physics.remove_ghost(expl_body)
+        expl_bodyNP.detach_node()
+        del(expl_body, expl_bodyNP)
+
+    def do_plasma_push(self, plasma, node, energy):
+        if node not in EXPLOSIONS_DONT_PUSH:
+            obj = self.objects[node]
+            solid = obj.solid
+            dummy_node = NodePath('tmp')
+            dummy_node.set_hpr(plasma.hpr)
+            dummy_node.set_pos(plasma.pos)
+            f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,1))
+            local_point = (obj.node.get_pos() - dummy_node.get_pos()) *-1
+            f_vec.normalize()
+            solid.set_active(True)
+            solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
+            del(dummy_node)
+
 
     def update(self, task):
         """

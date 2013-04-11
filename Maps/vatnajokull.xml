@@ -1,5 +1,5 @@
 <?xml version="1.0" standalone="yes" ?>
-<map name="Vatnajökull" tagline="Tingly!" author="Malkavian" description="Is that incessant clanging you hear in the background something trailing far behind you with razor sharp jaws and a Camaro?">
+<map name="Vatnajokull" tagline="Tingly!" author="Malkavian" description="Is that incessant clanging you hear in the background something trailing far behind you with razor sharp jaws and a Camaro?">
 	<sky color="0.933,0.898,0.745" horizon="0.467,0.384,0.047">
 		<celestial azimuth="10" elevation="20" color="1,1,1" intensity="0.8" visible="false"/>
 		<celestial azimuth="200" elevation="20" color="1,1,1" intensity="0.3" visible="false"/>

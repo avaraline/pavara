@@ -1,34 +1,34 @@
-pavara
-======
-
-A game inspired by the classic Mac game.
+<table>
+	<tr>
+		<td>
+			<h1>pavara</h1><br/>
+			A game insprired by the classic mac game
+		</td>
+		<td>
+			<img src="https://dl.dropbox.com/u/38430353/indra_thumb.jpg" alt="Indra by rherriman"/>
+		</td>
+	</tr>
+</table>
 
 * * *
 how to install dependencies
-===========================
+---------------------------
 
-Pavara depends on Panda3D which can be downloaded here: http://www.panda3d.org/download.php?sdk&version=1.8.0
+pavara depends on [Panda3d](http://www.panda3d.org/download.php?sdk&version=1.8.0).
 
-For Windows: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe
+Panda3d installer links: [Windows](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe), [Mac](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg), [Linux (Ubuntu)](http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk).
 
-For Macs: http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg
+Mac users also need the [NVidia CG toolkit](https://developer.nvidia.com/cg-toolkit). Mac users may also need an [X11 Server](http://xquartz.macosforge.org/trac) if one is not installed.
 
-Mac users also need: https://developer.nvidia.com/cg-toolkit
+In Ubuntu 12.04, the `oneiric` version of Panda3d will complain about 2 unmet dependencies during installation. [Download these](http://packages.ubuntu.com/oneiric/allpackages) to install.
 
-For Ubuntu: http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk
+running
+-------
+The python script `map_test.py` must be run with the `ppython` command (provided by Panda3d) inside the source directory.
 
-For Ubuntu 12.04, you can install the oneiric version, but it will complain about 2 unmet dependencies.
+* Windows: open a new `cmd.exe`, `dir \Wherever\You\Saved\pavara` then `ppython map_test.py`
 
-You can download those dependencies from here: http://packages.ubuntu.com/oneiric/allpackages. Then it will install.
-
-running it
-==========
-
-Windows: navigate to the source code directory with cmd and run ppython map_test.py
-
-Macs: navigate to the source code directory in a terminal and run ppython map_test.py
-
-Linux: navigate to the source code directory in a terminal and run python map_test.py
+* Mac/Linux: open a new terminal and `cd /path/to/pavara/folder` followed by `ppython map_test.py`
 
 * * *
 roadmap
@@ -57,6 +57,7 @@ Maps
 		*   fields/areas
 		*   custom shapes
 		*   assigning colors to shapes
+		* 	enemies
 
 Graphics
 --------
@@ -65,25 +66,36 @@ Graphics
     *   improvements
 	*	work with colliision character to stop feet on terrain
 
+*	**deferred shading, bloom, transparency**
+	*	point lights on everything
+
 ###low priority
 *   **updated assets**
 	*   grenade model, finalize missle/plasma
 	*   unigoody
+	*	scout
+	*	pillbox or 'autoturret'
+	*	"ball"
+	*	mine
+	*	guard/ufo/ai walker
+*	triangle debris when walkers scrape walls
+
 *   **shadows**
     *   directional soft shadow mapping
 *   **particle effects**
-	*	explosions
-	*	missle/lazer trails
+	*	missle/lazer trails?
 	*	environmental, e.g. precipitation?
 
 Networking
 ----------
 ###high priority
-*   **game object distribution and sync**
+*   **time travelling**
 
 ###low priority
 *   **server tracking**
 *   **game metadata distribution (chat/level and asset distribution)**
+*	**ladder**
+*	**films hall of fame**
 
 Logic
 -----
@@ -97,18 +109,26 @@ Logic
 		*	do allow for team masking
 		*	if number of players exceeds the number of incarnators, split players into "batches" and spawn them in ten second waves?
 	*	position, speed, velocity
-*	**game data**: setup, types, start/end conditions
+*	**game data**: setup, types, start/end conditions, game recording
 *	**messages**: triggering and listening for simple events, both in XML and whatever scripting set up we use
+*	**game modes**
+	*	vanilla mode with baseline hull
+	*	custom 'loadout' mode where several 'stats' are set using a fixed number of points enable you to select one or more balanced 'skills' based on the stats ???
+		*	for example, in addition to the baseline hull
+			* **agility** - increased top speed, decreased ammo capcity and armor, additional jump(s), wall jumps, floor sliding
+			* **defensive** - increased armor, decreased speed, droppable auto-turret (pillbox), droppable mines, ???
+			* **offensive** - increased ammo capacity, decreased armor, droppable remote motion sensor beacon, tele to scout, ???
+	*	co-op firefight, maps would need hooks for enemy spawn points
 
 Sound
 -----
 ###low priority
-*	**doppler effect/stereo positioned playback**
+*	**doppler effect**
 *	**updated assets**
 	*	plasma/missle/grenade loop
 	*	kArticWind etc. replacements
 	*	footstep sounds, goody sounds
-	*	incarnator and teleporter sounds
+	*	teleporter sounds
 	*	xplosions
 
 Physics (Bullet)
@@ -116,12 +136,17 @@ Physics (Bullet)
 ###higher priority
 *	**kinematic character controller**
 	*	improve collision detection
-	*	send messages to hector object for animation
+	*	send messages to walker object for animation
+	*	improve leg animation and IK to terrain
+	*	vertical height adjustment/crouching for jumping
 *	**ballistics**
 	*	grenade lobbing
 	*	"smart" missle tracking
-	*	lazers
-	*	damage
+	*	walker energy, cannons, shield charging
+	*	laser cannons
+		*	less energy = less shot power
+		*	add something for the opposite situation? *arcing charge shot*: if cannons at 100% power, hold down button to charge a large 'arcing' shot, which, scaling with charge time, has the effect of 'jumping' to other players within range of the player struck by the original arc shot, doing a fraction of the damage for each 'jump'. this would drain your cannons completely and overcharging (and self-destruction) would be possible. could be 'skill'
+	*	splash/freesolid/laser damage/recoil
 
 ###lower priority
 *	**other collidables**
@@ -132,3 +157,4 @@ User Interface
 --------------
 ###lowest priority
 *	**preliminary designs**
+*	3d target reticules

@@ -47,6 +47,7 @@ class Map (object):
         self.author = root['author'] or 'Unknown Author'
         self.tagline = root['tagline']
         self.description = root['description'] or 'No description.'
+        self.preview_cam = (parse_vector(root['preview_cam_pos'], (0,20,40)), parse_vector(root['preview_cam_hp'], (0,0)))
         self.world = World(camera, debug=parse_bool(root['debug']), audio3d=audio3d)
         self.process_children(root)
         if not self.has_celestials:
@@ -61,6 +62,11 @@ class Map (object):
         self.world.render.setColorOff()
         self.world.render.node().setAttrib(ColorAttrib.makeVertex())
         self.world.render.reparent_to(render)
+
+    def remove(self, render):
+        self.world.sky.detach()
+        self.world.render.detach_node()
+        self.world.render.remove_node()
 
     def process_children(self, node):
         for child in node.children():
