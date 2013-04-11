@@ -43,7 +43,7 @@ MISSILE_LIFESPAN = 600
 GRENADE_SCALE = .35
 GRENADE_OFFSET = [0, 1.55, .9]
 
-EXPLOSIONS_DONT_PUSH = ["expl", "ground", "grenade", "missile", "shrapnel", "Walker:0_walker_cap", "plasma"]
+EXPLOSIONS_DONT_PUSH = ["expl", "ground", "grenade", "missile", "shrapnel", "plasma"]
 
 class WorldObject (object):
     """
@@ -1047,7 +1047,7 @@ class World (object):
         for contact in result.getContacts():
             n0_name = contact.getNode0().get_name()
             n1_name = contact.getNode1().get_name()
-            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH:
+            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH and not n1_name.startswith('Walker'):
                 obj = self.objects[n1_name]
                 #repeat contact test with just this pair of objects
                 #otherwise all manifold point values will be the same
@@ -1066,7 +1066,7 @@ class World (object):
         del(expl_body, expl_bodyNP)
 
     def do_plasma_push(self, plasma, node, energy):
-        if node not in EXPLOSIONS_DONT_PUSH:
+        if node not in EXPLOSIONS_DONT_PUSH and not node.startswith('Walker'):
             obj = self.objects[node]
             solid = obj.solid
             dummy_node = NodePath('tmp')
