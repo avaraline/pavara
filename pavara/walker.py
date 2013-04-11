@@ -79,20 +79,23 @@ class Sack (object):
 
 class LegBones (object):
 
-    motion = [ [Vec3(0, p, 0) for p in [ 50, -5, -60,  0, 25, 0]]
-             , [Vec3(0, p, 0) for p in [ 20,  -40,  -10, -18, 0, 0]]
+    motion = [ [ 50,  -5,  -40,  -60, 25, 38]
+             , [ 20,  -40, -10,  -10, -40, -20]
              ]
 
     TOP = 0
     BOTTOM = 1
 
-    def __init__(self, hip, foot, top, bottom):
-        self.bones = [(bone, bone.get_hpr(), bone.get_pos(), motions) for (bone, motions) in zip([top, bottom], self.motion)]
+    def __init__(self, render, physics, hip, foot, top, bottom):
+        self.bones = [(bone, bone.get_p(), bone.get_pos(), motions) for (bone, motions) in zip([top, bottom], self.motion)]
         self.foot_bone = foot
         self.top_bone = top
         self.bottom_bone = bottom
         self.hip_bone = hip
         self.is_on_ground = False
+        self.render = render
+        self.physics = physics
+        self.global_floor_pos = Point3(0,0,0)
 
     def bottom_resting_pos(self):
         return self.bones[self.BOTTOM][2]
@@ -100,20 +103,60 @@ class LegBones (object):
     def top_resting_pos(self):
         return self.bones[self.TOP][2]
 
-    def get_walk_seq(self, stage, walk_cycle_speed, bob):
-        #add bakeInStart=0 to the LerpHprInterval arguments to attempt IK during interval
-        #this does not look very good at all
-        lerps = [LerpHprInterval(bone, walk_cycle_speed, resting_hpr + motions[stage]) for (bone, resting_hpr, resting_pos, motions) in self.bones]
+    def get_walk_seq(self, stage, walk_cycle_speed, bob, blend_type):
+        lerps = [LerpFunc(self.update_piece, fromData=resting_p + motions[stage - 1], toData=resting_p + motions[stage], duration=walk_cycle_speed, extraArgs=[bone]) for (bone, resting_p, resting_pos, motions) in self.bones]
+        #lerps = [LerpHprInterval(bone, walk_cycle_speed, Vec3(0,resting_hpr + motions[stage],0)) for (bone, resting_hpr, resting_pos, motions) in self.bones]
+
         bob = LerpPosInterval(self.bones[self.TOP][0], walk_cycle_speed, self.bones[self.TOP][2] + bob)
         lerps.append(bob)
         return lerps
 
     def get_return(self, return_speed):
-        lerps = [LerpHprInterval(bone, return_speed, resting_hpr) for (bone, resting_hpr, resting_pos, motions) in self.bones]
+        #lerps = [LerpHprInterval(bone, return_speed, Vec3(0,resting_p,0)) for (bone, resting_p, resting_pos, motions) in self.bones]
+        lerps = [LerpFunc(self.update_piece, fromData=bone.get_p(), toData=resting_p, duration=return_speed, extraArgs=[bone]) for (bone, resting_p, resting_pos, motions) in self.bones]
         return_pos = LerpPosInterval(self.bones[self.TOP][0], return_speed, self.bones[self.TOP][2])
         lerps.append(return_pos)
         return lerps
 
+    def update_piece(self, angle, bone):
+        if bone is self.top_bone:
+            bone.set_p(angle + (angle - self.top_bone_target_angle))
+        elif bone is self.bottom_bone:
+            bone.set_p(angle + (angle - self.bottom_bone_target_angle))
+
+    def set_floor_spot(self):
+        l_from = self.foot_bone.get_pos(self.render)
+        l_to = self.foot_bone.get_pos(self.render)
+        l_from.y += 1
+        l_to.y -= 1
+        result = self.physics.ray_test_closest(l_from, l_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        self.global_floor_pos = result.get_hit_pos()
+
+    def ik_leg(self, data):
+
+        if not self.is_on_ground:
+            return
+
+        hip_pos = self.hip_bone.get_pos(self.render)
+        target_vector =  hip_pos - self.global_floor_pos
+
+        #if we try to stretch the legs out farther than they are long, acos will throw a domain error
+        if .2 < target_vector.length() < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
+            #law of cosines
+            tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
+            target_top_angle = rad2Deg(math.acos(tt_angle_cos))
+            tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
+            target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
+            #sensible constraints
+            if target_top_angle and target_top_angle == target_top_angle and 20 < target_top_angle < 120:
+                #TODO: animate
+                zero_vector = Vec3.unitY() * -1
+                self.top_bone_target_angle = (90 - target_top_angle)
+
+            if target_bottom_angle and target_bottom_angle == target_bottom_angle and 20 < target_bottom_angle < 140:
+                self.bottom_bone_target_angle = ((180 - target_bottom_angle)*-1)
+        else:
+            return
 
 
 class Skeleton (object):
@@ -137,15 +180,17 @@ class Skeleton (object):
         # TODO: We definitely need more than four segments in the walk loop.
         # We also need to have separate loops for backwards and forwards walking.
 
-        ws = self.walk_cycle_speed / 6.0
+        ws = self.walk_cycle_speed / 5.0
         up_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.upbob)]
         down_interval = [LerpPosInterval(self.shoulder, ws, self.resting[0] + self.downbob)]
         left_leg_on_ground = [LerpFunc(self._left_leg_on_ground)]
         right_leg_on_ground = [LerpFunc(self._right_leg_on_ground)]
-        steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob) + self.left_leg.get_walk_seq(2,ws, self.upbob) + up_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(1,ws, self.downbob) + self.left_leg.get_walk_seq(3,ws, self.downbob) + down_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(2,ws, self.upbob) + self.left_leg.get_walk_seq(0,ws,self.upbob) + up_interval + left_leg_on_ground
-                , self.right_leg.get_walk_seq(3,ws, self.downbob) + self.left_leg.get_walk_seq(1,ws,self.downbob) + down_interval + left_leg_on_ground
+        steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(4,ws, self.upbob, 'easeIn') + up_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(1,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(5,ws, self.downbob, 'easeOut') + down_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(2,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(0,ws,self.upbob, 'easeIn') + up_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(3,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(1,ws,self.downbob, 'easeOut') + down_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(4,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(2,ws,self.downbob, 'easeOut') + left_leg_on_ground
+                , self.right_leg.get_walk_seq(5,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(3,ws,self.downbob, 'easeOut') + right_leg_on_ground
                 ]
         steps = [Parallel(*step) for step in steps]
         return Sequence(*steps)
@@ -154,6 +199,7 @@ class Skeleton (object):
         if not self.left_leg.is_on_ground:
             self.lf_sound.play()
         self.left_leg.is_on_ground = True
+        self.left_leg.set_floor_spot()
         self.right_leg.is_on_ground = False
 
     def _right_leg_on_ground(self, data):
@@ -161,6 +207,7 @@ class Skeleton (object):
             self.rf_sound.play()
         self.left_leg.is_on_ground = False
         self.right_leg.is_on_ground = True
+        self.right_leg.set_floor_spot()
 
     def _make_return_seq_(self):
         lerps = self.right_leg.get_return(self.return_speed) + self.left_leg.get_return(self.return_speed)
@@ -178,7 +225,10 @@ class Skeleton (object):
             self.walk_seq.pause()
             self.left_leg.is_on_ground = True
             self.right_leg.is_on_ground = True
-            #self.return_seq.start()
+            Sequence(self.return_seq).start()
+        self.right_leg.set_floor_spot()
+        self.left_leg.set_floor_spot()
+        Parallel(LerpFunc(self.left_leg.ik_leg), LerpFunc(self.right_leg.ik_leg)).start()
 
     def setup_footsteps(self, audio3d):
         if audio3d is not None:
@@ -197,51 +247,13 @@ class Skeleton (object):
         else:
             self.stop()
 
-        lf_from = self.left_leg.foot_bone.get_pos(render)
-        lf_to = self.left_leg.foot_bone.get_pos(render)
-        lf_from.y += 1
-        lf_to.y -= 1
-        left_foot_result = physics.ray_test_closest(lf_from, lf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        #if self.left_leg.is_on_ground:
+        #    self.left_leg.update_leg()
 
-        if self.left_leg.is_on_ground:
-            self.update_leg(self.left_leg, left_foot_result, render)
+        #if self.right_leg.is_on_ground:
+        #    self.right_leg.update_leg()
 
-        rf_from = self.right_leg.foot_bone.get_pos(render)
-        rf_to = self.right_leg.foot_bone.get_pos(render)
-        rf_from.y += 1
-        rf_to.y -= 1
-        right_foot_result = physics.ray_test_closest(rf_from, rf_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
 
-        if self.right_leg.is_on_ground:
-            self.update_leg(self.right_leg, right_foot_result, render)
-
-    def update_leg(self, leg, result, render):
-        hip_pos = leg.hip_bone.get_pos(render)
-        hit_pos = result.get_hit_pos()
-        target_vector =  hip_pos - hit_pos
-
-        if not result.has_hit():
-            #TODO: animate
-            leg.top_bone.set_p(TOP_LEG_EXTENDED_P)
-            leg.bottom_bone.set_p(BOTTOM_LEG_EXTENDED_P)
-            return
-        #if we try to stretch the legs out farther than they are long, acos will throw a domain error
-        if .2 < target_vector.length() < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
-            #law of cosines
-            tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
-            target_top_angle = rad2Deg(math.acos(tt_angle_cos))
-            tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
-            target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
-            #sensible constraints
-            if target_top_angle and target_top_angle == target_top_angle and 20 < target_top_angle < 120:
-                #TODO: animate
-                leg.top_bone.set_p(90 - target_top_angle)
-
-            if target_bottom_angle and target_bottom_angle == target_bottom_angle and 20 < target_bottom_angle < 140:
-                #TODO: animate
-                leg.bottom_bone.set_p((180-target_bottom_angle)*-1)
-        else:
-            return
 
 
 class Walker (PhysicalObject):
@@ -291,18 +303,7 @@ class Walker (PhysicalObject):
         self.actor.look_at(*self.spawn_point.heading)
         self.spawn_point.was_used()
 
-        left_bones = LegBones(
-            self.actor.exposeJoint(None, 'modelRoot', 'left_hip_bone'),
-            self.actor.exposeJoint(None, 'modelRoot', 'left_foot_bone'),
-            *[self.actor.controlJoint(None, 'modelRoot', name) for name in ['left_top_bone', 'left_bottom_bone']]
-        )
-        right_bones = LegBones(
-            self.actor.exposeJoint(None, 'modelRoot', 'right_hip_bone'),
-            self.actor.exposeJoint(None, 'modelRoot', 'right_foot_bone'),
-            *[self.actor.controlJoint(None, 'modelRoot', name) for name in  ['right_top_bone', 'right_bottom_bone']]
-        )
 
-        self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'head_bone'))
         self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_barrel_bone')
         self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_barrel_bone')
         return self.actor
@@ -359,7 +360,22 @@ class Walker (PhysicalObject):
         self.integrator = Integrator(self.world.gravity)
         self.world.register_collider(self)
         self.world.register_updater(self)
+        left_bones = LegBones(
+            self.world.render, self.world.physics,
+            self.actor.exposeJoint(None, 'modelRoot', 'left_hip_bone'),
+            self.actor.exposeJoint(None, 'modelRoot', 'left_foot_bone'),
+            *[self.actor.controlJoint(None, 'modelRoot', name) for name in ['left_top_bone', 'left_bottom_bone']]
+        )
+        right_bones = LegBones(
+            self.world.render, self.world.physics,
+            self.actor.exposeJoint(None, 'modelRoot', 'right_hip_bone'),
+            self.actor.exposeJoint(None, 'modelRoot', 'right_foot_bone'),
+            *[self.actor.controlJoint(None, 'modelRoot', name) for name in  ['right_top_bone', 'right_bottom_bone']]
+        )
+
+        self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'head_bone'))
         self.skeleton.setup_footsteps(self.world.audio3d)
+
 
 
     def collision(self, other, manifold, first):
