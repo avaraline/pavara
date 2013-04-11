@@ -1,0 +1,19 @@
+<?xml version="1.0" standalone="yes" ?>
+<map name="Pavara Splash" tagline="Opening splash screen." author="ryan &apos;silverfox&apos; herriman" description="Opening splash screen." preview_cam_pos="-4.299,5.4077,12.4276" preview_cam_hp="-9.33742,19.55514">
+    <sky ambient="0.05,0.05,0.05" color="0.373,0,0.447" horizon="0.682,0,0.498" horizonScale="0.25">
+        <celestial azimuth="20" elevation="10" color="1,0.435,0.310" intensity="0.8" size="90" visible="true"/>
+        <celestial azimuth="200" elevation="45" color="1,0.435,0.310" intensity="0.1" visible="false"/>
+        <starfield seed="81321345589144" count="77" minSize="0.7" maxSize="0.9" mode="realistic"/>
+    </sky>
+    <ground color="0.208,0.016,0.216"/>
+
+    <incarnator location="0,6,0" heading="-120"/>
+
+    <static>
+        <block center="0,3,0" size="6,6,6" color="0.2,0.2,0.2"/>
+        <block center="4.5,4,4.5" size="3,8,3" color="0.2,0.2,0.2"/>
+        <block center="-4.5,4,-4.5" size="3,8,3" color="0.2,0.2,0.2"/>
+        <wedge base="-9,3,0" top="-3,6,0" width="6" color="0.2,0.2,0.2"/>
+        <wedge base="0,3,9" top="0,6,3" width="6" color="0.2,0.2,0.2"/>
+    </static>
+</map>

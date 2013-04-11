@@ -638,11 +638,14 @@ class Incarnator (PhysicalObject):
     def attached(self):
         self.dummy_node = self.world.render.attach_new_node("incarnator"+self.name)
         self.dummy_node.set_pos(self.world.render, self.pos)
-        self.sound = self.world.audio3d.loadSfx('Sounds/incarnation_mono.wav')
+        if self.world.audio3d:
+            self.sound = self.world.audio3d.loadSfx('Sounds/incarnation_mono.wav')
+        else: self.sound = False
 
     def was_used(self):
-        self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
-        self.sound.play()
+        if self.sound:
+            self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
+            self.sound.play()
 
 class Plasma (PhysicalObject):
     def __init__(self, pos, hpr, energy, name=None):
@@ -819,7 +822,11 @@ class Grenade (PhysicalObject):
         self.inner_bottom.set_color(*random.choice(ENGINE_COLORS))
         result = self.world.physics.contact_test(self.solid)
         self.spin_bone.set_hpr(self.spin_bone, 0,0,10)
-        if len(result.getContacts()) > 0:
+        contacts = result.getContacts()
+        if len(contacts) > 0:
+            hit_node = contacts[0].get_node1().get_name()
+            if hit_node.endswith("_walker_cap"):
+                return
             clist = list(self.color)
             clist.extend([1])
             expl_colors = [clist]

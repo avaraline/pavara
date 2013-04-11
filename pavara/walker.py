@@ -181,14 +181,15 @@ class Skeleton (object):
             #self.return_seq.start()
 
     def setup_footsteps(self, audio3d):
-        self.lf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
-        self.lf_sound.set_balance(0)
-        audio3d.attachSoundToObject(self.lf_sound, self.left_leg.foot_bone)
-        self.lf_played_since = 0
-        self.rf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
-        self.rf_sound.set_balance(0)
-        audio3d.attachSoundToObject(self.rf_sound, self.right_leg.foot_bone)
-        self.rf_played_since = 0
+        if audio3d is not None:
+            self.lf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
+            self.lf_sound.set_balance(0)
+            audio3d.attachSoundToObject(self.lf_sound, self.left_leg.foot_bone)
+            self.lf_played_since = 0
+            self.rf_sound = audio3d.loadSfx('Sounds/step_mono.wav')
+            self.rf_sound.set_balance(0)
+            audio3d.attachSoundToObject(self.rf_sound, self.right_leg.foot_bone)
+            self.rf_played_since = 0
 
     def update_legs(self, walk, dt, render, physics):
         if walk != 0:
