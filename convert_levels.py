@@ -1,4 +1,5 @@
 from Converter import resource
+import Converter.pict.reader as pReader
 import argparse
 import sys
 
@@ -16,3 +17,7 @@ if __name__ == '__main__':
 
     reader = resource.Reader()
     resources = reader.parse(data)
+
+    for pict in resources['PICT'].values():
+        pReader.parse(pict['data'])
+

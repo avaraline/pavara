@@ -43,7 +43,7 @@ class Reader(object):
         numTypes = bytes_to_short(map[28:30])
 
         typeLength = 8 * (numTypes + 1)
-        # the part of the header that tells us the offset because it lies
+        # the part of the header that tells us the offset lies
         rawTypes = map[30:30 + typeLength]
         rawList = map[30 + typeLength:nameOffset]
         rawNames = map[nameOffset:]
