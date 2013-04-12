@@ -1,9 +1,5 @@
 import datatypes
-import struct
-
-
-def bytes_to_short(bytes):
-    return struct.unpack('>h', bytes)[0]
+from Converter.helpers import *
 
 
 class Operation (object):
