@@ -80,7 +80,7 @@ class Sack (object):
 class LegBones (object):
 
     motion = [ [ 50,  -5,  -40,  -50, 25, 38]
-             , [ 20,  -40, -10,  -10, -40, -20]
+             , [ 0,  -40, -10,  -10, -40, -20]
              ]
 
     TOP = 0
@@ -126,7 +126,7 @@ class LegBones (object):
             if foot_pos and self.is_on_ground:
                 hip_pos = self.hip_bone.get_pos(self.render)
                 v =  hip_pos - foot_pos
-                print v.length()
+                #print v.length()
                 self.ik_leg(v)
 
 
@@ -143,15 +143,18 @@ class LegBones (object):
             return None
 
     def ik_leg(self, target_vector):
-        if .2 < target_vector.length() < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
-            tt_angle_cos = ((TOP_LEG_LENGTH**2)+(target_vector.length()**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*target_vector.length())
+        pt_length = target_vector.length()
+        if .2 < pt_length < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
+            tt_angle_cos = ((TOP_LEG_LENGTH**2)+(pt_length**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*pt_length)
             target_top_angle = rad2Deg(math.acos(tt_angle_cos))
-            if target_top_angle and target_top_angle == target_top_angle and -120 < target_top_angle < 120:
+            if target_top_angle and target_top_angle == target_top_angle and -120 < target_top_angle < 100:
                 rot_mx = Mat3.rotateMatNormaxis(-target_top_angle, render.getRelativeVector(self.top_bone, Vec3.unitX()))
                 pk_prime = rot_mx.xformVec(target_vector)
+                target_vector.normalize()
                 alter_angle = target_vector.dot(pk_prime)
+                #print alter_angle
                 self.top_bone.set_p(self.top_bone, alter_angle)
-            tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - target_vector.length()**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
+            tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - pt_length**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
             target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
             if target_bottom_angle and target_bottom_angle == target_bottom_angle and -140 < target_bottom_angle < 140:
                 self.bottom_bone.set_p((180 - target_bottom_angle)*-1)
@@ -164,7 +167,7 @@ class Skeleton (object):
 
     upbob = Vec3(0, 0.05, 0)
     downbob = upbob * -1
-    walk_cycle_speed = 3
+    walk_cycle_speed = 1
     return_speed = 0.1
 
 
