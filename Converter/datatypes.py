@@ -3,9 +3,11 @@ from lxml import etree as ET
 
 
 class Color (object):
-    red = 1
-    green = 1
-    blue = 1
+
+    def __init__(self):
+        self.red = 1
+        self.green = 1
+        self.blue = 1
 
     @staticmethod
     def from_rgb(r, g, b):
@@ -27,9 +29,11 @@ class Color (object):
 
 
 class Point3D(object):
-    x = 0
-    y = 0
-    z = 0
+
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.z = 0
 
     def __str__(self):
         return (str(self.x) + "," +
@@ -37,10 +41,22 @@ class Point3D(object):
                 str(self.z))
 
 
+class Arc (object):
+
+    def __init__(self):
+        self.main = Color()
+        self.highlight = Color()
+        self.heading = 0
+        self.center = Point3D()
+
+
 class Block (object):
-    size = Point3D()
-    center = Point3D()
-    color = Color()
+
+    def __init__(self):
+        self.size = Point3D()
+        self.center = Point3D()
+        self.color = Color()
+        self.rounding = 0
 
     def to_xml(self, tree):
         el = ET.SubElement(tree, "block")
@@ -50,21 +66,50 @@ class Block (object):
 
 
 class Ramp (object):
-    base = Point3D()
-    top = Point3D()
-    width = 0
-    thickness = 0
+
+    def __init__(self):
+        self.base = Point3D()
+        self.top = Point3D()
+        self.width = 0
+        self.thickness = 0
+        self.color = Color()
+
+    def to_xml(self, tree):
+        el = ET.SubElement(tree, "blockramp")
+        el.set('base', str(self.base))
+        el.set('top', str(self.top))
+        el.set('width', str(self.width))
+        el.set('thickness', str(self.thickness))
+        el.set('color', str(self.color))
 
 
-class Goodie (object):
-    location = Point3D()
-    grenade = 0
-    missiles = 0
-    respawn = 0
-    model = Point3D()
-    spin = Point3D()
+class Goody (object):
+
+    def __init__(self):
+        self.location = Point3D()
+        self.grenades = 0
+        self.missiles = 0
+        self.respawn = 0
+        self.model = None
+        self.spin = Point3D()
+
+    def to_xml(self, tree):
+        el = ET.SubElement(tree, "goody")
+        el.set('location', str(self.location))
+        el.set('grenades', str(self.grenades))
+        el.set('missiles', str(self.missiles))
+        el.set('respawn', str(self.respawn))
+        el.set('spin', str(self.spin))
+        el.set('model', str(self.model))
 
 
 class Incarnator (object):
-    location = Point3D()
-    heading = 0
+
+    def __init__(self):
+        self.location = Point3D()
+        self.heading = 0
+
+    def to_xml(self, tree):
+        el = ET.SubElement(tree, "incarnator")
+        el.set('location', str(self.location))
+        el.set('heading', str(self.heading))
