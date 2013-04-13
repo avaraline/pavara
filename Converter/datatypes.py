@@ -89,7 +89,7 @@ class Goody (object):
         self.location = Point3D()
         self.grenades = 0
         self.missiles = 0
-        self.respawn = 0
+        self.respawn = 30
         self.model = None
         self.spin = Point3D()
 
