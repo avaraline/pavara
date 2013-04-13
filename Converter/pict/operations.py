@@ -44,7 +44,7 @@ class ClipRegion (VariableLengthOperation):
         self.vari_length = bytes_to_short(bytes) - 2
 
     def parse_variable(self, bytes):
-        self.region = bytes
+        self.region = datatypes.Rect(bytes)
 
 
 class TextFont (Operation):
@@ -80,6 +80,13 @@ class PenPattern (Operation):
 
     def parse(self, bytes):
         self.pattern = bytes
+
+
+class OvalSize (Operation):
+    length = 4
+
+    def parse(self, bytes):
+        self.point = datatypes.Point(byte)
 
 
 class Origin (Operation):
@@ -151,7 +158,6 @@ class LongText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class DHText (VariableLengthOperation):
@@ -163,7 +169,6 @@ class DHText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class DVText (VariableLengthOperation):
@@ -175,7 +180,6 @@ class DVText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class DHDVText (VariableLengthOperation):
@@ -188,7 +192,6 @@ class DHDVText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class FrameRectangle (Operation):
@@ -300,6 +303,7 @@ class Factory (object):
         0x7: PenSize,
         0x8: PenMode,
         0x9: PenPattern,
+        0xb: OvalSize,
         0xc: Origin,
         0xd: TextSize,
         0x10: TextRatio,

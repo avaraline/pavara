@@ -8,7 +8,7 @@ def parse(pict):
     if bytes_to_int(pict[10:14]) != 0x001102ff:
         print "ERROR: Not a version 2 PICT"
         return
-
+        
     data = pict[40:]
 
     ops = []
