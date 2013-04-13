@@ -26,7 +26,7 @@ class VariableLengthOperation (Operation):
         return self.vari_length
 
 
-class Reserved(VariableLengthOperation):
+class VariableReserved(VariableLengthOperation):
     length = 2
 
     def parse(self, bytes):
@@ -44,7 +44,7 @@ class ClipRegion (VariableLengthOperation):
         self.vari_length = bytes_to_short(bytes) - 2
 
     def parse_variable(self, bytes):
-        self.rect = datatypes.Rect(bytes)
+        self.region = bytes
 
 
 class TextFont (Operation):
@@ -52,6 +52,13 @@ class TextFont (Operation):
 
     def parse(self, bytes):
         self.font = bytes_to_short(bytes)
+
+
+class TextFace (Operation):
+    length = 1
+
+    def parse(self, bytes):
+        self.face = byte_to_unsigned_tiny_int(bytes)
 
 
 class PenSize (Operation):
@@ -66,6 +73,21 @@ class PenMode (Operation):
 
     def parse(self, bytes):
         self.mode = bytes_to_short(bytes)
+
+
+class PenPattern (Operation):
+    length = 8
+
+    def parse(self, bytes):
+        self.pattern = bytes
+
+
+class Origin (Operation):
+    length = 4
+
+    def parse(self, bytes):
+        self.dh = bytes_to_short(bytes[:2])
+        self.dv = bytes_to_short(bytes[2:])
 
 
 class TextSize (Operation):
@@ -83,13 +105,41 @@ class TextRatio (Operation):
         self.denominator = datatypes.Point(bytes[4:8])
 
 
+class PenLocationHFractional (Operation):
+    length = 2
+
+    def parse(self, bytes):
+        self.pos = bytes_to_short(bytes)
+
+
+class RGBForegroundColor (Operation):
+    length = 6
+
+    def parse(self, bytes):
+        self.red = bytes_to_unsigned_short(bytes[0:2])
+        self.green = bytes_to_unsigned_short(bytes[2:4])
+        self.blue = bytes_to_unsigned_short(bytes[4:6])
+
+
+class DefaultHighlight (Operation):
+    length = 0
+
+
 class ShortLine (Operation):
     length = 6
 
     def parse(self, bytes):
         self.start = datatypes.Point(bytes)
-        self.dh = byte_to_signed_tiny_int(bytes[2:3])
-        self.dv = byte_to_signed_tiny_int(bytes[3:4])
+        self.dh = byte_to_signed_tiny_int(bytes[2])
+        self.dv = byte_to_signed_tiny_int(bytes[3])
+
+
+class ShortLineFrom (Operation):
+    length = 2
+
+    def parse(self, bytes):
+        self.dh = byte_to_signed_tiny_int(bytes[0])
+        self.dv = byte_to_signed_tiny_int(bytes[1])
 
 
 class LongText (VariableLengthOperation):
@@ -97,10 +147,48 @@ class LongText (VariableLengthOperation):
 
     def parse(self, bytes):
         self.loc = datatypes.Point(bytes[0:4])
-        self.vari_length = byte_to_unsigned_tiny_int(bytes[4:5])+1
+        self.vari_length = byte_to_unsigned_tiny_int(bytes[4])
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
+        print self.text
+
+
+class DHText (VariableLengthOperation):
+    length = 2
+
+    def parse(self, bytes):
+        self.dh = byte_to_unsigned_tiny_int(bytes[0])
+        self.vari_length = byte_to_unsigned_tiny_int(bytes[1])
+
+    def parse_variable(self, bytes):
+        self.text = bytes_to_string(bytes)
+        print self.text
+
+
+class DVText (VariableLengthOperation):
+    length = 2
+
+    def parse(self, bytes):
+        self.dv = byte_to_unsigned_tiny_int(bytes[0])
+        self.vari_length = byte_to_unsigned_tiny_int(bytes[1])
+
+    def parse_variable(self, bytes):
+        self.text = bytes_to_string(bytes)
+        print self.text
+
+
+class DHDVText (VariableLengthOperation):
+    length = 3
+
+    def parse(self, bytes):
+        self.dh = byte_to_unsigned_tiny_int(bytes[0])
+        self.dv = byte_to_unsigned_tiny_int(bytes[1])
+        self.vari_length = byte_to_unsigned_tiny_int(bytes[2])
+
+    def parse_variable(self, bytes):
+        self.text = bytes_to_string(bytes)
+        print self.text
 
 
 class FrameRectangle (Operation):
@@ -108,6 +196,77 @@ class FrameRectangle (Operation):
 
     def parse(self, bytes):
         self.rect = datatypes.Rect(bytes)
+
+
+class PaintRectangle (Operation):
+    length = 8
+
+    def parse(self, bytes):
+        self.rect = datatypes.Rect(bytes)
+
+
+class FrameSameRectangle (Operation):
+    length = 0
+
+
+class PaintSameRectangle (Operation):
+    length = 0
+
+
+class FrameRoundedRectangle (Operation):
+    length = 8
+
+    def parse(self, bytes):
+        self.rect = datatypes.Rect(bytes)
+
+
+class PaintRoundedRectangle (Operation):
+    length = 8
+
+    def parse(self, bytes):
+        self.rect = datatypes.Rect(bytes)
+
+
+class FrameSameRoundedRectangle (Operation):
+    length = 0
+
+
+class PaintSameRoundedRectangle (Operation):
+    length = 0
+
+
+class FrameArc (Operation):
+    length = 12
+
+    def parse(self, bytes):
+        self.rect = datatypes.Rect(bytes[0:8])
+        self.startAngle = bytes_to_short(bytes[8:10])
+        self.arcAngle = bytes_to_short(bytes[10:12])
+
+
+class PaintArc (Operation):
+    length = 12
+
+    def parse(self, bytes):
+        self.rect = datatypes.Rect(bytes[0:8])
+        self.startAngle = bytes_to_short(bytes[8:10])
+        self.arcAngle = bytes_to_short(bytes[10:12])
+
+
+class FrameSameArc (Operation):
+    length = 4
+
+    def parse(self, bytes):
+        self.startAngle = bytes_to_short(bytes[0:2])
+        self.arcAngle = bytes_to_short(bytes[2:4])
+
+
+class PaintSameArc (Operation):
+    length = 4
+
+    def parse(self, bytes):
+        self.startAngle = bytes_to_short(bytes[0:2])
+        self.arcAngle = bytes_to_short(bytes[2:4])
 
 
 class ShortComment (Operation):
@@ -128,25 +287,48 @@ class LongComment (VariableLengthOperation):
         self.comment = bytes_to_string(bytes)
 
 
+class EndPict (Operation):
+    length = 0
+
+
 class Factory (object):
     opcodes = {
         0x0: NOP,
         0x1: ClipRegion,
-        #0x2: BackgroundPattern,
         0x3: TextFont,
-        #"0003": TextFont,
-        #"0004": TextFace,
+        0x4: TextFace,
         0x7: PenSize,
         0x8: PenMode,
+        0x9: PenPattern,
+        0xc: Origin,
         0xd: TextSize,
         0x10: TextRatio,
+        0x15: PenLocationHFractional,
+        0x1a: RGBForegroundColor,
+        0x1e: DefaultHighlight,
         0x22: ShortLine,
+        0x23: ShortLineFrom,
         0x28: LongText,
-        0x2c: Reserved,
-        0x2e: Reserved,
+        0x29: DHText,
+        0x2a: DVText,
+        0x2b: DHDVText,
+        0x2c: VariableReserved,
+        0x2e: VariableReserved,
         0x30: FrameRectangle,
+        0x31: PaintRectangle,
+        0x38: FrameSameRectangle,
+        0x39: PaintSameRectangle,
+        0x40: FrameRoundedRectangle,
+        0x41: PaintRoundedRectangle,
+        0x48: FrameSameRoundedRectangle,
+        0x49: PaintSameRoundedRectangle,
+        0x60: FrameArc,
+        0x61: PaintArc,
+        0x68: FrameSameArc,
+        0x69: PaintSameArc,
         0xa0: ShortComment,
-        0xa1: LongComment
+        0xa1: LongComment,
+        0xff: EndPict
     }
 
     @staticmethod
