@@ -10,7 +10,6 @@ def heading_from_arc(startAngle, angle):
         while(heading >= 360):
             heading -= 360
 
-        print heading
         return heading
 
 
@@ -177,10 +176,6 @@ class Converter:
             else:
                 lastText = False
 
-        print self.goodies
-        print self.incarnators
-        print self.teleporters
-
         mapEl = ET.Element('map')
 
         for inc in self.incarnators:
@@ -304,9 +299,6 @@ class Converter:
 
             if 'missiles' in object:
                 good.missiles = object['missiles']
-
-            if 'respawn' in object:
-                good.respawn = object['respawn']
 
             if 'shape' in object:
                 good.model = self.translate_model(object['shape'])
