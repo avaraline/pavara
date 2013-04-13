@@ -86,7 +86,7 @@ class OvalSize (Operation):
     length = 4
 
     def parse(self, bytes):
-        self.point = datatypes.Point(byte)
+        self.size = datatypes.Point(byte)
 
 
 class Origin (Operation):
