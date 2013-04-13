@@ -5,15 +5,17 @@ import shlex
 
 
 def heading_from_arc(startAngle, angle):
-        heading = ((startAngle + angle) / 2) + 180
+        heading = (startAngle + (angle / 2)) + 180
+
         while(heading >= 360):
             heading -= 360
 
+        print heading
         return heading
 
 
 class Converter:
-    SCALE = 18
+    SCALE = 25
 
     def __init__(self):
         self.name = None
@@ -69,7 +71,7 @@ class Converter:
         size.y = self.wall_height
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
-        center.y = (Decimal(self.wall_height + self.wa) / Decimal(2)) + self.base_height
+        center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
 
         # Reset wa because it's a per wall variable
         self.wa = 0
@@ -270,6 +272,8 @@ class Converter:
             self.wa = Decimal(value)
         elif key == 'wallHeight':
             self.wall_height = Decimal(value)
+        elif key == 'baseHeight':
+            self.base_height = Decimal(value)
         elif key == 'designer':
             self.author = value
         elif key == 'information':
@@ -312,32 +316,60 @@ class Converter:
 
             self.goodies.append(good)
         elif type == "Ramp":
-            print "New ramp"
             ramp = Ramp()
-            print ramp
-            print ramp.base.x
             block = self.blocks.pop()
             arc = self.cur_arc
-            deltaY = object['deltaY']
+            deltaY = Decimal(object['deltaY'])
             ramp.color = block.color
+
+            if 'y' in object:
+                y = Decimal(object['y'])
+            else:
+                y = Decimal(0)
 
             if arc.heading > 315 or arc.heading <= 45:
                 ramp.width = block.size.z
 
-                ramp.base.z = Decimal(block.center.z)
-                ramp.base.y = Decimal(block.center.y) - (Decimal(deltaY) / Decimal(2))
-                ramp.base.x = block.center.x + (block.size.x / 2)
+                ramp.base.x = block.center.x - (block.size.x / Decimal(2))
+                ramp.base.y = y + self.base_height
+                ramp.base.z = block.center.z
 
-                ramp.top.z = Decimal(block.center.z)
-                ramp.top.y = block.center.y + (Decimal(deltaY) / Decimal(2))
-                ramp.top.x = block.center.x - (block.size.x / 2)
+                ramp.top.x = block.center.x + (block.size.x / Decimal(2))
+                ramp.top.y = y + self.base_height + deltaY
+                ramp.top.z = block.center.z
 
             elif arc.heading > 45 and arc.heading <= 135:
-                ramp.width = block.size.y
-            elif arc.heading > 135 and arc.heading <= 225:
                 ramp.width = block.size.x
+
+                ramp.base.x = block.center.x
+                ramp.base.y = y + self.base_height
+                ramp.base.z = block.center.z + (block.size.z / Decimal(2))
+
+                ramp.top.x = block.center.x
+                ramp.top.y = y + self.base_height + deltaY
+                ramp.top.z = block.center.z - (block.size.z / Decimal(2))
+
+            elif arc.heading > 135 and arc.heading <= 225:
+                ramp.width = block.size.z
+
+                ramp.base.x = block.center.x + (block.size.x / Decimal(2))
+                ramp.base.y = y + self.base_height
+                ramp.base.z = block.center.z
+
+                ramp.top.x = block.center.x - (block.size.x / Decimal(2))
+                ramp.top.y = y + self.base_height + deltaY
+                ramp.top.z = block.center.z
+
             else:
-                ramp.width = block.size.y
+                ramp.width = block.size.x
+
+                ramp.base.x = block.center.x
+                ramp.base.y = y + self.base_height
+                ramp.base.z = block.center.z - (block.size.z / Decimal(2))
+
+                ramp.top.x = block.center.x
+                ramp.top.y = y + self.base_height + deltaY
+                ramp.top.z = block.center.z + (block.size.z / Decimal(2))
 
             if 'thickness' in object:
                 ramp.thickness = object['thickness']
