@@ -44,7 +44,7 @@ class ClipRegion (VariableLengthOperation):
         self.vari_length = bytes_to_short(bytes) - 2
 
     def parse_variable(self, bytes):
-        self.region = bytes
+        self.region = datatypes.Rect(bytes)
 
 
 class TextFont (Operation):
@@ -80,6 +80,13 @@ class PenPattern (Operation):
 
     def parse(self, bytes):
         self.pattern = bytes
+
+
+class OvalSize (Operation):
+    length = 4
+
+    def parse(self, bytes):
+        self.size = datatypes.Point(bytes)
 
 
 class Origin (Operation):
@@ -120,6 +127,13 @@ class RGBForegroundColor (Operation):
         self.green = bytes_to_unsigned_short(bytes[2:4])
         self.blue = bytes_to_unsigned_short(bytes[4:6])
 
+class RGBBackgroundColor (Operation):
+    length = 6
+
+    def parse(self, bytes):
+        self.red = bytes_to_unsigned_short(bytes[0:2])
+        self.green = bytes_to_unsigned_short(bytes[2:4])
+        self.blue = bytes_to_unsigned_short(bytes[4:6])
 
 class DefaultHighlight (Operation):
     length = 0
@@ -151,7 +165,6 @@ class LongText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class DHText (VariableLengthOperation):
@@ -163,7 +176,6 @@ class DHText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class DVText (VariableLengthOperation):
@@ -175,7 +187,6 @@ class DVText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class DHDVText (VariableLengthOperation):
@@ -188,7 +199,6 @@ class DHDVText (VariableLengthOperation):
 
     def parse_variable(self, bytes):
         self.text = bytes_to_string(bytes)
-        print self.text
 
 
 class FrameRectangle (Operation):
@@ -300,11 +310,13 @@ class Factory (object):
         0x7: PenSize,
         0x8: PenMode,
         0x9: PenPattern,
+        0xb: OvalSize,
         0xc: Origin,
         0xd: TextSize,
         0x10: TextRatio,
         0x15: PenLocationHFractional,
         0x1a: RGBForegroundColor,
+        0x1b: RGBBackgroundColor,
         0x1e: DefaultHighlight,
         0x22: ShortLine,
         0x23: ShortLineFrom,
