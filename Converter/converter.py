@@ -30,6 +30,7 @@ class Converter:
         self.blocks = []           # List of all static blocks
         self.ramps = []            # List of all static ramps
         self.g_vars = []           # List of globally concerned objects
+        self.enums = {}            # Dict of all enums
 
         self.wall_height = 3       # Current wall height (default 3)
         self.wa = 0                # Current wa, resets after every wall
@@ -313,7 +314,10 @@ class Converter:
         in_unique = False
         in_object = False
         in_adjust = False
+        in_enum = False
         cur_object = {}
+        cur_enum = None
+
         try:
             words = shlex.split(text)
         except ValueError:
@@ -350,6 +354,8 @@ class Converter:
                 in_object = True
             elif word == "adjust":
                 in_adjust = True
+            elif word == "enum":
+                in_enum = True
             elif word == "end":
                 if in_unique:
                     in_unique = False
@@ -359,6 +365,9 @@ class Converter:
                     cur_object = {}
                 elif in_adjust:
                     in_adjust = False
+                elif in_enum:
+                    in_enum = False
+                    cur_enum = None
             elif in_object:
                 if len(cur_object) == 0:
                     cur_object['type'] = word
@@ -369,6 +378,12 @@ class Converter:
                 pass
             elif in_adjust:
                 self.parse_adjust(word)
+            elif in_enum:
+                if cur_enum is None:
+                    cur_enum = Decimal(word)
+                else:
+                    self.enums[word] = cur_enum
+                    cur_enum += 1
             elif type(word) is tuple:
                 self.parse_global_variable(word[0], word[1])
 
