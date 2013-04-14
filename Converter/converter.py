@@ -33,6 +33,7 @@ class Converter:
 
         self.wall_height = 3       # Current wall height (default 3)
         self.wa = 0                # Current wa, resets after every wall
+        self.last_wa = 0           # Temporary wa for ramps
         self.base_height = 0       # Current base height
         self.pixel_to_thickness = Decimal("0.125")   # current corner-radius to thickness factor
 
@@ -95,6 +96,7 @@ class Converter:
         center.z = self.scale_and_snap(center.z)
 
         # Reset wa because it's a per wall variable
+        self.last_wa = self.wa
         self.wa = 0
 
         return size, center
@@ -353,21 +355,15 @@ class Converter:
             elif in_object:
                 if len(cur_object) == 0:
                     cur_object['type'] = word
-                elif variable is None:
-                    variable = word
-                elif word is not "=":
-                    cur_object[variable] = word.lstrip('=')
-                    variable = None
+                elif type(word) is tuple:
+                    cur_object[word[0]] = word[1]
             elif in_unique:
                 # Do nothing
                 pass
             elif in_adjust:
                 self.parse_adjust(word)
-            elif variable is None:
-                variable = word
-            elif word is not "=":
-                self.parse_global_variable(variable, word)
-                variable = None
+            elif type(word) is tuple:
+                self.parse_global_variable(word[0], word[1])
 
     def parse_global_variable(self, key, value):
         if key == 'wa':
@@ -426,10 +422,14 @@ class Converter:
 
             self.goodies.append(good)
         elif type == "Ramp":
+            self.wa = self.last_wa
             ramp = Ramp()
             block = self.blocks.pop()
             arc = self.cur_arc
-            deltaY = Decimal(object['deltaY'])
+            if 'deltaY' in object:
+                deltaY = Decimal(object['deltaY'])
+            else:
+                deltaY = 1
             ramp.color = arc.fill
 
             if 'y' in object:
