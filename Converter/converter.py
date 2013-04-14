@@ -425,8 +425,8 @@ class Converter:
                 self.blocks.append(block)
                 return
 
-                ramp.base.y = y + self.base_height
-                ramp.top.y = y + self.base_height + deltaY
+            ramp.base.y = y + self.base_height
+            ramp.top.y = y + self.base_height + deltaY
 
             if arc.heading > 315 or arc.heading <= 45:
                 ramp.width = block.size.z
