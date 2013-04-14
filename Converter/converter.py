@@ -17,32 +17,33 @@ class Converter:
     SCALE = 25
 
     def __init__(self):
-        self.name = None
-        self.tagline = None
-        self.author = None
-        self.description = None
+        self.name = None           # Stores the map name
+        self.tagline = None        # Map tagline
+        self.author = None         # Map author
+        self.description = None    # Map description
 
-        self.goodies = []
-        self.incarnators = []
-        self.teleporters = []
-        self.blocks = []
-        self.ramps = []
+        self.goodies = []          # List of all goodies
+        self.incarnators = []      # List of all incarnators
+        self.teleporters = []      # List of all teleporters
+        self.blocks = []           # List of all static blocks
+        self.ramps = []            # List of all static ramps
 
-        self.wall_height = 3
-        self.wa = 0
-        self.base_height = 0
+        self.wall_height = 3       # Current wall height (default 3)
+        self.wa = 0                # Current wa, resets after every wall
+        self.base_height = 0       # Current base height
 
-        self.fg_color = Color()
-        self.cur_block = None
-        self.cur_arc = None
-        self.cur_object = False
-        self.last_rect = None
-        self.last_arc = None
-        self.next_objects = []
+        self.fg_color = Color()    # Last foreground colour
+        self.cur_block = None      # Last created block
+        self.cur_arc = None        # Last arc
+        self.last_rect = None      # Last Rect used on a block
+        self.last_arc = None       # Last Rect used for an arc
 
-        self.origin_x = 0
-        self.origin_y = 0
+        self.origin_x = 0          # Current origin x
+        self.origin_y = 0          # Current origin y
 
+        # When the origin is changed some PICT calls
+        # mean different things, thus why we store
+        # data on different 'types' of origin change
         self.block_origin_changed = False
         self.arc_origin_changed = False
 
