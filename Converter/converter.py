@@ -417,7 +417,6 @@ class Converter:
             g = GroundColor()
             g.color = self.cur_arc.fill
             self.g_vars.append(g)
-        pass    # need to handle ground/sky colours
 
     def parse_object(self, object):
 
