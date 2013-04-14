@@ -222,7 +222,7 @@ class Converter:
                     self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
                 else:
                     heading = heading_from_arc(op.startAngle, op.arcAngle)
-                    if self.cur_arc.heading is not heading:
+                    if self.cur_arc.heading != heading:
                         self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
 
                 self.cur_arc.stroke = self.fg_color
@@ -421,6 +421,7 @@ class Converter:
             if deltaY == 0:
                 block.size.y = ramp.thickness
                 block.center.y = y + self.base_height
+                block.color = arc.fill
                 self.blocks.append(block)
                 return
             if arc.heading > 315 or arc.heading <= 45:
