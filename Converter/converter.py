@@ -320,6 +320,17 @@ class Converter:
             else:
                 y = Decimal(0)
 
+            if 'thickness' in object:
+                ramp.thickness = object['thickness']
+            else:
+                ramp.thickness = block.rounding
+
+            if deltaY == 0:
+                block.size.y = ramp.thickness
+                block.center.y = y + self.base_height
+                self.blocks.append(block)
+                return
+
             if arc.heading > 315 or arc.heading <= 45:
                 ramp.width = block.size.z
 
@@ -364,10 +375,6 @@ class Converter:
                 ramp.top.y = y + self.base_height + deltaY
                 ramp.top.z = block.center.z + (block.size.z / Decimal(2))
 
-            if 'thickness' in object:
-                ramp.thickness = object['thickness']
-            else:
-                ramp.thickness = block.rounding
 
             self.ramps.append(ramp)
 
