@@ -34,7 +34,7 @@ class Converter:
         self.wall_height = 3       # Current wall height (default 3)
         self.wa = 0                # Current wa, resets after every wall
         self.base_height = 0       # Current base height
-        self.pixel_to_thickness = Decimal("0.125") # current corner-radius to thickness factor
+        self.pixel_to_thickness = Decimal("0.125")   # current corner-radius to thickness factor
 
         self.fg_color = Color()    # Last foreground colour
         self.cur_block = None      # Last created block
@@ -77,13 +77,13 @@ class Converter:
         size.x = Decimal(real_dst_x - real_src_x) - self.pen_x
         size.z = Decimal(real_dst_y - real_src_y) - self.pen_y
         if corner_radius is not 0:
-            size.y = Decimal(str(corner_radius*self.pixel_to_thickness))
+            size.y = Decimal(str(corner_radius * self.pixel_to_thickness))
         else:
             size.y = Decimal(self.wall_height)
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         if corner_radius is not 0:
-            center.y = (Decimal(str(corner_radius*self.pixel_to_thickness)) / Decimal(2)) + self.wa + self.base_height
+            center.y = (Decimal(str(corner_radius * self.pixel_to_thickness)) / Decimal(2)) + self.wa + self.base_height
         else:
             center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
 
@@ -102,7 +102,7 @@ class Converter:
     def convert(self, ops):
         getcontext().prec = 10
         lastText = False
-        if ops == None:
+        if ops is None:
             return
         for op in ops:
             classname = op.__class__.__name__
