@@ -451,44 +451,36 @@ class Converter:
                 self.blocks.append(block)
                 return
 
+            ramp.base.x = block.center.x
             ramp.base.y = y + self.base_height
+            ramp.base.z = block.center.z
+            ramp.top.x = block.center.x
             ramp.top.y = y + self.base_height + deltaY
+            ramp.top.z = block.center.z
 
             if arc.heading > 315 or arc.heading <= 45:
                 ramp.width = block.size.z
 
-                ramp.base.x = block.center.x - (block.size.x / Decimal(2))
-                ramp.base.z = block.center.z
-
-                ramp.top.x = block.center.x + (block.size.x / Decimal(2))
-                ramp.top.z = block.center.z
+                ramp.base.x -= block.size.x / Decimal(2)
+                ramp.top.x += block.size.x / Decimal(2)
 
             elif arc.heading > 45 and arc.heading <= 135:
                 ramp.width = block.size.x
 
-                ramp.base.x = block.center.x
-                ramp.base.z = block.center.z + (block.size.z / Decimal(2))
-
-                ramp.top.x = block.center.x
-                ramp.top.z = block.center.z - (block.size.z / Decimal(2))
+                ramp.base.z += block.size.z / Decimal(2)
+                ramp.top.z -= block.size.z / Decimal(2)
 
             elif arc.heading > 135 and arc.heading <= 225:
                 ramp.width = block.size.z
 
-                ramp.base.x = block.center.x + (block.size.x / Decimal(2))
-                ramp.base.z = block.center.z
-
-                ramp.top.x = block.center.x - (block.size.x / Decimal(2))
-                ramp.top.z = block.center.z
+                ramp.base.x += block.size.x / Decimal(2)
+                ramp.top.x -= block.size.x / Decimal(2)
 
             else:
                 ramp.width = block.size.x
 
-                ramp.base.x = block.center.x
-                ramp.base.z = block.center.z - (block.size.z / Decimal(2))
-
-                ramp.top.x = block.center.x
-                ramp.top.z = block.center.z + (block.size.z / Decimal(2))
+                ramp.base.z -= block.size.z / Decimal(2)
+                ramp.top.z += block.size.z / Decimal(2)
 
             self.ramps.append(ramp)
 
