@@ -129,6 +129,7 @@ class Converter:
                 self.origin_y -= op.dh
                 self.block_origin_changed = True
                 self.arc_origin_changed = True
+                self.cur_block = None
             elif classname == "PenSize":
                 self.pen_x = op.size.x
                 self.pen_y = op.size.y
@@ -170,8 +171,9 @@ class Converter:
             elif classname == "PaintSameRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-
-                self.cur_block.color = self.fg_color
+                    self.block_color = self.fg_color
+                else:
+                    self.cur_block.color = self.fg_color
 
             elif classname == "OvalSize":
                 self.curr_oval_size = op.size
@@ -199,11 +201,12 @@ class Converter:
                     self.cur_block.color = self.block_color
 
                 self.blocks.append(self.cur_block)
-            elif classname == "PaintSameRectangle":
+            elif classname == "PaintSameRoundedRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-
-                self.cur_block.color = self.fg_color
+                    self.block_color = self.fg_color
+                else:
+                    self.cur_block.color = self.fg_color
 
             elif classname == "FrameArc":
                 if self.arc_origin_changed:
