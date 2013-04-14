@@ -314,8 +314,12 @@ class Converter:
         in_object = False
         in_adjust = False
         cur_object = {}
+        try:
+            words = shlex.split(text)
+        except ValueError:
+            text += '"'
+            words = shlex.split(text)
 
-        words = shlex.split(text)
         newwords = []
 
         skipnext = False
