@@ -16,9 +16,9 @@ class Color (object):
         RGB values to Pavara's decimal based
         """
         color = Color()
-        color.red = Decimal(r) / Decimal(65535)
-        color.green = Decimal(g) / Decimal(65535)
-        color.blue = Decimal(b) / Decimal(65535)
+        color.red = (Decimal(r) / Decimal(65535)).quantize(Decimal('0.001'))
+        color.green = (Decimal(g) / Decimal(65535)).quantize(Decimal('0.001'))
+        color.blue = (Decimal(b) / Decimal(65535)).quantize(Decimal('0.001'))
 
         return color
 
