@@ -116,3 +116,24 @@ class Incarnator (object):
         el = ET.SubElement(tree, "incarnator")
         el.set('location', str(self.location))
         el.set('heading', str(self.heading))
+
+class SkyColor(object):
+
+    def __init__(self):
+        self.horizon = Color()
+        self.color = Color()
+
+    def to_xml(self, tree):
+        el = ET.SubElement(tree, "sky")
+        el.set("horizon", str(self.horizon))
+        el.set("color", str(self.color))
+
+
+class GroundColor (object):
+
+    def __init__(self):
+        self.color = Color()
+
+    def to_xml(self, tree):
+        el = ET.SubElement(tree, "ground")
+        el.set("color", str(self.color))

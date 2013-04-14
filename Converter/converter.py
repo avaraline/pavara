@@ -15,9 +15,10 @@ def heading_from_arc(startAngle, angle):
 
 class Converter:
     SCALE = Decimal(18)
-    SNAP = Decimal('.01')
+    SNAP = Decimal('.001')
 
     def __init__(self):
+
         self.name = None           # Stores the map name
         self.tagline = None        # Map tagline
         self.author = None         # Map author
@@ -28,10 +29,12 @@ class Converter:
         self.teleporters = []      # List of all teleporters
         self.blocks = []           # List of all static blocks
         self.ramps = []            # List of all static ramps
+        self.g_vars = []           # List of globally concerned objects
 
         self.wall_height = 3       # Current wall height (default 3)
         self.wa = 0                # Current wa, resets after every wall
         self.base_height = 0       # Current base height
+        self.pixel_to_thickness = Decimal("0.125") # current corner-radius to thickness factor
 
         self.fg_color = Color()    # Last foreground colour
         self.cur_block = None      # Last created block
@@ -51,7 +54,7 @@ class Converter:
         self.block_origin_changed = False
         self.arc_origin_changed = False
 
-    def get_wall_points_from_rect(self, rect):
+    def get_wall_points_from_rect(self, rect, corner_radius=0):
         size = Point3D()
         center = Point3D()
 
@@ -73,10 +76,16 @@ class Converter:
         # Pen size does actually affect the size of the block
         size.x = Decimal(real_dst_x - real_src_x) - self.pen_x
         size.z = Decimal(real_dst_y - real_src_y) - self.pen_y
-        size.y = Decimal(self.wall_height)
+        if corner_radius is not 0:
+            size.y = Decimal(str(corner_radius*self.pixel_to_thickness))
+        else:
+            size.y = Decimal(self.wall_height)
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
-        center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
+        if corner_radius is not 0:
+            center.y = (Decimal(str(corner_radius*self.pixel_to_thickness)) / Decimal(2)) + self.wa + self.base_height
+        else:
+            center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
 
         # No need to scale y because y is only ever
         # indicated in meters (except where rounded rects come into play)
@@ -93,6 +102,8 @@ class Converter:
     def convert(self, ops):
         getcontext().prec = 10
         lastText = False
+        if ops == None:
+            return
         for op in ops:
             classname = op.__class__.__name__
 
@@ -121,6 +132,8 @@ class Converter:
                 self.pen_y = op.size.y
             elif classname == "RGBForegroundColor":
                 self.fg_color = Color.from_rgb(op.red, op.green, op.blue)
+            elif classname == "RGBBackgroundColor":
+                self.fg_color = Color.from_rgb(op.red, op.green, op.blue)
             elif classname == "FrameRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
@@ -135,7 +148,6 @@ class Converter:
             elif classname == "PaintRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-
                 self.last_rect = op.rect
                 self.block_color = self.fg_color
 
@@ -146,6 +158,38 @@ class Converter:
             # but actually create a new rectangle
             elif classname == "FrameSameRectangle":
                 self.cur_block = self.create_block(self.last_rect)
+
+                if self.block_origin_changed:
+                    self.block_origin_changed = False
+                else:                                        # Block has been painted
+                    self.cur_block.color = self.block_color
+
+                self.blocks.append(self.cur_block)
+            elif classname == "PaintSameRectangle":
+                if self.block_origin_changed:
+                    self.block_origin_changed = False
+
+                self.cur_block.color = self.fg_color
+
+            elif classname == "OvalSize":
+                self.curr_oval_size = op.size
+
+            elif classname == "FrameRoundedRectangle":
+                if self.block_origin_changed:
+                    self.block_origin_changed = False
+                block = self.create_block(op.rect, corner_radius=self.curr_oval_size.x)
+                self.cur_block = block
+                if self.curr_oval_size:
+                    self.cur_block.rounding = self.curr_oval_size
+                self.blocks.append(block)
+            elif classname == "PaintRoundedRectangle":
+                if self.block_origin_changed:
+                    self.block_origin_changed = False
+                self.last_rect = op.rect
+                self.block_color = self.fg_color
+
+            elif classname == "FrameSameRoundedRectangle":
+                self.cur_block = self.create_block(self.last_rect, corner_radius=self.curr_oval_size.x)
 
                 if self.block_origin_changed:
                     self.block_origin_changed = False
@@ -207,6 +251,9 @@ class Converter:
 
         mapEl = ET.Element('map')
 
+        for g_var in self.g_vars:
+            g_var.to_xml(mapEl)
+
         for inc in self.incarnators:
             inc.to_xml(mapEl)
 
@@ -220,12 +267,17 @@ class Converter:
         for good in self.goodies:
             good.to_xml(mapEl)
 
+        if self.author:
+            mapEl.set('designer', self.author)
+        if self.description:
+            mapEl.set('description', self.description)
+
         ET.dump(mapEl)
 
-    def create_block(self, rect):
+    def create_block(self, rect, corner_radius=0):
         self.last_rect = rect
         block = Block()
-        size, center = self.get_wall_points_from_rect(rect)
+        size, center = self.get_wall_points_from_rect(rect, corner_radius=corner_radius)
         block.size = size
         block.center = center
         return block
@@ -258,7 +310,7 @@ class Converter:
         in_adjust = False
         cur_object = {}
         variable = None
-
+        #print text
         for word in shlex.split(text):
             if word == "unique":
                 in_unique = True
@@ -281,7 +333,7 @@ class Converter:
                 elif variable is None:
                     variable = word
                 elif word is not "=":
-                    cur_object[variable] = word
+                    cur_object[variable] = word.lstrip('=')
                     variable = None
             elif in_unique:
                 # Do nothing
@@ -305,8 +357,19 @@ class Converter:
             self.author = value
         elif key == 'information':
             self.tagline = value
+        elif key == 'pointsToThickness':
+            self.pixel_to_thickness = Decimal(value)
 
     def parse_adjust(self, word):
+        if word == "SkyColor":
+            sc = SkyColor()
+            sc.horizon = self.cur_arc.fill
+            sc.color = self.cur_arc.stroke
+            self.g_vars.append(sc)
+        elif word == "GroundColor":
+            g = GroundColor()
+            g.color = self.cur_arc.fill
+            self.g_vars.append(g)
         pass    # need to handle ground/sky colours
 
     def parse_object(self, object):
@@ -344,15 +407,14 @@ class Converter:
             block = self.blocks.pop()
             arc = self.cur_arc
             deltaY = Decimal(object['deltaY'])
-            ramp.color = block.color
+            ramp.color = arc.fill
 
             if 'y' in object:
                 y = Decimal(object['y'])
             else:
                 y = Decimal(0)
-
             if 'thickness' in object:
-                ramp.thickness = object['thickness']
+                ramp.thickness = Decimal(object['thickness'])
             else:
                 ramp.thickness = block.rounding
 
@@ -361,7 +423,6 @@ class Converter:
                 block.center.y = y + self.base_height
                 self.blocks.append(block)
                 return
-
             if arc.heading > 315 or arc.heading <= 45:
                 ramp.width = block.size.z
 

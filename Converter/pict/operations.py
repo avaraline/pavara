@@ -86,7 +86,7 @@ class OvalSize (Operation):
     length = 4
 
     def parse(self, bytes):
-        self.size = datatypes.Point(byte)
+        self.size = datatypes.Point(bytes)
 
 
 class Origin (Operation):
@@ -127,6 +127,13 @@ class RGBForegroundColor (Operation):
         self.green = bytes_to_unsigned_short(bytes[2:4])
         self.blue = bytes_to_unsigned_short(bytes[4:6])
 
+class RGBBackgroundColor (Operation):
+    length = 6
+
+    def parse(self, bytes):
+        self.red = bytes_to_unsigned_short(bytes[0:2])
+        self.green = bytes_to_unsigned_short(bytes[2:4])
+        self.blue = bytes_to_unsigned_short(bytes[4:6])
 
 class DefaultHighlight (Operation):
     length = 0
@@ -309,6 +316,7 @@ class Factory (object):
         0x10: TextRatio,
         0x15: PenLocationHFractional,
         0x1a: RGBForegroundColor,
+        0x1b: RGBBackgroundColor,
         0x1e: DefaultHighlight,
         0x22: ShortLine,
         0x23: ShortLineFrom,
