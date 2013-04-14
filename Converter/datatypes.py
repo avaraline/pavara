@@ -44,8 +44,8 @@ class Point3D(object):
 class Arc (object):
 
     def __init__(self):
-        self.main = Color()
-        self.highlight = Color()
+        self.fill = Color()
+        self.stroke = Color()
         self.heading = 0
         self.center = Point3D()
 

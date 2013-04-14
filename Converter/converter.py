@@ -134,12 +134,12 @@ class Converter:
                 if self.arc_origin_changed:
                     self.arc_origin_changed = False
                 self.cur_arc = self.create_arc(op.rect, op.startAngle, op.arcAngle)
-                self.cur_arc.highlight = self.fg_color
+                self.cur_arc.stroke = self.fg_color
             elif classname == "PaintArc":
                 if self.arc_origin_changed:
                     self.arc_origin_changed = False
                 self.cur_arc = self.create_arc(op.rect, op.startAngle, op.arcAngle)
-                self.cur_arc.main = self.fg_color
+                self.cur_arc.fill = self.fg_color
 
             # The same Arc functions can result in different
             # arcs if the angles are different
@@ -152,7 +152,7 @@ class Converter:
                     if self.cur_arc.heading is not heading:
                         self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
 
-                self.cur_arc.highlight = self.fg_color
+                self.cur_arc.stroke = self.fg_color
 
             elif classname == "PaintSameArc":
                 if self.arc_origin_changed:
@@ -163,7 +163,7 @@ class Converter:
                     if self.cur_arc.heading is not heading:
                         self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
 
-                self.cur_arc.main = self.fg_color
+                self.cur_arc.fill = self.fg_color
 
             elif thisText:
                 if lastText:
