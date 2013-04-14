@@ -309,9 +309,32 @@ class Converter:
         in_object = False
         in_adjust = False
         cur_object = {}
-        variable = None
-        #print text
-        for word in shlex.split(text):
+
+        words = shlex.split(text)
+        newwords = []
+
+        skipnext = False
+        for idx, word in enumerate(words):
+            if '=' in word:
+                if len(word) == 1:
+                    newwords.pop()
+                    newwords.append((words[idx - 1], words[idx + 1]))
+                    skipnext = True
+                elif word.endswith('='):
+                    newwords.append((word[:-1], words[idx + 1]))
+                    skipnext = True
+                elif word.startswith('='):
+                    newwords.pop()
+                    newwords.append((words[idx - 1], word[1:]))
+                else:
+                    splitword = word.split('=')
+                    newwords.append((splitword[0], splitword[1]))
+            elif skipnext:
+                skipnext = False
+            else:
+                newwords.append(word)
+
+        for word in newwords:
             if word == "unique":
                 in_unique = True
             elif word == "object":
