@@ -41,6 +41,7 @@ class Converter:
         self.fg_color = Color()    # Last foreground colour
         self.cur_block = None      # Last created block
         self.cur_arc = None        # Last arc
+        self.cur_text = ""         # Placeholder for text stack
         self.last_rect = None      # Last Rect used on a block
         self.last_arc = None       # Last Rect used for an arc
 
@@ -105,15 +106,19 @@ class Converter:
     def convert(self, ops):
         getcontext().prec = 10
         lastText = False
+        thisText = False
         if ops is None:
             return
         for op in ops:
             classname = op.__class__.__name__
-
-            if (classname == "LongText" or
-                    classname == "DHText" or
-                    classname == "DVText" or
-                    classname == "DHDVText"):
+            if classname in ("LongText",
+                             "DHText",
+                             "DVText",
+                             "DHDVText"):
+                thisText = True
+            elif lastText and classname in ("TextFont",
+                                            "TextSize",
+                                            "VariableReserved"):
                 thisText = True
             else:
                 thisText = False
@@ -245,10 +250,11 @@ class Converter:
                 self.cur_arc.fill = self.fg_color
 
             elif thisText:
-                if lastText:
-                    self.cur_text += " " + op.text
-                else:
-                    self.cur_text = op.text
+                if hasattr(op, 'text'):
+                    if lastText:
+                        self.cur_text += " " + op.text
+                    else:
+                        self.cur_text = op.text
 
             if thisText:
                 lastText = True
