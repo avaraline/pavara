@@ -75,11 +75,14 @@ class Ramp (object):
         self.color = Color()
 
     def to_xml(self, tree):
-        el = ET.SubElement(tree, "blockramp")
+        if self.thickness > 0:
+            el = ET.SubElement(tree, "blockramp")
+            el.set('thickness', str(self.thickness))
+        else:
+            el = ET.SubElement(tree, 'ramp')
         el.set('base', str(self.base))
         el.set('top', str(self.top))
         el.set('width', str(self.width))
-        el.set('thickness', str(self.thickness))
         el.set('color', str(self.color))
 
 
