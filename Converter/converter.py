@@ -14,7 +14,7 @@ def heading_from_arc(startAngle, angle):
 
 
 class Converter:
-    SCALE = Decimal(25)
+    SCALE = Decimal(18)
     SNAP = Decimal('.01')
 
     def __init__(self):
@@ -65,7 +65,7 @@ class Converter:
         # Swapping the z and y around as well as we're now in
         # 3D space
 
-        real_src_x = (rect.src.x + self.origin_x) 
+        real_src_x = (rect.src.x + self.origin_x)
         real_src_y = (rect.src.y + self.origin_y)
         real_dst_x = (rect.dst.x + self.origin_x)
         real_dst_y = (rect.dst.y + self.origin_y)
@@ -75,13 +75,11 @@ class Converter:
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
-        size.x = (size.x / Converter.SCALE).quantize(Converter.SNAP)
-        size.z = (size.z / Converter.SCALE).quantize(Converter.SNAP)
-        size.y = size.y.quantize(Converter.SNAP)
+        size.x = self.scale_and_snap(size.x)
+        size.z = self.scale_and_snap(size.z)
 
-        center.y = center.y.quantize(Converter.SNAP)
-        center.x = (center.x / Converter.SCALE).quantize(Converter.SNAP)
-        center.z = (center.z / Converter.SCALE).quantize(Converter.SNAP)
+        center.x = self.scale_and_snap(center.x)
+        center.z = self.scale_and_snap(center.z)
         # Reset wa because it's a per wall variable
         self.wa = 0
 
@@ -221,15 +219,18 @@ class Converter:
         center = Point3D()
         self.last_arc = rect
 
-        getcontext().prec = 10
-        real_src_x = Decimal(Decimal(rect.src.x + self.origin_x) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_src_y = Decimal(Decimal(rect.src.y + self.origin_y) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_dst_x = Decimal(Decimal(rect.dst.x + self.origin_x) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_dst_y = Decimal(Decimal(rect.dst.y + self.origin_y) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
+        real_src_x = rect.src.x + self.origin_x
+        real_src_y = rect.src.y + self.origin_y
+        real_dst_x = rect.dst.x + self.origin_x
+        real_dst_y = rect.dst.y + self.origin_y
 
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         center.y = self.base_height
+
+        center.x = self.scale_and_snap(center.x)
+        center.z = self.scale_and_snap(center.z)
+
         arc.center = center
         arc.heading = heading_from_arc(startAngle, arcAngle)
 
@@ -389,11 +390,10 @@ class Converter:
                 ramp.top.y = y + self.base_height + deltaY
                 ramp.top.z = block.center.z + (block.size.z / Decimal(2))
 
-            ramp.base.x = ramp.base.x.quantize(Converter.SNAP)
-            ramp.base.z = ramp.base.z.quantize(Converter.SNAP)
-            ramp.top.x = ramp.top.x.quantize(Converter.SNAP)
-            ramp.top.z = ramp.top.z.quantize(Converter.SNAP)
             self.ramps.append(ramp)
+
+    def scale_and_snap(self, dec):
+        return (dec / Converter.SCALE).quantize(Converter.SNAP)
 
     def translate_model(self, shape):
         models = {
