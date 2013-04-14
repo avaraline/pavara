@@ -25,6 +25,8 @@ class Map_Test (ShowBase):
         #self.task_mgr = taskMgr
         self.initP3D()
         self.audio3d = Audio3DManager.Audio3DManager(self.sfxManagerList[0], self.cam)
+        self.audio3d.setDopplerFactor(0.5)
+        self.audio3d.setListenerVelocity(Vec3(-5,0,-5))
 
         self.doc = False
         self.map = False

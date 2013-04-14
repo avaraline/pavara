@@ -118,18 +118,7 @@ class LegBones (object):
         return lerps
 
     def update_piece(self, angle, bone, idx):
-        if idx is 0:
-            bone.set_p(angle)
-        else:
-            bone.set_p(angle)
-            foot_pos = self.get_floor_spot()
-            if foot_pos and self.is_on_ground:
-                hip_pos = self.hip_bone.get_pos(self.render)
-                v =  hip_pos - foot_pos
-                #print v.length()
-                self.ik_leg(v)
-
-
+        bone.set_p(angle)
 
     def get_floor_spot(self):
         l_from = self.foot_bone.get_pos(self.render)
@@ -142,18 +131,27 @@ class LegBones (object):
         else:
             return None
 
-    def ik_leg(self, target_vector):
+    def ik_leg(self, data):
+        foot_pos = self.get_floor_spot()
+        if foot_pos and self.is_on_ground:
+            hip_pos = self.hip_bone.get_pos(self.render)
+            target_vector =  hip_pos - foot_pos
+        else:
+            self.top_bone.set_p(TOP_LEG_EXTENDED_P)
+            self.bottom_bone.set_p(BOTTOM_LEG_EXTENDED_P)
+            return
         pt_length = target_vector.length()
         if .2 < pt_length < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH):
             tt_angle_cos = ((TOP_LEG_LENGTH**2)+(pt_length**2)-(BOTTOM_LEG_LENGTH**2))/(2*TOP_LEG_LENGTH*pt_length)
             target_top_angle = rad2Deg(math.acos(tt_angle_cos))
             if target_top_angle and target_top_angle == target_top_angle and -120 < target_top_angle < 100:
-                rot_mx = Mat3.rotateMatNormaxis(-target_top_angle, render.getRelativeVector(self.top_bone, Vec3.unitX()))
-                pk_prime = rot_mx.xformVec(target_vector)
-                target_vector.normalize()
-                alter_angle = target_vector.dot(pk_prime)
+                #rot_mx = Mat3.rotateMatNormaxis(-target_top_angle, render.getRelativeVector(self.top_bone, Vec3.unitX()))
+                #pk_prime = rot_mx.xformVec(target_vector)
+                #target_vector.normalize()
+                #alter_angle = target_vector.dot(pk_prime)
                 #print alter_angle
-                self.top_bone.set_p(self.top_bone, alter_angle)
+                #self.top_bone.set_p(self.top_bone, alter_angle)
+                self.top_bone.set_p(90 - target_top_angle)
             tb_angle_cos = (((TOP_LEG_LENGTH**2) + (BOTTOM_LEG_LENGTH**2) - pt_length**2)/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
             target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
             if target_bottom_angle and target_bottom_angle == target_bottom_angle and -140 < target_bottom_angle < 140:
@@ -211,6 +209,7 @@ class Skeleton (object):
     def _make_return_seq_(self):
         lerps = self.right_leg.get_return(self.return_speed) + self.left_leg.get_return(self.return_speed)
         lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting[0], bakeInStart=0))
+        lerps.append(Parallel(LerpFunc(self._left_leg_on_ground), LerpFunc(self._right_leg_on_ground)))
         return Parallel(*lerps)
 
     def walk(self):
@@ -224,8 +223,9 @@ class Skeleton (object):
             self.walk_seq.pause()
             self.left_leg.is_on_ground = True
             self.right_leg.is_on_ground = True
-            Sequence(self.return_seq).start()
-        #Parallel(LerpFunc(self.left_leg.ik_leg), LerpFunc(self.right_leg.ik_leg)).start()
+            Sequence(self.return_seq,
+                     Parallel(LerpFunc(self.left_leg.ik_leg),
+                              LerpFunc(self.right_leg.ik_leg))).start()
 
     def setup_footsteps(self, audio3d):
         if audio3d is not None:
@@ -244,11 +244,11 @@ class Skeleton (object):
         else:
             self.stop()
 
-        #if self.left_leg.is_on_ground:
-        #    self.left_leg.update_leg()
+        if self.left_leg.is_on_ground:
+            self.left_leg.ik_leg(0)
 
-        #if self.right_leg.is_on_ground:
-        #    self.right_leg.update_leg()
+        if self.right_leg.is_on_ground:
+            self.right_leg.ik_leg(0)
 
 
 

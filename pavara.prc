@@ -10,3 +10,4 @@ sync-video 1
 basic-shaders-only 1
 egg-emulate-bface 0
 model-path Models
+audio-library-name p3fmod_audio

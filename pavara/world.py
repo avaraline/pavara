@@ -690,6 +690,12 @@ class Plasma (PhysicalObject):
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
+        self.sound = self.world.audio3d.loadSfx('Sounds/stringsample.wav')
+        self.sound.set_balance(0)
+        self.world.audio3d.attachSoundToObject(self.sound, self.node)
+        self.world.audio3d.setSoundVelocity(self.sound, render.get_relative_vector(self.node, Vec3(0,0,900)))
+        self.sound.set_loop(True)
+        self.sound.play()
 
     def update(self, dt):
         self.move_by(0,0,(dt*60)/5)
@@ -707,8 +713,13 @@ class Plasma (PhysicalObject):
             contact.getManifoldPoint().getLocalPointB()
             n1_name = contact.getNode1().get_name()
             self.world.do_plasma_push(self, n1_name, self.energy)
+            self.sound.stop()
+            self.world.audio3d.detachSound(self.sound)
             self.world.garbage.add(self)
+
         if self.age > PLASMA_LIFESPAN:
+            self.sound.stop()
+            self.world.audio3d.detachSound(self.sound)
             self.world.garbage.add(self)
 
 class Missile (PhysicalObject):
@@ -754,6 +765,11 @@ class Missile (PhysicalObject):
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
+        self.sound = self.world.audio3d.loadSfx('Sounds/stringsample.wav')
+        self.sound.set_balance(0)
+        self.world. audio3d.attachSoundToObject(self.sound, self.node)
+        self.sound.set_loop(True)
+        self.sound.play()
 
     def update(self, dt):
         current_pos = Point3(0, self.position().get_y(), 0)
@@ -777,9 +793,15 @@ class Missile (PhysicalObject):
             for c in expl_colors:
                 self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80))
             self.world.do_explosion(self.node, 1.5, 30)
+            self.sound.stop()
+            self.world.audio3d.detachSound(self.sound)
             self.world.garbage.add(self)
+
         if self.age > MISSILE_LIFESPAN:
+            self.sound.stop()
+            self.world.audio3d.detachSound(self.sound)
             self.world.garbage.add(self)
+
 
 class Grenade (PhysicalObject):
     def __init__(self, pos, hpr, color, walker_v, name=None):
