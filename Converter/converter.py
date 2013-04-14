@@ -14,38 +14,42 @@ def heading_from_arc(startAngle, angle):
 
 
 class Converter:
-    SCALE = 25
+    SCALE = Decimal(18)
+    SNAP = Decimal('.01')
 
     def __init__(self):
-        self.name = None
-        self.tagline = None
-        self.author = None
-        self.description = None
 
-        self.goodies = []
-        self.incarnators = []
-        self.teleporters = []
-        self.blocks = []
-        self.ramps = []
-        self.g_vars = []
+        self.name = None           # Stores the map name
+        self.tagline = None        # Map tagline
+        self.author = None         # Map author
+        self.description = None    # Map description
 
-        self.wall_height = 3
-        self.wa = 0
-        self.base_height = 0
-        self.curr_oval_size = 0
+        self.goodies = []          # List of all goodies
+        self.incarnators = []      # List of all incarnators
+        self.teleporters = []      # List of all teleporters
+        self.blocks = []           # List of all static blocks
+        self.ramps = []            # List of all static ramps
+        self.g_vars = []           # List of globally concerned objects
 
-        self.fg_color = Color()
-        self.bg_color = Color()
-        self.cur_block = None
-        self.cur_arc = None
-        self.cur_object = False
-        self.last_rect = None
-        self.last_arc = None
-        self.next_objects = []
+        self.wall_height = 3       # Current wall height (default 3)
+        self.wa = 0                # Current wa, resets after every wall
+        self.base_height = 0       # Current base height
 
-        self.origin_x = 0
-        self.origin_y = 0
+        self.fg_color = Color()    # Last foreground colour
+        self.cur_block = None      # Last created block
+        self.cur_arc = None        # Last arc
+        self.last_rect = None      # Last Rect used on a block
+        self.last_arc = None       # Last Rect used for an arc
 
+        self.origin_x = 0          # Current origin x
+        self.origin_y = 0          # Current origin y
+
+        self.pen_x = 1             # Current pen x
+        self.pen_y = 1             # Current pen y
+
+        # When the origin is changed some PICT calls
+        # mean different things, thus why we store
+        # data on different 'types' of origin change
         self.block_origin_changed = False
         self.arc_origin_changed = False
 
@@ -63,14 +67,15 @@ class Converter:
         # Swapping the z and y around as well as we're now in
         # 3D space
 
-        getcontext().prec = 10
-        real_src_x = Decimal(Decimal(rect.src.x + self.origin_x) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_src_y = Decimal(Decimal(rect.src.y + self.origin_y) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_dst_x = Decimal(Decimal(rect.dst.x + self.origin_x) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_dst_y = Decimal(Decimal(rect.dst.y + self.origin_y) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        size.x = (real_dst_x - real_src_x)
-        size.z = (real_dst_y - real_src_y)
-        size.y = self.wall_height
+        real_src_x = (rect.src.x + self.origin_x)
+        real_src_y = (rect.src.y + self.origin_y)
+        real_dst_x = (rect.dst.x + self.origin_x)
+        real_dst_y = (rect.dst.y + self.origin_y)
+
+        # Pen size does actually affect the size of the block
+        size.x = Decimal(real_dst_x - real_src_x) - self.pen_x
+        size.z = Decimal(real_dst_y - real_src_y) - self.pen_y
+        size.y = Decimal(self.wall_height)
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         if corner_radius is not 0:
@@ -78,13 +83,20 @@ class Converter:
         else:
             center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
 
+        # No need to scale y because y is only ever
+        # indicated in meters (except where rounded rects come into play)
+        size.x = self.scale_and_snap(size.x)
+        size.z = self.scale_and_snap(size.z)
+        center.x = self.scale_and_snap(center.x)
+        center.z = self.scale_and_snap(center.z)
+
         # Reset wa because it's a per wall variable
         self.wa = 0
 
         return size, center
 
     def convert(self, ops):
-        getcontext().prec = 3
+        getcontext().prec = 10
         lastText = False
         if ops == None:
             return
@@ -103,11 +115,17 @@ class Converter:
 
             if classname == "ClipRegion":
                 self.cur_region = op.region
+
+            # A positive dv/dh moves you backwards
+            # This is confusing.
             elif classname == "Origin":
                 self.origin_x -= op.dv
                 self.origin_y -= op.dh
                 self.block_origin_changed = True
                 self.arc_origin_changed = True
+            elif classname == "PenSize":
+                self.pen_x = op.size.x
+                self.pen_y = op.size.y
             elif classname == "RGBForegroundColor":
                 self.fg_color = Color.from_rgb(op.red, op.green, op.blue)
             elif classname == "RGBBackgroundColor":
@@ -118,26 +136,36 @@ class Converter:
                 block = self.create_block(op.rect)
                 self.cur_block = block
                 self.blocks.append(block)
+
+            # Avara does not create a wall until framed so here
+            # we're just storing the rectangle and color
+            # This also means that we can be sure that the
+            # right pen size is used at framing time
             elif classname == "PaintRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-                block = self.create_block(op.rect)
-                self.cur_block = block
-                self.cur_block.color = self.fg_color
+
+                self.last_rect = op.rect
+                self.block_color = self.fg_color
 
             # A note for Frame/Paint Same Rectangle:
             # If the origin point changes and then one
             # of these is called, it means use the same
             # rectangle dimensions from the new origin point
+            # but actually create a new rectangle
             elif classname == "FrameSameRectangle":
+                self.cur_block = self.create_block(self.last_rect)
+
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-                    self.cur_block = self.create_block(self.last_rect)
+                else:                                        # Block has been painted
+                    self.cur_block.color = self.block_color
+
                 self.blocks.append(self.cur_block)
             elif classname == "PaintSameRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-                    self.cur_block = self.create_block(self.last_rect)
+
                 self.cur_block.color = self.fg_color
 
             elif classname == "OvalSize":
@@ -160,12 +188,12 @@ class Converter:
                 if self.arc_origin_changed:
                     self.arc_origin_changed = False
                 self.cur_arc = self.create_arc(op.rect, op.startAngle, op.arcAngle)
-                self.cur_arc.highlight = self.fg_color
+                self.cur_arc.stroke = self.fg_color
             elif classname == "PaintArc":
                 if self.arc_origin_changed:
                     self.arc_origin_changed = False
                 self.cur_arc = self.create_arc(op.rect, op.startAngle, op.arcAngle)
-                self.cur_arc.main = self.fg_color
+                self.cur_arc.fill = self.fg_color
 
             # The same Arc functions can result in different
             # arcs if the angles are different
@@ -178,7 +206,7 @@ class Converter:
                     if self.cur_arc.heading is not heading:
                         self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
 
-                self.cur_arc.highlight = self.fg_color
+                self.cur_arc.stroke = self.fg_color
 
             elif classname == "PaintSameArc":
                 if self.arc_origin_changed:
@@ -189,7 +217,7 @@ class Converter:
                     if self.cur_arc.heading is not heading:
                         self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
 
-                self.cur_arc.main = self.fg_color
+                self.cur_arc.fill = self.fg_color
 
             elif thisText:
                 if lastText:
@@ -235,15 +263,18 @@ class Converter:
         center = Point3D()
         self.last_arc = rect
 
-        getcontext().prec = 10
-        real_src_x = Decimal(Decimal(rect.src.x + self.origin_x) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_src_y = Decimal(Decimal(rect.src.y + self.origin_y) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_dst_x = Decimal(Decimal(rect.dst.x + self.origin_x) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
-        real_dst_y = Decimal(Decimal(rect.dst.y + self.origin_y) / Decimal(Converter.SCALE)).quantize(Decimal('.1'))
+        real_src_x = rect.src.x + self.origin_x
+        real_src_y = rect.src.y + self.origin_y
+        real_dst_x = rect.dst.x + self.origin_x
+        real_dst_y = rect.dst.y + self.origin_y
 
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         center.y = self.base_height
+
+        center.x = self.scale_and_snap(center.x)
+        center.z = self.scale_and_snap(center.z)
+
         arc.center = center
         arc.heading = heading_from_arc(startAngle, arcAngle)
 
@@ -356,6 +387,16 @@ class Converter:
                 y = Decimal(object['y'])
             else:
                 y = Decimal(0)
+            if 'thickness' in object:
+                ramp.thickness = object['thickness']
+            else:
+                ramp.thickness = block.rounding
+
+            if deltaY == 0:
+                block.size.y = ramp.thickness
+                block.center.y = y + self.base_height
+                self.blocks.append(block)
+                return
             if arc.heading > 315 or arc.heading <= 45:
                 ramp.width = block.size.z
 
@@ -400,12 +441,10 @@ class Converter:
                 ramp.top.y = y + self.base_height + deltaY
                 ramp.top.z = block.center.z + (block.size.z / Decimal(2))
 
-            if 'thickness' in object:
-                ramp.thickness = object['thickness']
-            else:
-                ramp.thickness = block.rounding
-
             self.ramps.append(ramp)
+
+    def scale_and_snap(self, dec):
+        return (dec / Converter.SCALE).quantize(Converter.SNAP)
 
     def translate_model(self, shape):
         models = {

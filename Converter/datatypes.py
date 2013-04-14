@@ -44,8 +44,8 @@ class Point3D(object):
 class Arc (object):
 
     def __init__(self):
-        self.main = Color()
-        self.highlight = Color()
+        self.fill = Color()
+        self.stroke = Color()
         self.heading = 0
         self.center = Point3D()
 
@@ -75,14 +75,14 @@ class Ramp (object):
         self.color = Color()
 
     def to_xml(self, tree):
-        if self.thickness > 0 and self.thickness is not "0":
+        if self.thickness > 0:
             el = ET.SubElement(tree, "blockramp")
+            el.set('thickness', str(self.thickness))
         else:
-            el = ET.SubElement(tree, "ramp")
+            el = ET.SubElement(tree, 'ramp')
         el.set('base', str(self.base))
         el.set('top', str(self.top))
         el.set('width', str(self.width))
-        el.set('thickness', str(self.thickness))
         el.set('color', str(self.color))
 
 
