@@ -15,7 +15,7 @@ def heading_from_arc(startAngle, angle):
 
 class Converter:
     SCALE = Decimal(18)
-    SNAP = Decimal('.01')
+    SNAP = Decimal('.001')
 
     def __init__(self):
 
@@ -34,6 +34,7 @@ class Converter:
         self.wall_height = 3       # Current wall height (default 3)
         self.wa = 0                # Current wa, resets after every wall
         self.base_height = 0       # Current base height
+        self.pixel_to_thickness = Decimal("0.125") # current corner-radius to thickness factor
 
         self.fg_color = Color()    # Last foreground colour
         self.cur_block = None      # Last created block
@@ -75,11 +76,14 @@ class Converter:
         # Pen size does actually affect the size of the block
         size.x = Decimal(real_dst_x - real_src_x) - self.pen_x
         size.z = Decimal(real_dst_y - real_src_y) - self.pen_y
-        size.y = Decimal(self.wall_height)
+        if corner_radius is not 0:
+            size.y = Decimal(str(corner_radius*self.pixel_to_thickness))
+        else:
+            size.y = Decimal(self.wall_height)
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         if corner_radius is not 0:
-            center.y = (Decimal(corner_radius.x*3)) + self.wa + self.base_height
+            center.y = (Decimal(str(corner_radius*self.pixel_to_thickness)) / Decimal(2)) + self.wa + self.base_height
         else:
             center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
 
@@ -144,7 +148,6 @@ class Converter:
             elif classname == "PaintRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-
                 self.last_rect = op.rect
                 self.block_color = self.fg_color
 
@@ -174,14 +177,30 @@ class Converter:
             elif classname == "FrameRoundedRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-                block = self.create_block(op.rect, corner_radius=self.curr_oval_size)
+                block = self.create_block(op.rect, corner_radius=self.curr_oval_size.x)
                 self.cur_block = block
+                if self.curr_oval_size:
+                    self.cur_block.rounding = self.curr_oval_size
                 self.blocks.append(block)
             elif classname == "PaintRoundedRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-                block = self.create_block(op.rect, corner_radius=self.curr_oval_size)
-                self.cur_block = block
+                self.last_rect = op.rect
+                self.block_color = self.fg_color
+
+            elif classname == "FrameSameRoundedRectangle":
+                self.cur_block = self.create_block(self.last_rect, corner_radius=self.curr_oval_size.x)
+
+                if self.block_origin_changed:
+                    self.block_origin_changed = False
+                else:                                        # Block has been painted
+                    self.cur_block.color = self.block_color
+
+                self.blocks.append(self.cur_block)
+            elif classname == "PaintSameRectangle":
+                if self.block_origin_changed:
+                    self.block_origin_changed = False
+
                 self.cur_block.color = self.fg_color
 
             elif classname == "FrameArc":
@@ -247,6 +266,11 @@ class Converter:
 
         for good in self.goodies:
             good.to_xml(mapEl)
+
+        if self.author:
+            mapEl.set('designer', self.author)
+        if self.description:
+            mapEl.set('description', self.description)
 
         ET.dump(mapEl)
 
@@ -333,16 +357,18 @@ class Converter:
             self.author = value
         elif key == 'information':
             self.tagline = value
+        elif key == 'pointsToThickness':
+            self.pixel_to_thickness = Decimal(value)
 
     def parse_adjust(self, word):
         if word == "SkyColor":
             sc = SkyColor()
-            sc.horizon = self.fg_color
-            sc.color = self.bg_color
+            sc.horizon = self.cur_arc.fill
+            sc.color = self.cur_arc.stroke
             self.g_vars.append(sc)
         elif word == "GroundColor":
             g = GroundColor()
-            g.color = self.fg_color
+            g.color = self.cur_arc.fill
             self.g_vars.append(g)
         pass    # need to handle ground/sky colours
 
@@ -381,14 +407,14 @@ class Converter:
             block = self.blocks.pop()
             arc = self.cur_arc
             deltaY = Decimal(object['deltaY'])
-            ramp.color = block.color
+            ramp.color = arc.fill
 
             if 'y' in object:
                 y = Decimal(object['y'])
             else:
                 y = Decimal(0)
             if 'thickness' in object:
-                ramp.thickness = object['thickness']
+                ramp.thickness = Decimal(object['thickness'])
             else:
                 ramp.thickness = block.rounding
 
