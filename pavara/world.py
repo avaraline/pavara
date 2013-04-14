@@ -404,10 +404,16 @@ class BlockRamp (PhysicalObject):
         midramp = Point2(midx, midy)
         newtop = (midramp - newbase)*2 + newbase
         topxz = v.get_xz()/l*newtop.get_x()
-        topy = v.get_y()/h*newtop.get_y()
+        if int(h) == 0:
+            topy = newtop.get_y()
+        else:
+            topy = v.get_y()/h*newtop.get_y()
         self.top = self.base + (topxz[0], topy, topxz[1])
         bottomxz = v.get_xz()/l*newbase.get_x()
-        bottomy = v.get_y()/h*newbase.get_y()
+        if int(h) == 0:
+            bottomy = newbase.get_y()
+        else:
+            bottomy = v.get_y()/h*newbase.get_y()
         self.base = self.base + (bottomxz[0], bottomy, bottomxz[1])
 
 
