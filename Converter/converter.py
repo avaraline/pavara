@@ -124,7 +124,9 @@ class Converter:
                 thisText = False
                 if lastText:
                     self.parse_text(self.cur_text)
+                    self.cur_text = ""
 
+            # TODO: PARSE OVALS!
             if classname == "ClipRegion":
                 self.cur_region = op.region
 
