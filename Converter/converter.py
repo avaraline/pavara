@@ -69,17 +69,22 @@ class Converter:
         real_src_y = (rect.src.y + self.origin_y)
         real_dst_x = (rect.dst.x + self.origin_x)
         real_dst_y = (rect.dst.y + self.origin_y)
+
+        # Pen size does actually affect the size of the block
         size.x = Decimal(real_dst_x - real_src_x) - self.pen_x
         size.z = Decimal(real_dst_y - real_src_y) - self.pen_y
         size.y = Decimal(self.wall_height)
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
+
+        # No need to scale y because y is only ever
+        # indicated in meters (except where rounded rects come into play)
         size.x = self.scale_and_snap(size.x)
         size.z = self.scale_and_snap(size.z)
-
         center.x = self.scale_and_snap(center.x)
         center.z = self.scale_and_snap(center.z)
+
         # Reset wa because it's a per wall variable
         self.wa = 0
 
@@ -103,6 +108,9 @@ class Converter:
 
             if classname == "ClipRegion":
                 self.cur_region = op.region
+
+            # A positive dv/dh moves you backwards
+            # This is confusing.
             elif classname == "Origin":
                 self.origin_x -= op.dv
                 self.origin_y -= op.dh
@@ -119,6 +127,11 @@ class Converter:
                 block = self.create_block(op.rect)
                 self.cur_block = block
                 self.blocks.append(block)
+
+            # Avara does not create a wall until framed so here
+            # we're just storing the rectangle and color
+            # This also means that we can be sure that the
+            # right pen size is used at framing time
             elif classname == "PaintRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
@@ -130,12 +143,15 @@ class Converter:
             # If the origin point changes and then one
             # of these is called, it means use the same
             # rectangle dimensions from the new origin point
+            # but actually create a new rectangle
             elif classname == "FrameSameRectangle":
                 self.cur_block = self.create_block(self.last_rect)
+
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-                else:
+                else:                                        # Block has been painted
                     self.cur_block.color = self.block_color
+
                 self.blocks.append(self.cur_block)
             elif classname == "PaintSameRectangle":
                 if self.block_origin_changed:
