@@ -127,6 +127,7 @@ class RGBForegroundColor (Operation):
         self.green = bytes_to_unsigned_short(bytes[2:4])
         self.blue = bytes_to_unsigned_short(bytes[4:6])
 
+
 class RGBBackgroundColor (Operation):
     length = 6
 
@@ -135,8 +136,18 @@ class RGBBackgroundColor (Operation):
         self.green = bytes_to_unsigned_short(bytes[2:4])
         self.blue = bytes_to_unsigned_short(bytes[4:6])
 
+
 class DefaultHighlight (Operation):
     length = 0
+
+
+class OpColor (Operation):
+    length = 6
+
+    def parse(self, bytes):
+        self.red = bytes_to_unsigned_short(bytes[0:2])
+        self.green = bytes_to_unsigned_short(bytes[2:4])
+        self.blue = bytes_to_unsigned_short(bytes[4:6])
 
 
 class ShortLine (Operation):
@@ -245,6 +256,28 @@ class PaintSameRoundedRectangle (Operation):
     length = 0
 
 
+class FrameOval (Operation):
+    length = 8
+
+    def parse(self, bytes):
+        self.rect = datatypes.Rect(bytes)
+
+
+class PaintOval (Operation):
+    length = 8
+
+    def parse(self, bytes):
+        self.rect = datatypes.Rect(bytes)
+
+
+class FrameSameOval (Operation):
+    length = 0
+
+
+class PaintSameOval (Operation):
+    length = 0
+
+
 class FrameArc (Operation):
     length = 12
 
@@ -318,6 +351,7 @@ class Factory (object):
         0x1a: RGBForegroundColor,
         0x1b: RGBBackgroundColor,
         0x1e: DefaultHighlight,
+        0x1f: OpColor,
         0x22: ShortLine,
         0x23: ShortLineFrom,
         0x28: LongText,
@@ -334,6 +368,10 @@ class Factory (object):
         0x41: PaintRoundedRectangle,
         0x48: FrameSameRoundedRectangle,
         0x49: PaintSameRoundedRectangle,
+        0x50: FrameOval,
+        0x51: PaintOval,
+        0x58: FrameSameOval,
+        0x59: PaintSameOval,
         0x60: FrameArc,
         0x61: PaintArc,
         0x68: FrameSameArc,

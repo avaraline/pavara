@@ -30,15 +30,18 @@ class Converter:
         self.blocks = []           # List of all static blocks
         self.ramps = []            # List of all static ramps
         self.g_vars = []           # List of globally concerned objects
+        self.enums = {}            # Dict of all enums
 
         self.wall_height = 3       # Current wall height (default 3)
         self.wa = 0                # Current wa, resets after every wall
+        self.last_wa = 0           # Temporary wa for ramps
         self.base_height = 0       # Current base height
-        self.pixel_to_thickness = Decimal("0.125") # current corner-radius to thickness factor
+        self.pixel_to_thickness = Decimal("0.125")   # current corner-radius to thickness factor
 
         self.fg_color = Color()    # Last foreground colour
         self.cur_block = None      # Last created block
         self.cur_arc = None        # Last arc
+        self.cur_text = ""         # Placeholder for text stack
         self.last_rect = None      # Last Rect used on a block
         self.last_arc = None       # Last Rect used for an arc
 
@@ -77,13 +80,13 @@ class Converter:
         size.x = Decimal(real_dst_x - real_src_x) - self.pen_x
         size.z = Decimal(real_dst_y - real_src_y) - self.pen_y
         if corner_radius is not 0:
-            size.y = Decimal(str(corner_radius*self.pixel_to_thickness))
+            size.y = Decimal(str(corner_radius * self.pixel_to_thickness))
         else:
             size.y = Decimal(self.wall_height)
         center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
         center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
         if corner_radius is not 0:
-            center.y = (Decimal(str(corner_radius*self.pixel_to_thickness)) / Decimal(2)) + self.wa + self.base_height
+            center.y = (Decimal(str(corner_radius * self.pixel_to_thickness)) / Decimal(2)) + self.wa + self.base_height
         else:
             center.y = (Decimal(self.wall_height) / Decimal(2)) + self.wa + self.base_height
 
@@ -95,6 +98,7 @@ class Converter:
         center.z = self.scale_and_snap(center.z)
 
         # Reset wa because it's a per wall variable
+        self.last_wa = self.wa
         self.wa = 0
 
         return size, center
@@ -102,21 +106,27 @@ class Converter:
     def convert(self, ops):
         getcontext().prec = 10
         lastText = False
-        if ops == None:
+        thisText = False
+        if ops is None:
             return
         for op in ops:
             classname = op.__class__.__name__
-
-            if (classname == "LongText" or
-                    classname == "DHText" or
-                    classname == "DVText" or
-                    classname == "DHDVText"):
+            if classname in ("LongText",
+                             "DHText",
+                             "DVText",
+                             "DHDVText"):
+                thisText = True
+            elif lastText and classname in ("TextFont",
+                                            "TextSize",
+                                            "VariableReserved"):
                 thisText = True
             else:
                 thisText = False
                 if lastText:
                     self.parse_text(self.cur_text)
+                    self.cur_text = ""
 
+            # TODO: PARSE OVALS!
             if classname == "ClipRegion":
                 self.cur_region = op.region
 
@@ -127,6 +137,7 @@ class Converter:
                 self.origin_y -= op.dh
                 self.block_origin_changed = True
                 self.arc_origin_changed = True
+                self.cur_block = None
             elif classname == "PenSize":
                 self.pen_x = op.size.x
                 self.pen_y = op.size.y
@@ -168,8 +179,9 @@ class Converter:
             elif classname == "PaintSameRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-
-                self.cur_block.color = self.fg_color
+                    self.block_color = self.fg_color
+                else:
+                    self.cur_block.color = self.fg_color
 
             elif classname == "OvalSize":
                 self.curr_oval_size = op.size
@@ -197,11 +209,12 @@ class Converter:
                     self.cur_block.color = self.block_color
 
                 self.blocks.append(self.cur_block)
-            elif classname == "PaintSameRectangle":
+            elif classname == "PaintSameRoundedRectangle":
                 if self.block_origin_changed:
                     self.block_origin_changed = False
-
-                self.cur_block.color = self.fg_color
+                    self.block_color = self.fg_color
+                else:
+                    self.cur_block.color = self.fg_color
 
             elif classname == "FrameArc":
                 if self.arc_origin_changed:
@@ -222,7 +235,7 @@ class Converter:
                     self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
                 else:
                     heading = heading_from_arc(op.startAngle, op.arcAngle)
-                    if self.cur_arc.heading is not heading:
+                    if self.cur_arc.heading != heading:
                         self.cur_arc = self.create_arc(self.last_arc, op.startAngle, op.arcAngle)
 
                 self.cur_arc.stroke = self.fg_color
@@ -239,10 +252,11 @@ class Converter:
                 self.cur_arc.fill = self.fg_color
 
             elif thisText:
-                if lastText:
-                    self.cur_text += " " + op.text
-                else:
-                    self.cur_text = op.text
+                if hasattr(op, 'text'):
+                    if lastText:
+                        self.cur_text += " " + op.text
+                    else:
+                        self.cur_text = op.text
 
             if thisText:
                 lastText = True
@@ -308,16 +322,48 @@ class Converter:
         in_unique = False
         in_object = False
         in_adjust = False
+        in_enum = False
         cur_object = {}
-        variable = None
-        #print text
-        for word in shlex.split(text):
+        cur_enum = None
+
+        try:
+            words = shlex.split(text)
+        except ValueError:
+            text += '"'
+            words = shlex.split(text)
+
+        newwords = []
+
+        skipnext = False
+        for idx, word in enumerate(words):
+            if '=' in word:
+                if len(word) == 1:
+                    newwords.pop()
+                    newwords.append((words[idx - 1], words[idx + 1]))
+                    skipnext = True
+                elif word.endswith('='):
+                    newwords.append((word[:-1], words[idx + 1]))
+                    skipnext = True
+                elif word.startswith('='):
+                    newwords.pop()
+                    newwords.append((words[idx - 1], word[1:]))
+                else:
+                    splitword = word.split('=')
+                    newwords.append((splitword[0], splitword[1]))
+            elif skipnext:
+                skipnext = False
+            else:
+                newwords.append(word)
+
+        for word in newwords:
             if word == "unique":
                 in_unique = True
             elif word == "object":
                 in_object = True
             elif word == "adjust":
                 in_adjust = True
+            elif word == "enum":
+                in_enum = True
             elif word == "end":
                 if in_unique:
                     in_unique = False
@@ -327,24 +373,27 @@ class Converter:
                     cur_object = {}
                 elif in_adjust:
                     in_adjust = False
+                elif in_enum:
+                    in_enum = False
+                    cur_enum = None
             elif in_object:
                 if len(cur_object) == 0:
                     cur_object['type'] = word
-                elif variable is None:
-                    variable = word
-                elif word is not "=":
-                    cur_object[variable] = word.lstrip('=')
-                    variable = None
+                elif type(word) is tuple:
+                    cur_object[word[0]] = word[1]
             elif in_unique:
                 # Do nothing
                 pass
             elif in_adjust:
                 self.parse_adjust(word)
-            elif variable is None:
-                variable = word
-            elif word is not "=":
-                self.parse_global_variable(variable, word)
-                variable = None
+            elif in_enum:
+                if cur_enum is None:
+                    cur_enum = Decimal(word)
+                else:
+                    self.enums[word] = cur_enum
+                    cur_enum += 1
+            elif type(word) is tuple:
+                self.parse_global_variable(word[0], word[1])
 
     def parse_global_variable(self, key, value):
         if key == 'wa':
@@ -370,7 +419,6 @@ class Converter:
             g = GroundColor()
             g.color = self.cur_arc.fill
             self.g_vars.append(g)
-        pass    # need to handle ground/sky colours
 
     def parse_object(self, object):
 
@@ -403,10 +451,14 @@ class Converter:
 
             self.goodies.append(good)
         elif type == "Ramp":
+            self.wa = self.last_wa
             ramp = Ramp()
             block = self.blocks.pop()
             arc = self.cur_arc
-            deltaY = Decimal(object['deltaY'])
+            if 'deltaY' in object:
+                deltaY = Decimal(object['deltaY'])
+            else:
+                deltaY = 1
             ramp.color = arc.fill
 
             if 'y' in object:
@@ -421,51 +473,40 @@ class Converter:
             if deltaY == 0:
                 block.size.y = ramp.thickness
                 block.center.y = y + self.base_height
+                block.color = arc.fill
                 self.blocks.append(block)
                 return
+
+            ramp.base.x = block.center.x
+            ramp.base.y = y + self.base_height
+            ramp.base.z = block.center.z
+            ramp.top.x = block.center.x
+            ramp.top.y = y + self.base_height + deltaY
+            ramp.top.z = block.center.z
+
             if arc.heading > 315 or arc.heading <= 45:
                 ramp.width = block.size.z
 
-                ramp.base.x = block.center.x - (block.size.x / Decimal(2))
-                ramp.base.y = y + self.base_height
-                ramp.base.z = block.center.z
-
-                ramp.top.x = block.center.x + (block.size.x / Decimal(2))
-                ramp.top.y = y + self.base_height + deltaY
-                ramp.top.z = block.center.z
+                ramp.base.x -= block.size.x / Decimal(2)
+                ramp.top.x += block.size.x / Decimal(2)
 
             elif arc.heading > 45 and arc.heading <= 135:
                 ramp.width = block.size.x
 
-                ramp.base.x = block.center.x
-                ramp.base.y = y + self.base_height
-                ramp.base.z = block.center.z + (block.size.z / Decimal(2))
-
-                ramp.top.x = block.center.x
-                ramp.top.y = y + self.base_height + deltaY
-                ramp.top.z = block.center.z - (block.size.z / Decimal(2))
+                ramp.base.z += block.size.z / Decimal(2)
+                ramp.top.z -= block.size.z / Decimal(2)
 
             elif arc.heading > 135 and arc.heading <= 225:
                 ramp.width = block.size.z
 
-                ramp.base.x = block.center.x + (block.size.x / Decimal(2))
-                ramp.base.y = y + self.base_height
-                ramp.base.z = block.center.z
-
-                ramp.top.x = block.center.x - (block.size.x / Decimal(2))
-                ramp.top.y = y + self.base_height + deltaY
-                ramp.top.z = block.center.z
+                ramp.base.x += block.size.x / Decimal(2)
+                ramp.top.x -= block.size.x / Decimal(2)
 
             else:
                 ramp.width = block.size.x
 
-                ramp.base.x = block.center.x
-                ramp.base.y = y + self.base_height
-                ramp.base.z = block.center.z - (block.size.z / Decimal(2))
-
-                ramp.top.x = block.center.x
-                ramp.top.y = y + self.base_height + deltaY
-                ramp.top.z = block.center.z + (block.size.z / Decimal(2))
+                ramp.base.z -= block.size.z / Decimal(2)
+                ramp.top.z += block.size.z / Decimal(2)
 
             self.ramps.append(ramp)
 
