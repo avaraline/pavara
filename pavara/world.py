@@ -30,6 +30,7 @@ WALKER_RECHARGE_FACTOR = .23
 WALKER_ENERGY_TO_GUN_CHARGE = (.10,.36)
 WALKER_MIN_CHARGE_ENERGY = .2
 PLASMA_LIFESPAN = 900
+PLASMA_SOUND_FALLOFF = 20
 
 ENGINE_COLORS = [ [173.0/255.0, 0, 0, 1] #dark red
                         , [237.0/255.0, 118.0/255.0, 21.0/255.0, 1] #bright orange
@@ -660,6 +661,7 @@ class Plasma (PhysicalObject):
         self.hpr = hpr
         self.energy = energy
         self.age = 0
+        self.in_earshot = False
 
     def create_node(self):
         m = load_model('plasma.egg')
@@ -690,15 +692,15 @@ class Plasma (PhysicalObject):
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-        self.sound = self.world.audio3d.loadSfx('Sounds/stringsample.wav')
+        self.sound = self.world.audio3d.loadSfx('Sounds/plasma.wav')
         self.sound.set_balance(0)
         self.world.audio3d.attachSoundToObject(self.sound, self.node)
-        self.world.audio3d.setSoundVelocity(self.sound, render.get_relative_vector(self.node, Vec3(0,0,900)))
+        self.world.audio3d.setSoundVelocity(self.sound, render.get_relative_vector(self.node, Vec3(0,0,400)))
         self.sound.set_loop(True)
         self.sound.play()
 
     def update(self, dt):
-        self.move_by(0,0,(dt*60)/5)
+        self.move_by(0,0,(dt*60)/4)
         self.rotate_by(0,0,(dt*60)*3)
         result = self.world.physics.contact_test(self.solid)
         self.age += dt*60
@@ -730,15 +732,6 @@ class Missile (PhysicalObject):
         self.age = 0
         self.color = color
         self.velocity = Vec3(0,0,0)
-        self.integrator = Integrator(self.get_forward_vec(render))
-
-    def get_forward_vec(self, render):
-        dummy_node = NodePath('tmp')
-        dummy_node.set_hpr(self.hpr)
-        dummy_node.set_pos(self.pos)
-        f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,30))
-        del(dummy_node)
-        return f_vec
 
     def create_node(self):
         self.model = load_model('missile.egg')
@@ -765,11 +758,12 @@ class Missile (PhysicalObject):
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-        self.sound = self.world.audio3d.loadSfx('Sounds/stringsample.wav')
+        self.sound = self.world.audio3d.loadSfx('Sounds/plasma.wav')
         self.sound.set_balance(0)
         self.world. audio3d.attachSoundToObject(self.sound, self.node)
         self.sound.set_loop(True)
         self.sound.play()
+        self.integrator = Integrator(self.world.render.get_relative_vector(self.node, Vec3(0,0,30)))
 
     def update(self, dt):
         current_pos = Point3(0, self.position().get_y(), 0)
@@ -777,7 +771,7 @@ class Missile (PhysicalObject):
         if self.velocity.length() > 30:
             self.integrator.accel = Vec3(0,0,0)
         else:
-            self.integrator.accel = self.get_forward_vec(self.world.render)
+            self.integrator.accel = self.world.render.get_relative_vector(self.node, Vec3(0,0,30))
         self.move(self.position() + (pos - self.node.get_pos()))
 
         self.main_engines.set_color(*random.choice(ENGINE_COLORS))
@@ -840,14 +834,16 @@ class Grenade (PhysicalObject):
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-        grenade_iv = render.get_relative_vector(self.node, Vec3(0,84,104))
+        grenade_iv = render.get_relative_vector(self.node, Vec3(0,200,210))
         grenade_iv += self.walker_v
+        self.force_vector = render.get_relative_vector(self.node, Vec3(0,-240,-90))
         self.solid.apply_impulse(grenade_iv, Point3(*self.pos))
 
 
     def update(self, dt):
         self.inner_top.set_color(*random.choice(ENGINE_COLORS))
         self.inner_bottom.set_color(*random.choice(ENGINE_COLORS))
+        self.solid.apply_force(self.force_vector, self.node.get_pos())
         result = self.world.physics.contact_test(self.solid)
         self.spin_bone.set_hpr(self.spin_bone, 0,0,10)
         contacts = result.getContacts()
