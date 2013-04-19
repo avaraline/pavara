@@ -7,6 +7,12 @@ BOTTOM_LEG_LENGTH = 1.21
 TOP_LEG_EXTENDED_P = 60
 BOTTOM_LEG_EXTENDED_P = -70
 
+MISSILE_OFFSET = [0, 2.5, 1.48]
+GRENADE_OFFSET = [0, 1.9, 1.3]
+
+SIGHTS_FRIENDLY_COLOR = [114.0/255.0, 214.0/255.0, 86.0/255.0, 1]
+SIGHTS_ENEMY_COLOR = [217.0/255.0, 24.0/255.0, 24.0/255.0, 1]
+
 class Hat (object):
 
     def __init__(self, actor, color):
@@ -78,9 +84,32 @@ class Sack (object):
 
 class Sights (object):
 
-    def __init__(self, actor, render, physics):
+    def __init__(self, left_barrel, right_barrel, render, physics):
         self.render = render
         self.physics = physics
+        self.left_plasma = load_model('plasma_sight.egg')
+        self.right_plasma = load_model('plasma_sight.egg')
+        self.left_plasma.reparent_to(left_barrel)
+        self.right_plasma.reparent_to(right_barrel)
+        self.left_plasma.set_r(180)
+        self.left_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
+        self.right_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
+
+    def update(self, left_barrel, right_barrel):
+        self.do_barrel_raytest(left_barrel, self.left_plasma)
+        self.do_barrel_raytest(right_barrel, self.right_plasma)
+
+    def do_barrel_raytest(self, barrel, sight):
+        pfrom = barrel.get_pos(self.render)
+        pto = pfrom + self.render.get_relative_vector(barrel, Vec3(0,0,-60))
+        result = self.physics.ray_test_closest(pfrom, pto, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        if result.has_hit():
+            sight.set_pos(render, result.get_hit_pos())
+            #if isbadthing(result.get_node1()):
+                #sight.find("**/sight").setColor(*SIGHTS_ENEMY_COLOR)
+        else:
+            sight.set_pos(render, pto)
+
 
 
 class LegBones (object):
@@ -173,8 +202,6 @@ class LegBones (object):
                 self.bottom_bone.set_p((180 - target_bottom_angle)*-1)
         else:
             return
-
-
 
 class Skeleton (object):
 
@@ -306,6 +333,8 @@ class Walker (PhysicalObject):
         self.primary_color = [1,1,1,1]
         self.colordict = colordict if colordict else None
         self.crouching = False
+        self.player = player
+        self.can_jump = False
 
     def get_model_part(self, obj_name):
         return self.actor.find("**/%s" % obj_name)
@@ -314,8 +343,6 @@ class Walker (PhysicalObject):
         self.actor = Actor('walker.egg')
         if self.colordict:
             self.setup_color(self.colordict)
-        self.loaded_missile = Hat(self.actor, self.primary_color)
-        self.loaded_grenade = Sack(self.actor, self.primary_color)
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         self.spawn_point.was_used()
@@ -323,6 +350,7 @@ class Walker (PhysicalObject):
 
         self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_barrel_bone')
         self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_barrel_bone')
+
         return self.actor
 
     def create_solid(self):
@@ -392,6 +420,11 @@ class Walker (PhysicalObject):
 
         self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'pelvis_bone'))
         self.skeleton.setup_footsteps(self.world.audio3d)
+        self.head_bone = self.actor.controlJoint(None, 'modelRoot', 'head_bone')
+        self.loaded_missile = Hat(self.head_bone, self.primary_color)
+        self.loaded_grenade = Sack(self.head_bone, self.primary_color)
+        if self.player:
+            self.sights = Sights(self.left_barrel_joint, self.right_barrel_joint, self.world.render, self.world.physics)
 
 
 
@@ -402,9 +435,12 @@ class Walker (PhysicalObject):
     def handle_command(self, cmd, pressed):
         if cmd is 'crouch' and pressed:
             self.crouching = True
-        if cmd is 'crouch' and not pressed and self.on_ground:
+            if self.on_ground:
+                self.can_jump = True
+        if cmd is 'crouch' and not pressed and self.on_ground and self.can_jump:
             self.crouching = False
             self.y_velocity = Vec3(0, 6.8, 0)
+            self.can_jump = False
         if cmd is 'fire' and pressed:
             self.handle_fire()
             return
@@ -536,6 +572,9 @@ class Walker (PhysicalObject):
 
         if self.energy < 1:
             self.energy += WALKER_RECHARGE_FACTOR * (dt)
+
+        if self.player:
+            self.sights.update(self.left_barrel_joint, self.right_barrel_joint)
 
 
 
