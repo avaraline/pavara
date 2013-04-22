@@ -7,8 +7,8 @@ BOTTOM_LEG_LENGTH = 1.21
 TOP_LEG_EXTENDED_P = 60
 BOTTOM_LEG_EXTENDED_P = -70
 
-MISSILE_OFFSET = [0, 2.5, 1.48]
-GRENADE_OFFSET = [0, 1.9, 1.3]
+MISSILE_OFFSET = [0, -.3, -.6]#2.5, 1.48]
+GRENADE_OFFSET = [0, .3, -.8]#1.9, 1.3]
 
 SIGHTS_FRIENDLY_COLOR = [114.0/255.0, 214.0/255.0, 86.0/255.0, 1]
 SIGHTS_ENEMY_COLOR = [217.0/255.0, 24.0/255.0, 24.0/255.0, 1]
@@ -21,6 +21,7 @@ class Hat (object):
         self.loaded_missile.hide()
         self.loaded_missile.reparentTo(actor)
         self.loaded_missile.set_pos(self.loaded_missile, *MISSILE_OFFSET)
+        self.loaded_missile.set_h(180)
         self.loaded_missile.set_scale(MISSILE_SCALE)
         main_engines = self.loaded_missile.find('**/mainengines')
         main_engines.set_color(.2,.2,.2)
@@ -56,6 +57,7 @@ class Sack (object):
         self.loaded_grenade.hide()
         self.loaded_grenade.reparentTo(actor)
         self.loaded_grenade.set_pos(self.loaded_grenade, *GRENADE_OFFSET)
+        self.loaded_grenade.set_hpr(0,180,0)
         self.loaded_grenade.set_scale(GRENADE_SCALE)
         inner_top = self.loaded_grenade.find('**/inner_top')
         inner_top.set_color(.2,.2,.2)
@@ -447,8 +449,9 @@ class Walker (PhysicalObject):
         self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'pelvis_bone'))
         self.skeleton.setup_footsteps(self.world.audio3d)
         self.head_bone = self.actor.controlJoint(None, 'modelRoot', 'head_bone')
-        self.loaded_missile = Hat(self.head_bone, self.primary_color)
-        self.loaded_grenade = Sack(self.head_bone, self.primary_color)
+        self.head_bone_joint = self.actor.exposeJoint(None, 'modelRoot', 'head_bone')
+        self.loaded_missile = Hat(self.head_bone_joint, self.primary_color)
+        self.loaded_grenade = Sack(self.head_bone_joint, self.primary_color)
         if self.player:
             self.sights = Sights(self.left_barrel_joint, self.right_barrel_joint, self.world.render, self.world.physics)
 
