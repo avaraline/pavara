@@ -122,7 +122,7 @@ class LegBones (object):
     BOTTOM = 1
 
     def __init__(self, render, physics, hip, foot, top, bottom):
-        self.bones = [(bone, bone.get_p(), bone.get_pos(), motions) for (bone, motions) in zip([top, bottom], self.motion)]
+        self.bones = [(bone, float(bone.get_p()), Point3(bone.get_pos()), motions) for (bone, motions) in zip([top, bottom], self.motion)]
         self.foot_bone = foot
         self.top_bone = top
         self.bottom_bone = bottom
@@ -143,16 +143,36 @@ class LegBones (object):
         return self.bones[self.TOP][2] + self.crouch_factor*-50
 
     def get_walk_seq(self, stage, walk_cycle_speed, bob, blend_type):
-        lerps = [LerpFunc(self.update_piece_hpr, fromData=resting_p + motions[stage - 1], toData=resting_p + motions[stage], duration=walk_cycle_speed, extraArgs=[bone, idx]) for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
+        lerps = [LerpFunc(self.update_piece_hpr,
+                          fromData=resting_p + motions[stage - 1],
+                          toData=resting_p + motions[stage],
+                          duration=walk_cycle_speed,
+                          extraArgs=[bone, idx])
+        for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
+
         to_data = self.bones[self.TOP][2]
         to_data += bob
-        bob = LerpFunc(self.update_bob, fromData=self.top_bone.get_pos().y, toData=to_data.y, duration=walk_cycle_speed, extraArgs=[self.bones[self.TOP][0]])
+        bob = LerpFunc(self.update_bob,
+                       fromData=self.top_bone.get_pos().y,
+                       toData=to_data.y,
+                       duration=walk_cycle_speed,
+                       extraArgs=[self.bones[self.TOP][0]])
         lerps.append(bob)
         return lerps
 
     def get_return(self, return_speed):
-        lerps = [LerpFunc(self.update_piece_hpr, fromData=bone.get_p(), toData=resting_p, duration=return_speed, extraArgs=[bone, idx]) for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
-        return_pos = LerpFunc(self.update_bob, fromData=self.top_bone.get_pos().y, toData=self.bones[self.TOP][2].y, duration=return_speed, extraArgs=[self.bones[self.TOP][0]])
+        lerps = [LerpFunc(self.update_piece_hpr,
+                          fromData=float(bone.get_p()),
+                          toData=resting_p,
+                          duration=return_speed,
+                          extraArgs=[bone, idx])
+        for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
+
+        return_pos = LerpFunc(self.update_bob,
+                              fromData=float(self.top_bone.get_pos().y),
+                              toData=self.bones[self.TOP][2].y,
+                              duration=return_speed,
+                              extraArgs=[self.bones[self.TOP][0]])
         lerps.append(return_pos)
         return lerps
 
@@ -223,16 +243,24 @@ class Skeleton (object):
 
     def _make_walk_seq_(self):
         ws = self.walk_cycle_speed / 6.0
-        up_interval = [LerpFunc(self._move_shoulder, fromData=self.shoulder.get_pos().y, toData=self.resting.y + self.upbob.y, duration=ws, extraArgs=[self.shoulder])]
-        down_interval = [LerpFunc(self._move_shoulder, fromData=self.shoulder.get_pos().y, toData=self.resting.y + self.downbob.y, duration=ws, extraArgs=[self.shoulder])]
+        up_interval = [LerpFunc(self._move_shoulder,
+                                fromData=self.shoulder.get_pos().y,
+                                toData=self.resting.y + self.upbob.y,
+                                duration=ws, extraArgs=[self.shoulder])]
+
+        down_interval = [LerpFunc(self._move_shoulder,
+                                  fromData=self.shoulder.get_pos().y,
+                                  toData=self.resting.y + self.downbob.y,
+                                  duration=ws, extraArgs=[self.shoulder])]
+
         left_leg_on_ground = [LerpFunc(self._left_leg_on_ground)]
         right_leg_on_ground = [LerpFunc(self._right_leg_on_ground)]
         steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(4,ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(1,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(5,ws, self.upbob, 'easeOut') + down_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(2,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(0,ws,self.upbob, 'easeOut') + up_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(1,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(5,ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(2,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(0,ws, self.upbob, 'easeOut') + up_interval + left_leg_on_ground
                 , self.right_leg.get_walk_seq(3,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(1,ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
-                , self.right_leg.get_walk_seq(4,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(2,ws,self.downbob, 'easeIn') + left_leg_on_ground
-                , self.right_leg.get_walk_seq(5,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(3,ws,self.downbob, 'easeIn') + right_leg_on_ground
+                , self.right_leg.get_walk_seq(4,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(2,ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(5,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(3,ws,self.downbob, 'easeIn') + down_interval + right_leg_on_ground
                 ]
         steps = [Parallel(*step) for step in steps]
         return Sequence(*steps)
@@ -254,7 +282,6 @@ class Skeleton (object):
 
     def _make_return_seq_(self):
         lerps = self.right_leg.get_return(self.return_speed) + self.left_leg.get_return(self.return_speed)
-        lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting))
         return Parallel(*lerps)
 
     def walk(self):
@@ -293,11 +320,9 @@ class Skeleton (object):
         else:
             self.stop()
 
-        if self.left_leg.is_on_ground:
-            self.left_leg.ik_leg(0)
 
-        if self.right_leg.is_on_ground:
-            self.right_leg.ik_leg(0)
+        self.left_leg.ik_leg(0)
+        self.right_leg.ik_leg(0)
 
 class Walker (PhysicalObject):
 
@@ -335,6 +360,7 @@ class Walker (PhysicalObject):
         self.crouching = False
         self.player = player
         self.can_jump = False
+        self.crouch_impulse = 0
 
     def get_model_part(self, obj_name):
         return self.actor.find("**/%s" % obj_name)
@@ -525,13 +551,13 @@ class Walker (PhysicalObject):
 
         if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
+            self.crouch_impulse = self.y_velocity.y
             self.y_velocity = Vec3(0, 0, 0)
             self.move(result.get_hit_pos())
         else:
             self.on_ground = False
             current_y = Point3(0, self.position().get_y(), 0)
             y, self.y_velocity = self.integrator.integrate(current_y, self.y_velocity, dt)
-
             self.move(self.position() + (y - current_y))
 
         if self.crouching and self.skeleton.crouch_factor < 1:
@@ -540,6 +566,8 @@ class Walker (PhysicalObject):
         elif not self.crouching and self.skeleton.crouch_factor > 0:
             self.skeleton.crouch_factor -= (dt*60)/10
             self.skeleton.update_legs(0, dt, self.world.render, self.world.physics)
+
+        #if self.crouch_impulse < 0:
 
         goal = self.position()
         adj_dist = abs((start - goal).length())
