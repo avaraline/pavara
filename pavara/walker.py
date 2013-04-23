@@ -7,6 +7,12 @@ BOTTOM_LEG_LENGTH = 1.21
 TOP_LEG_EXTENDED_P = 60
 BOTTOM_LEG_EXTENDED_P = -70
 
+MISSILE_OFFSET = [0, -.3, -.6]#2.5, 1.48]
+GRENADE_OFFSET = [0, .3, -.8]#1.9, 1.3]
+
+SIGHTS_FRIENDLY_COLOR = [114.0/255.0, 214.0/255.0, 86.0/255.0, 1]
+SIGHTS_ENEMY_COLOR = [217.0/255.0, 24.0/255.0, 24.0/255.0, 1]
+
 class Hat (object):
 
     def __init__(self, actor, color):
@@ -15,6 +21,7 @@ class Hat (object):
         self.loaded_missile.hide()
         self.loaded_missile.reparentTo(actor)
         self.loaded_missile.set_pos(self.loaded_missile, *MISSILE_OFFSET)
+        self.loaded_missile.set_h(180)
         self.loaded_missile.set_scale(MISSILE_SCALE)
         main_engines = self.loaded_missile.find('**/mainengines')
         main_engines.set_color(.2,.2,.2)
@@ -50,6 +57,7 @@ class Sack (object):
         self.loaded_grenade.hide()
         self.loaded_grenade.reparentTo(actor)
         self.loaded_grenade.set_pos(self.loaded_grenade, *GRENADE_OFFSET)
+        self.loaded_grenade.set_hpr(0,180,0)
         self.loaded_grenade.set_scale(GRENADE_SCALE)
         inner_top = self.loaded_grenade.find('**/inner_top')
         inner_top.set_color(.2,.2,.2)
@@ -78,9 +86,32 @@ class Sack (object):
 
 class Sights (object):
 
-    def __init__(self, actor, render, physics):
+    def __init__(self, left_barrel, right_barrel, render, physics):
         self.render = render
         self.physics = physics
+        self.left_plasma = load_model('plasma_sight.egg')
+        self.right_plasma = load_model('plasma_sight.egg')
+        self.left_plasma.reparent_to(left_barrel)
+        self.right_plasma.reparent_to(right_barrel)
+        self.left_plasma.set_r(180)
+        self.left_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
+        self.right_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
+
+    def update(self, left_barrel, right_barrel):
+        self.do_barrel_raytest(left_barrel, self.left_plasma)
+        self.do_barrel_raytest(right_barrel, self.right_plasma)
+
+    def do_barrel_raytest(self, barrel, sight):
+        pfrom = barrel.get_pos(self.render)
+        pto = pfrom + self.render.get_relative_vector(barrel, Vec3(0,0,-60))
+        result = self.physics.ray_test_closest(pfrom, pto, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
+        if result.has_hit():
+            sight.set_pos(render, result.get_hit_pos())
+            #if isbadthing(result.get_node1()):
+                #sight.find("**/sight").setColor(*SIGHTS_ENEMY_COLOR)
+        else:
+            sight.set_pos(render, pto)
+
 
 
 class LegBones (object):
@@ -93,7 +124,7 @@ class LegBones (object):
     BOTTOM = 1
 
     def __init__(self, render, physics, hip, foot, top, bottom):
-        self.bones = [(bone, bone.get_p(), bone.get_pos(), motions) for (bone, motions) in zip([top, bottom], self.motion)]
+        self.bones = [(bone, float(bone.get_p()), Point3(bone.get_pos()), motions) for (bone, motions) in zip([top, bottom], self.motion)]
         self.foot_bone = foot
         self.top_bone = top
         self.bottom_bone = bottom
@@ -114,16 +145,36 @@ class LegBones (object):
         return self.bones[self.TOP][2] + self.crouch_factor*-50
 
     def get_walk_seq(self, stage, walk_cycle_speed, bob, blend_type):
-        lerps = [LerpFunc(self.update_piece_hpr, fromData=resting_p + motions[stage - 1], toData=resting_p + motions[stage], duration=walk_cycle_speed, extraArgs=[bone, idx]) for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
+        lerps = [LerpFunc(self.update_piece_hpr,
+                          fromData=resting_p + motions[stage - 1],
+                          toData=resting_p + motions[stage],
+                          duration=walk_cycle_speed,
+                          extraArgs=[bone, idx])
+        for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
+
         to_data = self.bones[self.TOP][2]
         to_data += bob
-        bob = LerpFunc(self.update_bob, fromData=self.top_bone.get_pos().y, toData=to_data.y, duration=walk_cycle_speed, extraArgs=[self.bones[self.TOP][0]])
+        bob = LerpFunc(self.update_bob,
+                       fromData=self.top_bone.get_pos().y,
+                       toData=to_data.y,
+                       duration=walk_cycle_speed,
+                       extraArgs=[self.bones[self.TOP][0]])
         lerps.append(bob)
         return lerps
 
     def get_return(self, return_speed):
-        lerps = [LerpFunc(self.update_piece_hpr, fromData=bone.get_p(), toData=resting_p, duration=return_speed, extraArgs=[bone, idx]) for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
-        return_pos = LerpFunc(self.update_bob, fromData=self.top_bone.get_pos().y, toData=self.bones[self.TOP][2].y, duration=return_speed, extraArgs=[self.bones[self.TOP][0]])
+        lerps = [LerpFunc(self.update_piece_hpr,
+                          fromData=float(bone.get_p()),
+                          toData=resting_p,
+                          duration=return_speed,
+                          extraArgs=[bone, idx])
+        for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
+
+        return_pos = LerpFunc(self.update_bob,
+                              fromData=float(self.top_bone.get_pos().y),
+                              toData=self.bones[self.TOP][2].y,
+                              duration=return_speed,
+                              extraArgs=[self.bones[self.TOP][0]])
         lerps.append(return_pos)
         return lerps
 
@@ -174,8 +225,6 @@ class LegBones (object):
         else:
             return
 
-
-
 class Skeleton (object):
 
     upbob = Vec3(0, 0.05, 0)
@@ -196,16 +245,24 @@ class Skeleton (object):
 
     def _make_walk_seq_(self):
         ws = self.walk_cycle_speed / 6.0
-        up_interval = [LerpFunc(self._move_shoulder, fromData=self.shoulder.get_pos().y, toData=self.resting.y + self.upbob.y, duration=ws, extraArgs=[self.shoulder])]
-        down_interval = [LerpFunc(self._move_shoulder, fromData=self.shoulder.get_pos().y, toData=self.resting.y + self.downbob.y, duration=ws, extraArgs=[self.shoulder])]
+        up_interval = [LerpFunc(self._move_shoulder,
+                                fromData=self.shoulder.get_pos().y,
+                                toData=self.resting.y + self.upbob.y,
+                                duration=ws, extraArgs=[self.shoulder])]
+
+        down_interval = [LerpFunc(self._move_shoulder,
+                                  fromData=self.shoulder.get_pos().y,
+                                  toData=self.resting.y + self.downbob.y,
+                                  duration=ws, extraArgs=[self.shoulder])]
+
         left_leg_on_ground = [LerpFunc(self._left_leg_on_ground)]
         right_leg_on_ground = [LerpFunc(self._right_leg_on_ground)]
         steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(4,ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(1,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(5,ws, self.upbob, 'easeOut') + down_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(2,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(0,ws,self.upbob, 'easeOut') + up_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(1,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(5,ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(2,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(0,ws, self.upbob, 'easeOut') + up_interval + left_leg_on_ground
                 , self.right_leg.get_walk_seq(3,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(1,ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
-                , self.right_leg.get_walk_seq(4,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(2,ws,self.downbob, 'easeIn') + left_leg_on_ground
-                , self.right_leg.get_walk_seq(5,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(3,ws,self.downbob, 'easeIn') + right_leg_on_ground
+                , self.right_leg.get_walk_seq(4,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(2,ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(5,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(3,ws,self.downbob, 'easeIn') + down_interval + right_leg_on_ground
                 ]
         steps = [Parallel(*step) for step in steps]
         return Sequence(*steps)
@@ -227,7 +284,6 @@ class Skeleton (object):
 
     def _make_return_seq_(self):
         lerps = self.right_leg.get_return(self.return_speed) + self.left_leg.get_return(self.return_speed)
-        lerps.append(LerpPosInterval(self.shoulder, self.return_speed, self.resting))
         return Parallel(*lerps)
 
     def walk(self):
@@ -266,11 +322,9 @@ class Skeleton (object):
         else:
             self.stop()
 
-        if self.left_leg.is_on_ground:
-            self.left_leg.ik_leg(0)
 
-        if self.right_leg.is_on_ground:
-            self.right_leg.ik_leg(0)
+        self.left_leg.ik_leg(0)
+        self.right_leg.ik_leg(0)
 
 class Walker (PhysicalObject):
 
@@ -306,6 +360,9 @@ class Walker (PhysicalObject):
         self.primary_color = [1,1,1,1]
         self.colordict = colordict if colordict else None
         self.crouching = False
+        self.player = player
+        self.can_jump = False
+        self.crouch_impulse = 0
 
     def get_model_part(self, obj_name):
         return self.actor.find("**/%s" % obj_name)
@@ -314,8 +371,6 @@ class Walker (PhysicalObject):
         self.actor = Actor('walker.egg')
         if self.colordict:
             self.setup_color(self.colordict)
-        self.loaded_missile = Hat(self.actor, self.primary_color)
-        self.loaded_grenade = Sack(self.actor, self.primary_color)
         self.actor.set_pos(*self.spawn_point.pos)
         self.actor.look_at(*self.spawn_point.heading)
         self.spawn_point.was_used()
@@ -323,6 +378,7 @@ class Walker (PhysicalObject):
 
         self.left_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'left_barrel_bone')
         self.right_barrel_joint = self.actor.exposeJoint(None, 'modelRoot', 'right_barrel_bone')
+
         return self.actor
 
     def create_solid(self):
@@ -392,6 +448,12 @@ class Walker (PhysicalObject):
 
         self.skeleton = Skeleton(left_bones, right_bones, self.actor.controlJoint(None, 'modelRoot', 'pelvis_bone'))
         self.skeleton.setup_footsteps(self.world.audio3d)
+        self.head_bone = self.actor.controlJoint(None, 'modelRoot', 'head_bone')
+        self.head_bone_joint = self.actor.exposeJoint(None, 'modelRoot', 'head_bone')
+        self.loaded_missile = Hat(self.head_bone_joint, self.primary_color)
+        self.loaded_grenade = Sack(self.head_bone_joint, self.primary_color)
+        if self.player:
+            self.sights = Sights(self.left_barrel_joint, self.right_barrel_joint, self.world.render, self.world.physics)
 
 
 
@@ -402,9 +464,12 @@ class Walker (PhysicalObject):
     def handle_command(self, cmd, pressed):
         if cmd is 'crouch' and pressed:
             self.crouching = True
-        if cmd is 'crouch' and not pressed and self.on_ground:
+            if self.on_ground:
+                self.can_jump = True
+        if cmd is 'crouch' and not pressed and self.on_ground and self.can_jump:
             self.crouching = False
             self.y_velocity = Vec3(0, 6.8, 0)
+            self.can_jump = False
         if cmd is 'fire' and pressed:
             self.handle_fire()
             return
@@ -489,13 +554,13 @@ class Walker (PhysicalObject):
 
         if self.y_velocity.get_y() <= 0 and result.has_hit():
             self.on_ground = True
+            self.crouch_impulse = self.y_velocity.y
             self.y_velocity = Vec3(0, 0, 0)
             self.move(result.get_hit_pos())
         else:
             self.on_ground = False
             current_y = Point3(0, self.position().get_y(), 0)
             y, self.y_velocity = self.integrator.integrate(current_y, self.y_velocity, dt)
-
             self.move(self.position() + (y - current_y))
 
         if self.crouching and self.skeleton.crouch_factor < 1:
@@ -504,6 +569,8 @@ class Walker (PhysicalObject):
         elif not self.crouching and self.skeleton.crouch_factor > 0:
             self.skeleton.crouch_factor -= (dt*60)/10
             self.skeleton.update_legs(0, dt, self.world.render, self.world.physics)
+
+        #if self.crouch_impulse < 0:
 
         goal = self.position()
         adj_dist = abs((start - goal).length())
@@ -536,6 +603,9 @@ class Walker (PhysicalObject):
 
         if self.energy < 1:
             self.energy += WALKER_RECHARGE_FACTOR * (dt)
+
+        if self.player:
+            self.sights.update(self.left_barrel_joint, self.right_barrel_joint)
 
 
 

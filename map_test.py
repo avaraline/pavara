@@ -150,7 +150,7 @@ class Map_Test (ShowBase):
             "body_primary_color": [3.0/255, 127.0/255, 140.0/255],
             "body_secondary_color": [217.0/255, 213.0/255, 154.0/255]
         }
-        self.walker = self.map.world.attach(Walker(incarn, colordict=walker_color_dict))
+        self.walker = self.map.world.attach(Walker(incarn, colordict=walker_color_dict, player=True))
         taskMgr.add(self.move, 'move')
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
         self.setup_input()
@@ -172,7 +172,11 @@ class Map_Test (ShowBase):
             block = self.map.world.attach(FreeSolid(Block((1, 1, 1), (1, 0, 0, 1), 0.01, rand_pos, (0, 0, 0)), 0.01))
 
     def setup_input(self):
-        self.key_map = { 'left': 0
+        self.key_map = {'cam_forward': 0
+                      , 'cam_left': 0
+                      , 'cam_backward': 0
+                      , 'cam_right': 0
+                      , 'left': 0
                       , 'right': 0
                       , 'forward': 0
                       , 'backward': 0
@@ -188,35 +192,51 @@ class Map_Test (ShowBase):
                       }
         self.accept('escape', sys.exit)
         self.accept('p', self.drop_blocks)
-        self.accept('w', self.set_key, ['forward', 1])
-        self.accept('w-up', self.set_key, ['forward', 0])
-        self.accept('a', self.set_key, ['left', 1])
-        self.accept('a-up', self.set_key, ['left', 0])
-        self.accept('s', self.set_key, ['backward', 1])
-        self.accept('s-up', self.set_key, ['backward', 0])
-        self.accept('d', self.set_key, ['right', 1])
-        self.accept('d-up', self.set_key, ['right', 0])
-        self.accept('/', self.set_key, ['print_cam', True])
-        self.accept('/-up', self.set_key, ['print_cam', False])
+        self.accept('w', self.set_key, ['cam_forward', 1])
+        self.accept('w-up', self.set_key, ['cam_forward', 0])
+        self.accept('a', self.set_key, ['cam_left', 1])
+        self.accept('a-up', self.set_key, ['cam_left', 0])
+        self.accept('s', self.set_key, ['cam_backward', 1])
+        self.accept('s-up', self.set_key, ['cam_backward', 0])
+        self.accept('d', self.set_key, ['cam_right', 1])
+        self.accept('d-up', self.set_key, ['cam_right', 0])
+        self.accept('/', self.set_key, ['print_cam', 1])
+        self.accept('/-up', self.set_key, ['print_cam', 0])
         # Test walker movement
-        self.accept('i',        self.walker.handle_command, ['forward', True])
-        self.accept('i-up',     self.walker.handle_command, ['forward', False])
-        self.accept('j',        self.walker.handle_command, ['left', True])
-        self.accept('j-up',     self.walker.handle_command, ['left', False])
-        self.accept('k',        self.walker.handle_command, ['backward', True])
-        self.accept('k-up',     self.walker.handle_command, ['backward', False])
-        self.accept('l',        self.walker.handle_command, ['right', True])
-        self.accept('l-up',     self.walker.handle_command, ['right', False])
-        self.accept('shift',    self.walker.handle_command, ['crouch', True])
-        self.accept('shift-up', self.walker.handle_command, ['crouch', False])
-        self.accept('mouse1',   self.walker.handle_command, ['fire', True])
-        self.accept('mouse1-up',self.walker.handle_command, ['fire', False])
-        self.accept('u',        self.walker.handle_command, ['missile', True])
-        self.accept('u-up',     self.walker.handle_command, ['missile', False])
-        self.accept('o',        self.walker.handle_command, ['grenade_fire', True])
-        self.accept('o-up',     self.walker.handle_command, ['grenade_fire', False])
-        self.accept('m',        self.walker.handle_command, ['grenade', True])
-        self.accept('m-up',     self.walker.handle_command, ['grenade', False])
+        self.accept('i',         self.set_key, ['forward', 1])
+        self.accept('i-up',      self.set_key, ['forward', 0])
+        self.accept('shift-i',   self.set_key, ['forward', 1])
+        self.accept('shift-i-up',self.set_key, ['forward', 0])
+        self.accept('j',         self.set_key, ['left', 1])
+        self.accept('j-up',      self.set_key, ['left', 0])
+        self.accept('shift-j',   self.set_key, ['left', 1])
+        self.accept('shift-j-up',self.set_key, ['left', 0])
+        self.accept('k',         self.set_key, ['backward', 1])
+        self.accept('k-up',      self.set_key, ['backward', 0])
+        self.accept('shift-k',   self.set_key, ['backward', 1])
+        self.accept('shift-k-up',self.set_key, ['backward', 0])
+        self.accept('l',         self.set_key, ['right', 1])
+        self.accept('l-up',      self.set_key, ['right', 0])
+        self.accept('shift-l',   self.set_key, ['right', 1])
+        self.accept('shift-l-up',self.set_key, ['right', 0])
+        self.accept('shift',     self.set_key, ['crouch', 1])
+        self.accept('shift-up',  self.set_key, ['crouch', 0])
+        self.accept('mouse1',    self.set_key, ['fire', 1])
+        self.accept('mouse1-up', self.set_key, ['fire', 0])
+        self.accept('shift-mouse1',self.set_key, ['fire', 1])
+        self.accept('shift-mouse1-up',self.set_key, ['fire', 0])
+        self.accept('u',         self.set_key, ['missile', 1])
+        self.accept('u-up',      self.set_key, ['missile', 0])
+        self.accept('shift-u',   self.set_key, ['missile', 1])
+        self.accept('shift-u-up',self.set_key, ['missile', 0])
+        self.accept('o',         self.set_key, ['grenade_fire', 1])
+        self.accept('o-up',      self.set_key, ['grenade_fire', 0])
+        self.accept('shift-o',   self.set_key, ['grenade_fire', 1])
+        self.accept('shift-o-up',self.set_key, ['grenade_fire', 0])
+        self.accept('m',         self.set_key, ['grenade', 1])
+        self.accept('m-up',      self.set_key, ['grenade', 0])
+        self.accept('shift-m',   self.set_key, ['grenade', 1])
+        self.accept('shift-m-up',self.set_key, ['grenade', 0])
 
     def move(self, task):
         dt = globalClock.getDt()
@@ -247,16 +267,32 @@ class Map_Test (ShowBase):
             self.x = None
             self.y = None
 
-        if (self.key_map['forward']):
+        if (self.key_map['cam_forward']):
             self.camera.setZ(self.camera, -25 * dt)
-        if (self.key_map['backward']):
+        if (self.key_map['cam_backward']):
             self.camera.setZ(self.camera, 25 * dt)
-        if (self.key_map['left']):
+        if (self.key_map['cam_left']):
             self.camera.setX(self.camera, -25 * dt)
-        if (self.key_map['right']):
+        if (self.key_map['cam_right']):
             self.camera.setX(self.camera, 25 * dt)
         if (self.key_map['print_cam']):
             print "CAMERA: Pos - %s, Hpr - %s" % (self.camera.get_pos(), self.camera.get_hpr())
+            self.key_map['print_cam'] = 0
+
+        self.walker.handle_command('forward', self.key_map['forward'])
+        self.walker.handle_command('left', self.key_map['left'])
+        self.walker.handle_command('backward', self.key_map['backward'])
+        self.walker.handle_command('right', self.key_map['right'])
+        self.walker.handle_command('crouch', self.key_map['crouch'])
+
+        self.walker.handle_command('fire', self.key_map['fire'])
+        if self.key_map['fire']: self.key_map['fire'] = 0
+        self.walker.handle_command('missile', self.key_map['missile'])
+        if self.key_map['missile']: self.key_map['missile'] = 0
+        self.walker.handle_command('grenade_fire', self.key_map['grenade_fire'])
+        if self.key_map['grenade_fire']: self.key_map['grenade_fire'] = 0
+        self.walker.handle_command('grenade', self.key_map['grenade'])
+        if self.key_map['grenade']: self.key_map['grenade'] = 0
 
         return task.cont
 

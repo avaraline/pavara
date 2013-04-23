@@ -33,18 +33,16 @@ PLASMA_LIFESPAN = 900
 PLASMA_SOUND_FALLOFF = 20
 
 ENGINE_COLORS = [ [173.0/255.0, 0, 0, 1] #dark red
-                        , [237.0/255.0, 118.0/255.0, 21.0/255.0, 1] #bright orange
-                        , [194.0/255.0, 116.0/255.0, 14.0/255.0, 1] #darker orange
-                        , [247.0/255.0, 76.0/255.0, 42.0/255.0, 1] #brighter red
-                        ]
+                , [237.0/255.0, 118.0/255.0, 21.0/255.0, 1] #bright orange
+                , [194.0/255.0, 116.0/255.0, 14.0/255.0, 1] #darker orange
+                , [247.0/255.0, 76.0/255.0, 42.0/255.0, 1] #brighter red
+                ]
 MISSILE_SCALE = .29
-MISSILE_OFFSET = [0, 2.1, .58]
 MISSILE_LIFESPAN = 600
 
 GRENADE_SCALE = .35
-GRENADE_OFFSET = [0, 1.55, .9]
 
-EXPLOSIONS_DONT_PUSH = ["expl", "ground", "grenade", "missile", "shrapnel", "plasma"]
+EXPLOSIONS_DONT_PUSH = ["expl", "ground"]
 
 class WorldObject (object):
     """
@@ -673,7 +671,7 @@ class Plasma (PhysicalObject):
         return m
 
     def create_solid(self):
-        node = BulletGhostNode("plasma")
+        node = BulletGhostNode(self.name)
         node_shape = BulletSphereShape(.05)
         node.add_shape(node_shape)
         node.set_kinematic(True)
@@ -746,7 +744,7 @@ class Missile (PhysicalObject):
         return self.model
 
     def create_solid(self):
-        node = BulletGhostNode("missile")
+        node = BulletGhostNode(self.name)
         node_shape = BulletSphereShape(.08)
         node.add_shape(node_shape)
         node.set_kinematic(True)
@@ -764,6 +762,16 @@ class Missile (PhysicalObject):
         self.sound.set_loop(True)
         self.sound.play()
         self.integrator = Integrator(self.world.render.get_relative_vector(self.node, Vec3(0,0,30)))
+
+    def decompose(self):
+        clist = list(self.color)
+        clist.extend([1])
+        expl_colors = [clist]
+        expl_colors.extend(ENGINE_COLORS)
+        expl_pos = self.node.get_pos(self.world.render)
+        for c in expl_colors:
+            self.world.attach(TriangleExplosion(expl_pos, 1, size=.1, color=c, lifetime=40))
+        self._remove_all()
 
     def update(self, dt):
         current_pos = Point3(0, self.position().get_y(), 0)
@@ -787,15 +795,15 @@ class Missile (PhysicalObject):
             for c in expl_colors:
                 self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80))
             self.world.do_explosion(self.node, 1.5, 30)
-            self.sound.stop()
-            self.world.audio3d.detachSound(self.sound)
-            self.world.garbage.add(self)
+            self._remove_all()
 
         if self.age > MISSILE_LIFESPAN:
-            self.sound.stop()
-            self.world.audio3d.detachSound(self.sound)
-            self.world.garbage.add(self)
+            self._remove_all()
 
+    def _remove_all(self):
+        self.sound.stop()
+        self.world.audio3d.detachSound(self.sound)
+        self.world.garbage.add(self)
 
 class Grenade (PhysicalObject):
     def __init__(self, pos, hpr, color, walker_v, name=None):
@@ -821,7 +829,7 @@ class Grenade (PhysicalObject):
         return self.model
 
     def create_solid(self):
-        node = BulletRigidBodyNode("grenade")
+        node = BulletRigidBodyNode(self.name)
         node.set_angular_damping(.9)
         node_shape = BulletSphereShape(.08)
         node.add_shape(node_shape)
@@ -839,6 +847,15 @@ class Grenade (PhysicalObject):
         self.force_vector = render.get_relative_vector(self.node, Vec3(0,-240,-90))
         self.solid.apply_impulse(grenade_iv, Point3(*self.pos))
 
+    def decompose(self):
+        clist = list(self.color)
+        clist.extend([1])
+        expl_colors = [clist]
+        expl_colors.extend(ENGINE_COLORS)
+        expl_pos = self.node.get_pos(self.world.render)
+        for c in expl_colors:
+            self.world.attach(TriangleExplosion(expl_pos, 1, size=.1, color=c, lifetime=40))
+        self.world.garbage.add(self)
 
     def update(self, dt):
         self.inner_top.set_color(*random.choice(ENGINE_COLORS))
@@ -907,7 +924,7 @@ class Shrapnel (PhysicalObject):
         return self.node
 
     def create_solid(self):
-        node = BulletRigidBodyNode('shrapnel')
+        node = BulletRigidBodyNode(self.name)
         node_shape = BulletBoxShape(Vec3(.001, .05, .05))
         node.add_shape(node_shape)
         node.set_mass(3)
@@ -1080,11 +1097,18 @@ class World (object):
                 mpoint = real_c.getContacts()[0].getManifoldPoint()
                 distance = mpoint.getDistance()
                 if distance < 0:
-                    expl_vec = Vec3(mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB())
-                    expl_vec.normalize()
-                    magnitude = force * 1.0/math.sqrt(abs(radius - abs(distance)))
-                    obj.solid.set_active(True)
-                    obj.solid.apply_impulse(expl_vec*magnitude, mpoint.getLocalPointB())
+                    if n1_name.startswith("Grenade"):
+                        obj.decompose()
+                    elif n1_name.startswith("Missile"):
+                        obj.decompose()
+                    elif n1_name.startswith("Plasma"):
+                        continue
+                    else:
+                        expl_vec = Vec3(mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB())
+                        expl_vec.normalize()
+                        magnitude = force * 1.0/math.sqrt(abs(radius - abs(distance)))
+                        obj.solid.set_active(True)
+                        obj.solid.apply_impulse(expl_vec*magnitude, mpoint.getLocalPointB())
         self.physics.remove_ghost(expl_body)
         expl_bodyNP.detach_node()
         del(expl_body, expl_bodyNP)
@@ -1092,16 +1116,25 @@ class World (object):
     def do_plasma_push(self, plasma, node, energy):
         if node not in EXPLOSIONS_DONT_PUSH and not node.startswith('Walker'):
             obj = self.objects[node]
-            solid = obj.solid
-            dummy_node = NodePath('tmp')
-            dummy_node.set_hpr(plasma.hpr)
-            dummy_node.set_pos(plasma.pos)
-            f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,1))
-            local_point = (obj.node.get_pos() - dummy_node.get_pos()) *-1
-            f_vec.normalize()
-            solid.set_active(True)
-            solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
-            del(dummy_node)
+            if obj.name.startswith("Grenade"):
+                obj.decompose()
+                return
+            elif obj.name.startswith("Missile"):
+                obj.decompose()
+                return
+            elif obj.name.startswith("Plasma"):
+                return
+            else:
+                solid = obj.solid
+                dummy_node = NodePath('tmp')
+                dummy_node.set_hpr(plasma.hpr)
+                dummy_node.set_pos(plasma.pos)
+                f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,1))
+                local_point = (obj.node.get_pos() - dummy_node.get_pos()) *-1
+                f_vec.normalize()
+                solid.set_active(True)
+                solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
+                del(dummy_node)
 
 
     def update(self, task):
