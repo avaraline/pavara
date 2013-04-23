@@ -68,8 +68,8 @@ class Converter:
         # Also assuming that the 'size' is the full
         # length/width/height, not halved
         #
-        # Swapping the z and y around as well as we're now in
-        # 3D space
+        # PICT y becomes x, PICT x becomes z, and height
+        # becomes y. 
 
         real_src_x = (rect.src.x + self.origin_x)
         real_src_y = (rect.src.y + self.origin_y)
@@ -77,14 +77,14 @@ class Converter:
         real_dst_y = (rect.dst.y + self.origin_y)
 
         # Pen size does actually affect the size of the block
-        size.x = Decimal(real_dst_x - real_src_x) - self.pen_x
-        size.z = Decimal(real_dst_y - real_src_y) - self.pen_y
+        size.z = Decimal(real_dst_x - real_src_x) - self.pen_x
+        size.x = Decimal(real_dst_y - real_src_y) - self.pen_y
         if corner_radius is not 0:
             size.y = Decimal(str(corner_radius * self.pixel_to_thickness))
         else:
             size.y = Decimal(self.wall_height)
-        center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
-        center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
+        center.z = Decimal(real_src_x + real_dst_x) / Decimal(2)
+        center.x = Decimal(real_src_y + real_dst_y) / Decimal(2)
         if corner_radius is not 0:
             center.y = (Decimal(str(corner_radius * self.pixel_to_thickness)) / Decimal(2)) + self.wa + self.base_height
         else:
@@ -306,8 +306,9 @@ class Converter:
         real_dst_x = rect.dst.x + self.origin_x
         real_dst_y = rect.dst.y + self.origin_y
 
-        center.x = Decimal(real_src_x + real_dst_x) / Decimal(2)
-        center.z = Decimal(real_src_y + real_dst_y) / Decimal(2)
+        # Flipping x and z around to better match pavara
+        center.z = Decimal(real_src_x + real_dst_x) / Decimal(2)
+        center.x = Decimal(real_src_y + real_dst_y) / Decimal(2)
         center.y = self.base_height
 
         center.x = self.scale_and_snap(center.x)
@@ -485,28 +486,28 @@ class Converter:
             ramp.top.z = block.center.z
 
             if arc.heading > 315 or arc.heading <= 45:
-                ramp.width = block.size.z
-
-                ramp.base.x -= block.size.x / Decimal(2)
-                ramp.top.x += block.size.x / Decimal(2)
-
-            elif arc.heading > 45 and arc.heading <= 135:
                 ramp.width = block.size.x
 
-                ramp.base.z += block.size.z / Decimal(2)
-                ramp.top.z -= block.size.z / Decimal(2)
+                ramp.base.z -= block.size.z / Decimal(2)
+                ramp.top.z += block.size.z / Decimal(2)
 
-            elif arc.heading > 135 and arc.heading <= 225:
+            elif arc.heading > 45 and arc.heading <= 135:
                 ramp.width = block.size.z
 
                 ramp.base.x += block.size.x / Decimal(2)
                 ramp.top.x -= block.size.x / Decimal(2)
 
-            else:
+            elif arc.heading > 135 and arc.heading <= 225:
                 ramp.width = block.size.x
 
-                ramp.base.z -= block.size.z / Decimal(2)
-                ramp.top.z += block.size.z / Decimal(2)
+                ramp.base.z += block.size.z / Decimal(2)
+                ramp.top.z -= block.size.z / Decimal(2)
+
+            else:
+                ramp.width = block.size.z
+
+                ramp.base.x -= block.size.x / Decimal(2)
+                ramp.top.x += block.size.x / Decimal(2)
 
             self.ramps.append(ramp)
 
