@@ -1,6 +1,7 @@
 from panda3d.core import *
 from direct.actor.Actor import Actor
-from world import *
+from pavara.world import *
+from pavara.projectiles import *
 
 TOP_LEG_LENGTH = 1
 BOTTOM_LEG_LENGTH = 1.21
@@ -96,6 +97,19 @@ class Sights (object):
         self.left_plasma.set_r(180)
         self.left_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
         self.right_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
+        #ambient light source for lighting sight shapes
+        sight_light = AmbientLight('sight_light')
+        sight_light.set_color(VBase4(1,1,1,1))
+        sight_lightnp = render.attach_new_node(sight_light)
+        #the following excludes the sights from z-culling (always visible)
+        self.left_plasma.set_bin("fixed", 40)
+        self.left_plasma.set_depth_test(False)
+        self.left_plasma.set_depth_write(False)
+        self.left_plasma.set_light(sight_lightnp)
+        self.right_plasma.set_bin("fixed", 40)
+        self.right_plasma.set_depth_test(False)
+        self.right_plasma.set_depth_write(False)
+        self.right_plasma.set_light(sight_lightnp)
 
     def update(self, left_barrel, right_barrel):
         self.do_barrel_raytest(left_barrel, self.left_plasma)
