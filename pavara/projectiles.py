@@ -192,7 +192,7 @@ class Grenade (Projectile):
         node.set_angular_damping(.9)
         node_shape = BulletSphereShape(.08)
         node.add_shape(node_shape)
-        node.set_mass(9)
+        node.set_mass(.5)
         return node
 
     def attached(self):
@@ -201,9 +201,9 @@ class Grenade (Projectile):
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-        grenade_iv = render.get_relative_vector(self.node, Vec3(0,200,210))
-        grenade_iv += self.walker_v
-        self.force_vector = render.get_relative_vector(self.node, Vec3(0,-240,-90))
+        self.solid.set_gravity(DEFAULT_GRAVITY*4.5)
+        grenade_iv = render.get_relative_vector(self.node, Vec3(0,8.5,13.5))
+        grenade_iv += (self.walker_v * 1/2)
         self.solid.apply_impulse(grenade_iv, Point3(*self.pos))
 
     def decompose(self):
@@ -219,7 +219,6 @@ class Grenade (Projectile):
     def update(self, dt):
         self.inner_top.set_color(*random.choice(ENGINE_COLORS))
         self.inner_bottom.set_color(*random.choice(ENGINE_COLORS))
-        self.solid.apply_force(self.force_vector, self.node.get_pos())
         result = self.world.physics.contact_test(self.solid)
         self.spin_bone.set_hpr(self.spin_bone, 0,0,10)
         contacts = result.getContacts()

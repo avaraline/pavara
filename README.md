@@ -14,13 +14,13 @@
 how to install dependencies
 ---------------------------
 
-pavara depends on [Panda3d](http://www.panda3d.org/download.php?sdk&version=1.8.0).
+pavara depends on [Panda3d](http://www.panda3d.org/download.php?sdk&version=1.8.0). Panda3d installs its own version of python, but to run the map converter and other helper tools in the repo you will need python >= 2.7 installed on your system.
 
 Panda3d installer links: [Windows](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe), [Mac](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg), [Linux (Ubuntu)](http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk).
 
 Mac users also need the [NVidia CG toolkit](https://developer.nvidia.com/cg-toolkit). Mac users may also need an [X11 Server](http://xquartz.macosforge.org/trac) if one is not installed.
 
-In Ubuntu 12.04, the `oneiric` version of Panda3d will complain about 2 unmet dependencies during installation. [Download these](http://packages.ubuntu.com/oneiric/allpackages) to install.
+In Ubuntu 12.04, the `oneiric` version of Panda3d will complain about 2 unmet dependencies during installation. Download and install the missing packages [from here](http://packages.ubuntu.com/oneiric/allpackages) and retry installation.
 
 running
 -------
@@ -40,12 +40,9 @@ Maps
 *   **legacy map converter**
 	*   add conversion for
 		*   domes
-		*   rounded rects
 		*	fields
 		*	walldoors
-		*	goodies
 		*	teleporters
-		*	etc.
 
 ###low priority
 *	**map loading**
@@ -63,16 +60,15 @@ Graphics
 --------
 ###high priority
 *   **walking animation**
-    *   improvements
-	*	work with colliision character to stop feet on terrain
+    *   implement correct walk cycle
 
 *	**deferred shading, bloom, transparency**
-	*	point lights on everything
+	*	integrate shadows (directional higher priority than shadows from point-lights)
 
 ###low priority
 *   **updated assets**
-	*   grenade model, finalize missle/plasma
-	*   unigoody
+	*   finalize projectile models
+	*   unigoody (or placeholder)
 	*	scout
 	*	pillbox or 'autoturret'
 	*	"ball"
@@ -80,8 +76,6 @@ Graphics
 	*	guard/ufo/ai walker
 *	triangle debris when walkers scrape walls
 
-*   **shadows**
-    *   directional soft shadow mapping
 *   **particle effects**
 	*	missle/lazer trails?
 	*	environmental, e.g. precipitation?
@@ -90,6 +84,7 @@ Networking
 ----------
 ###high priority
 *   **time travelling**
+*	multiple physics simulations on the server/clients? ([discussion here](https://docs.google.com/document/d/1WPZOwmkIAJMAJXovGwdvVnahyb-7qaJY826McMYeMVo/))
 
 ###low priority
 *   **server tracking**
@@ -135,12 +130,10 @@ Physics (Bullet)
 -------
 ###higher priority
 *	**kinematic character controller**
-	*	improve collision detection
-	*	send messages to walker object for animation
-	*	improve leg animation and IK to terrain
-	*	vertical height adjustment/crouching for jumping
+	*	collision detection for damage and externally applied forces (explosions/weapons fire)
+	*	impulse vertical height adjustment/crouching for hitting ground from free-fall
 *	**ballistics**
-	*	grenade lobbing
+	*	grenade lobbing!
 	*	"smart" missle tracking
 	*	walker energy, cannons, shield charging
 	*	laser cannons
@@ -157,4 +150,4 @@ User Interface
 --------------
 ###lowest priority
 *	**preliminary designs**
-*	3d target reticules
+*	3d target reticules (finalize plasma/missile, draft grenade)

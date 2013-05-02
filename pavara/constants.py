@@ -1,6 +1,6 @@
 from panda3d.core import BitMask32, Vec3
 
-#world default
+#world defaults
 
 DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
 DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
