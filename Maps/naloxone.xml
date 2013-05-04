@@ -1,0 +1,111 @@
+<?xml version="1" standalone="yes" ?>
+<map name="Naloxone" tagline="Counteract." author="ryan &apos;silverfox&apos; herriman" description="I hate needles.">
+	<sky color="0.247,0.298,0.400" horizon="0.902,0.902,0.761" horizonScale="0.1"/>
+	<ground color="0.494,0.545,0.643"/>
+
+	<incarnator location="-26,20,-26" heading="135"/>
+	<incarnator location="26,20,26" heading="315"/>
+	<incarnator location="26,20,-26" heading="225"/>
+	<incarnator location="-26,20,26" heading="45"/>
+	<incarnator location="-38,20,4.055" heading="90"/>
+	<incarnator location="38,20,-3.945" heading="270"/>
+
+	<teleporter location="-8,20,-8" group="recenter" disorient="false" model=""/>
+	<teleporter location="8,20,8" group="recenter" disorient="false" model=""/>
+	<teleporter location="0,-30,0" activeRadius="150" deadRadius="110" destination="recenter" disorient="false" model=""/>
+
+	<static>
+		<block size="4,3,28" center="-46,1.5,-34" color="0,0.051,0.157"/>
+		<block size="24,3,4" center="-32,1.5,-46" color="0,0.051,0.157"/>
+		<block size="8,3,28" center="-16,1.5,-34" color="0.494,0.545,0.643"/>
+		<block size="36,3,8" center="-30,1.5,-16" color="0.494,0.545,0.643"/>
+		<block size="8,4,8" center="-32,2,-24" color="0.373,0.424,0.522"/>
+		<block size="8,4,16" center="-24,2,-28" color="0.373,0.424,0.522"/>
+		<block size="32,3,12" center="4,1.5,-42" color="0.494,0.545,0.643"/>
+		<block size="12,3,32" center="-42,1.5,4" color="0.494,0.545,0.643"/>
+		<block size="8,10,8" center="-8,5,-8" color="0,0.051,0.157"/>
+		<block size="8,10,8" center="8,5,8" color="0,0.051,0.157"/>
+		<block size="8,2,8" center="0,1,-16" color="0.745,0.792,0.886"/>
+		<block size="8,2,8" center="-16,1,0" color="0.745,0.792,0.886"/>
+		<block size="8,3,16" center="-24,1.5,-4" color="0.494,0.545,0.643"/>
+		<block size="16,3,8" center="-20,1.5,8" color="0.494,0.545,0.643"/>
+		<block size="8,3,8" center="-16,1.5,16" color="0.494,0.545,0.643"/>
+		<block size="8,2,8" center="-8,1,8" color="0.745,0.792,0.886"/>
+		<block size="8,2,8" center="0,1,16" color="0.745,0.792,0.886"/>
+		<block size="8,2,8" center="8,1,-8" color="0.745,0.792,0.886"/>
+		<block size="8,2,8" center="16,1,0" color="0.745,0.792,0.886"/>
+		<block size="36,3,8" center="30,1.5,16" color="0.494,0.545,0.643"/>
+		<block size="8,3,28" center="16,1.5,34" color="0.494,0.545,0.643"/>
+		<block size="8,4,16" center="24,2,28" color="0.373,0.424,0.522"/>
+		<block size="8,4,8" center="32,2,24" color="0.373,0.424,0.522"/>
+		<block size="8,3,16" center="-8,1.5,20" color="0.494,0.545,0.643"/>
+		<block size="16,3,8" center="4,1.5,24" color="0.494,0.545,0.643"/>
+		<block size="32,3,12" center="-4,1.5,42" color="0.494,0.545,0.643"/>
+		<block size="8,4,8" center="-24,2,24" color="0.373,0.424,0.522"/>
+		<block size="16,2,8" center="-12,1,32" color="0.745,0.792,0.886"/>
+		<block size="8,2,16" center="-32,1,12" color="0.745,0.792,0.886"/>
+		<block size="4,2,20" center="-38,1,30" color="0,0.051,0.157"/>
+		<block size="16,2,4" center="-28,1,38" color="0,0.051,0.157"/>
+		<block size="12,3,32" center="42,1.5,-4" color="0.494,0.545,0.643"/>
+		<block size="16,3,8" center="-4,1.5,-24" color="0.494,0.545,0.643"/>
+		<block size="8,3,16" center="24,1.5,4" color="0.494,0.545,0.643"/>
+		<block size="8,3,16" center="8,1.5,-20" color="0.494,0.545,0.643"/>
+		<block size="16,3,8" center="20,1.5,-8" color="0.494,0.545,0.643"/>
+		<block size="8,3,8" center="16,1.5,-16" color="0.494,0.545,0.643"/>
+		<block size="8,4,8" center="24,2,-24" color="0.373,0.424,0.522"/>
+		<block size="16,2,8" center="12,1,-32" color="0.745,0.792,0.886"/>
+		<block size="8,2,16" center="32,1,-12" color="0.745,0.792,0.886"/>
+		<block size="4,2,20" center="38,1,-30" color="0,0.051,0.157"/>
+		<block size="16,2,4" center="28,1,-38" color="0,0.051,0.157"/>
+		<block size="24,3,4" center="32,1.5,46" color="0,0.051,0.157"/>
+		<block size="4,3,28" center="46,1.5,34" color="0,0.051,0.157"/>
+		<ramp base="-40,0,-28" top="-40,3,-20" width="8" color="1,1,0.863"/>
+		<ramp base="-28,0,-40" top="-20,3,-40" width="8" color="1,1,0.863"/>
+		<ramp base="-4,2,-16" top="-12,3,-16" width="8" color="1,1,0.863"/>
+		<ramp base="-16,2,-4" top="-16,3,-12" width="8" color="1,1,0.863"/>
+		<ramp base="-4,0,0" top="-12,2,0" width="8" color="1,1,0.863"/>
+		<ramp base="0,0,-4" top="0,2,-12" width="8" color="1,1,0.863"/>
+		<ramp base="-32,2,4" top="-32,3,-12" width="8" color="1,1,0.863"/>
+		<ramp base="4,0,0" top="12,2,0" width="8" color="1,1,0.863"/>
+		<ramp base="0,0,4" top="0,2,12" width="8" color="1,1,0.863"/>
+		<ramp base="4,2,16" top="12,3,16" width="8" color="1,1,0.863"/>
+		<ramp base="16,2,4" top="16,3,12" width="8" color="1,1,0.863"/>
+		<ramp base="-4,2,32" top="12,3,32" width="8" color="1,1,0.863"/>
+		<ramp base="-16,2,28" top="-16,3,20" width="8" color="1,1,0.863"/>
+		<ramp base="-28,2,16" top="-20,3,16" width="8" color="1,1,0.863"/>
+		<ramp base="-28,0,32" top="-20,2,32" width="8" color="1,1,0.863"/>
+		<ramp base="-32,0,28" top="-32,2,20" width="8" color="1,1,0.863"/>
+		<ramp base="4,2,-32" top="-12,3,-32" width="8" color="1,1,0.863"/>
+		<ramp base="32,2,-4" top="32,3,12" width="8" color="1,1,0.863"/>
+		<ramp base="28,2,-16" top="20,3,-16" width="8" color="1,1,0.863"/>
+		<ramp base="16,2,-28" top="16,3,-20" width="8" color="1,1,0.863"/>
+		<ramp base="32,0,-28" top="32,2,-20" width="8" color="1,1,0.863"/>
+		<ramp base="28,0,-32" top="20,2,-32" width="8" color="1,1,0.863"/>
+		<ramp base="40,0,28" top="40,3,20" width="8" color="1,1,0.863"/>
+		<ramp base="28,0,40" top="20,3,40" width="8" color="1,1,0.863"/>
+	</static>
+
+	<hologram>
+		<static>
+			<block size="2,0,2" center="-40,0.01,-40" color="1,1,0.863"/>
+			<block size="2,0,2" center="40,0.01,40" color="1,1,0.863"/>
+			<block size="2,0,2" center="-32,0.01,32" color="1,1,0.863"/>
+			<block size="2,0,2" center="32,0.01,-32" color="1,1,0.863"/>
+			<block size="2,0,2" center="0,0.01,0" color="1,1,0.863"/>
+			<block size="2,0,2" center="16,3.01,-16" color="1,1,0.863"/>
+			<block size="2,0,2" center="-16,3.01,-16" color="1,1,0.863"/>
+			<block size="2,0,2" center="-16,3.01,16" color="1,1,0.863"/>
+			<block size="2,0,2" center="16,3.01,16" color="1,1,0.863"/>
+		</static>
+	</hologram>
+
+	<goody location="0,1.75,0" grenades="8" missiles="4" respawn="18.75" spin="80,0,0" model="Mushroom"/>
+	<goody location="-32,1.75,32" missiles="4" respawn="9.375" spin="80,0,0" model="Missile"/>
+	<goody location="32,1.75,-32" missiles="4" respawn="9.375" spin="80,0,0" model="Missile"/>
+	<goody location="-16,4.75,-16" missiles="2" respawn="6.25" spin="80,0,0" model="Missile"/>
+	<goody location="16,4.75,16" missiles="2" respawn="6.25" spin="80,0,0" model="Missile"/>
+	<goody location="40,1.75,40" grenades="8" respawn="15.625" spin="80,0,0" model="Grenade"/>
+	<goody location="-40,1.75,-40" grenades="8" respawn="15.625" spin="80,0,0" model="Grenade"/>
+	<goody location="16,4.75,-16" grenades="4" respawn="12.5" spin="80,0,0" model="Grenade"/>
+	<goody location="-16,4.75,16" grenades="4" respawn="12.5" spin="80,0,0" model="Grenade"/>
+</map>
