@@ -839,12 +839,8 @@ class World (object):
                 mpoint = real_c.getContacts()[0].getManifoldPoint()
                 distance = mpoint.getDistance()
                 if distance < 0:
-                    if n1_name.startswith("Grenade"):
+                    if hasattr(obj, 'decompose'):
                         obj.decompose()
-                    elif n1_name.startswith("Missile"):
-                        obj.decompose()
-                    elif n1_name.startswith("Plasma"):
-                        continue
                     else:
                         expl_vec = Vec3(mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB())
                         expl_vec.normalize()
@@ -858,14 +854,8 @@ class World (object):
     def do_plasma_push(self, plasma, node, energy):
         if node not in EXPLOSIONS_DONT_PUSH and not node.startswith('Walker'):
             obj = self.objects[node]
-            if obj.name.startswith("Grenade"):
+            if hasattr(obj, 'decompose'):
                 obj.decompose()
-                return
-            elif obj.name.startswith("Missile"):
-                obj.decompose()
-                return
-            elif obj.name.startswith("Plasma"):
-                return
             else:
                 solid = obj.solid
                 dummy_node = NodePath('tmp')

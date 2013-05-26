@@ -8,8 +8,8 @@ BOTTOM_LEG_LENGTH = 1.21
 TOP_LEG_EXTENDED_P = 60
 BOTTOM_LEG_EXTENDED_P = -70
 
-MISSILE_OFFSET = [0, -.3, -.6]#2.5, 1.48]
-GRENADE_OFFSET = [0, .3, -.8]#1.9, 1.3]
+MISSILE_OFFSET = [0, -.3, -.6]
+GRENADE_OFFSET = [0, .3, -.8]
 
 SIGHTS_FRIENDLY_COLOR = [114.0/255.0, 214.0/255.0, 86.0/255.0, 1]
 SIGHTS_ENEMY_COLOR = [217.0/255.0, 24.0/255.0, 24.0/255.0, 1]
@@ -165,15 +165,15 @@ class LegBones (object):
                           duration=walk_cycle_speed,
                           extraArgs=[bone, idx])
         for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
-
-        to_data = self.bones[self.TOP][2]
-        to_data += bob
-        bob = LerpFunc(self.update_bob,
-                       fromData=self.top_bone.get_pos().y,
-                       toData=to_data.y,
-                       duration=walk_cycle_speed,
-                       extraArgs=[self.bones[self.TOP][0]])
-        lerps.append(bob)
+        if bob:
+            to_data = self.bones[self.TOP][2]
+            to_data += bob
+            bob = LerpFunc(self.update_bob,
+                           fromData=self.top_bone.get_pos().y,
+                           toData=to_data.y,
+                           duration=walk_cycle_speed,
+                           extraArgs=[self.bones[self.TOP][0]])
+            lerps.append(bob)
         return lerps
 
     def get_return(self, return_speed):
@@ -210,7 +210,7 @@ class LegBones (object):
         l_from = self.foot_bone.get_pos(self.render)
         l_to = self.foot_bone.get_pos(self.render)
         l_from.y += 1
-        l_to.y -= 1
+        l_to.y -= .7
         result = self.physics.ray_test_closest(l_from, l_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         if result.has_hit():
             return result.get_hit_pos()
@@ -219,7 +219,7 @@ class LegBones (object):
 
     def ik_leg(self, data):
         foot_pos = self.get_floor_spot()
-        if foot_pos and self.is_on_ground:
+        if foot_pos:
             hip_pos = self.hip_bone.get_pos(self.render)
             target_vector =  hip_pos - foot_pos
         else:
@@ -271,12 +271,12 @@ class Skeleton (object):
 
         left_leg_on_ground = [LerpFunc(self._left_leg_on_ground)]
         right_leg_on_ground = [LerpFunc(self._right_leg_on_ground)]
-        steps = [ self.right_leg.get_walk_seq(0,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(4,ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(1,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(5,ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
-                , self.right_leg.get_walk_seq(2,ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(0,ws, self.upbob, 'easeOut') + up_interval + left_leg_on_ground
-                , self.right_leg.get_walk_seq(3,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(1,ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
-                , self.right_leg.get_walk_seq(4,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(2,ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
-                , self.right_leg.get_walk_seq(5,ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(3,ws,self.downbob, 'easeIn') + down_interval + right_leg_on_ground
+        steps = [ self.right_leg.get_walk_seq(0, ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(4, ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
+                , self.right_leg.get_walk_seq(1, ws, None, 'easeIn') + self.left_leg.get_walk_seq(5, ws, None, 'easeOut') + right_leg_on_ground
+                , self.right_leg.get_walk_seq(2, ws, None, 'easeIn') + self.left_leg.get_walk_seq(0, ws, None, 'easeOut') + left_leg_on_ground
+                , self.right_leg.get_walk_seq(3, ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(1, ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(4, ws, None, 'easeOut') + self.left_leg.get_walk_seq(2, ws,None, 'easeIn') + left_leg_on_ground
+                , self.right_leg.get_walk_seq(5, ws, None, 'easeOut') + self.left_leg.get_walk_seq(3, ws,None, 'easeIn') + right_leg_on_ground
                 ]
         steps = [Parallel(*step) for step in steps]
         return Sequence(*steps)
@@ -571,6 +571,8 @@ class Walker (PhysicalObject):
             self.crouch_impulse = self.y_velocity.y
             self.y_velocity = Vec3(0, 0, 0)
             self.move(result.get_hit_pos())
+            self.skeleton.left_leg_on_ground = True
+            self.skeleton.right_leg_on_ground = True
         else:
             self.on_ground = False
             current_y = Point3(0, self.position().get_y(), 0)

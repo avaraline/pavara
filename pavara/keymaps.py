@@ -1,0 +1,47 @@
+
+
+class KeyMaps:
+
+	flycam_input_settings = [('w', 		   	  'cam_forward'),
+					         ('a', 		   	  'cam_left'),
+					         ('s', 		   	  'cam_backward'),
+					         ('d', 		   	  'cam_right'),
+					         ('/', 		   	  'print_cam'),
+					         ('i',            'forward'),
+					         ('shift-i',      'forward'),
+					         ('j',            'left'),
+					         ('shift-j',      'left'),
+					         ('k',            'backward'),
+					         ('shift-k',      'backward'),
+					         ('l',            'right'),
+					         ('shift-l',      'right'),
+					         ('shift',        'crouch'),
+					         ('mouse1',       'fire'),
+					         ('shift-mouse1', 'fire'),
+					         ('u',            'missile'),
+					         ('shift-u',      'missile'),
+					         ('o',            'grenade_fire'),
+					         ('shift-o',      'grenade_fire'),
+					         ('m',            'grenade'),
+					         ('shift-m',      'grenade')]
+
+
+	hector_input_settings = [('w', 		   	  'forward'),
+							 ('shift-w',	  'forward'),
+					         ('a', 		   	  'left'),
+					         ('shift-a', 	  'left'),
+					         ('s', 		   	  'backward'),
+					         ('shift-s', 	  'backward'),
+					         ('d', 		   	  'right'),
+					         ('shift-d', 	  'right'),
+					         ('/', 		   	  'print_cam'),
+					         ('shift-l',      'right'),
+					         ('shift',        'crouch'),
+					         ('mouse1',       'fire'),
+					         ('shift-mouse1', 'fire'),
+					         ('q',            'missile'),
+					         ('shift-q',      'missile'),
+					         ('e',            'grenade_fire'),
+					         ('shift-e',      'grenade_fire'),
+					         ('c',            'grenade'),
+					         ('shift-c',      'grenade')]

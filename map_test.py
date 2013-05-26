@@ -13,6 +13,7 @@ from pavara.maps import load_maps
 from pavara.world import Block, FreeSolid
 from pavara.utils.geom import GeomBuilder
 from pavara.walker import Walker
+from pavara.keymaps import KeyMaps
 
 
 class Map_Test (ShowBase):
@@ -192,51 +193,11 @@ class Map_Test (ShowBase):
                       }
         self.accept('escape', sys.exit)
         self.accept('p', self.drop_blocks)
-        self.accept('w', self.set_key, ['cam_forward', 1])
-        self.accept('w-up', self.set_key, ['cam_forward', 0])
-        self.accept('a', self.set_key, ['cam_left', 1])
-        self.accept('a-up', self.set_key, ['cam_left', 0])
-        self.accept('s', self.set_key, ['cam_backward', 1])
-        self.accept('s-up', self.set_key, ['cam_backward', 0])
-        self.accept('d', self.set_key, ['cam_right', 1])
-        self.accept('d-up', self.set_key, ['cam_right', 0])
-        self.accept('/', self.set_key, ['print_cam', 1])
-        self.accept('/-up', self.set_key, ['print_cam', 0])
-        # Test walker movement
-        self.accept('i',         self.set_key, ['forward', 1])
-        self.accept('i-up',      self.set_key, ['forward', 0])
-        self.accept('shift-i',   self.set_key, ['forward', 1])
-        self.accept('shift-i-up',self.set_key, ['forward', 0])
-        self.accept('j',         self.set_key, ['left', 1])
-        self.accept('j-up',      self.set_key, ['left', 0])
-        self.accept('shift-j',   self.set_key, ['left', 1])
-        self.accept('shift-j-up',self.set_key, ['left', 0])
-        self.accept('k',         self.set_key, ['backward', 1])
-        self.accept('k-up',      self.set_key, ['backward', 0])
-        self.accept('shift-k',   self.set_key, ['backward', 1])
-        self.accept('shift-k-up',self.set_key, ['backward', 0])
-        self.accept('l',         self.set_key, ['right', 1])
-        self.accept('l-up',      self.set_key, ['right', 0])
-        self.accept('shift-l',   self.set_key, ['right', 1])
-        self.accept('shift-l-up',self.set_key, ['right', 0])
-        self.accept('shift',     self.set_key, ['crouch', 1])
-        self.accept('shift-up',  self.set_key, ['crouch', 0])
-        self.accept('mouse1',    self.set_key, ['fire', 1])
-        self.accept('mouse1-up', self.set_key, ['fire', 0])
-        self.accept('shift-mouse1',self.set_key, ['fire', 1])
-        self.accept('shift-mouse1-up',self.set_key, ['fire', 0])
-        self.accept('u',         self.set_key, ['missile', 1])
-        self.accept('u-up',      self.set_key, ['missile', 0])
-        self.accept('shift-u',   self.set_key, ['missile', 1])
-        self.accept('shift-u-up',self.set_key, ['missile', 0])
-        self.accept('o',         self.set_key, ['grenade_fire', 1])
-        self.accept('o-up',      self.set_key, ['grenade_fire', 0])
-        self.accept('shift-o',   self.set_key, ['grenade_fire', 1])
-        self.accept('shift-o-up',self.set_key, ['grenade_fire', 0])
-        self.accept('m',         self.set_key, ['grenade', 1])
-        self.accept('m-up',      self.set_key, ['grenade', 0])
-        self.accept('shift-m',   self.set_key, ['grenade', 1])
-        self.accept('shift-m-up',self.set_key, ['grenade', 0])
+
+        for key,cmd in KeyMaps.flycam_input_settings:
+            self.accept(key, self.set_key, [cmd, 1])
+            self.accept(key+"-up", self.set_key, [cmd, 0])
+
 
     def move(self, task):
         dt = globalClock.getDt()

@@ -18,7 +18,6 @@ class Plasma (Projectile):
         self.hpr = hpr
         self.energy = energy
         self.age = 0
-        self.in_earshot = False
 
     def create_node(self):
         m = load_model('plasma.egg')
@@ -80,6 +79,9 @@ class Plasma (Projectile):
             self.sound.stop()
             self.world.audio3d.detachSound(self.sound)
             self.world.garbage.add(self)
+
+    def decompose(self):
+        pass
 
 class Missile (Projectile):
     def __init__(self, pos, hpr, color, name=None):
