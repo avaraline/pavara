@@ -275,10 +275,10 @@ class Skeleton (object):
         right_leg_on_ground = [LerpFunc(self._right_leg_on_ground)]
         steps = [ self.right_leg.get_walk_seq(0, ws, self.upbob, 'easeIn') + self.left_leg.get_walk_seq(4, ws, self.upbob, 'easeOut') + up_interval + right_leg_on_ground
                 , self.right_leg.get_walk_seq(1, ws, None, 'easeIn') + self.left_leg.get_walk_seq(5, ws, None, 'easeOut') + right_leg_on_ground
-                , self.right_leg.get_walk_seq(2, ws, None, 'easeIn') + self.left_leg.get_walk_seq(0, ws, None, 'easeOut') + left_leg_on_ground
-                , self.right_leg.get_walk_seq(3, ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(1, ws,self.downbob, 'easeIn') + down_interval + left_leg_on_ground
+                , self.right_leg.get_walk_seq(2, ws, self.downbob, 'easeIn') + self.left_leg.get_walk_seq(0, ws, self.downbob, 'easeOut') + down_interval +left_leg_on_ground
+                , self.right_leg.get_walk_seq(3, ws, self.upbob, 'easeOut') + self.left_leg.get_walk_seq(1, ws,self.upbob, 'easeIn') + up_interval + left_leg_on_ground
                 , self.right_leg.get_walk_seq(4, ws, None, 'easeOut') + self.left_leg.get_walk_seq(2, ws,None, 'easeIn') + left_leg_on_ground
-                , self.right_leg.get_walk_seq(5, ws, None, 'easeOut') + self.left_leg.get_walk_seq(3, ws,None, 'easeIn') + right_leg_on_ground
+                , self.right_leg.get_walk_seq(5, ws, self.downbob, 'easeOut') + self.left_leg.get_walk_seq(3, ws, self.downbob, 'easeIn') + down_interval + right_leg_on_ground
                 ]
         steps = [Parallel(*step) for step in steps]
         return Sequence(*steps)
