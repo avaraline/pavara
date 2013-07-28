@@ -1,5 +1,8 @@
 from pavara.utils import drill
-from pavara.world import *
+from pavara.map_objects import *
+from pavara.effects import *
+from pavara.world import World
+from panda3d.core import ColorAttrib
 import random
 import math
 
@@ -93,8 +96,19 @@ class Map (object):
         self.process_children(node)
         self.effects.pop()
 
+    def parse_mortal(self, node):
+        hp = parse_float(node['hp'])
+        self.effects.append(lambda effected: Mortal(effected, hp))
+        self.process_children(node)
+        self.effects.pop()
+
     def parse_hologram(self, node):
         self.effects.append(Hologram)
+        self.process_children(node)
+        self.effects.pop()
+    
+    def parse_hostile(self, node):
+        self.effects.append(Hostile)
         self.process_children(node)
         self.effects.pop()
 

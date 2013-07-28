@@ -8,9 +8,11 @@ from direct.showbase import Audio3DManager
 from direct.filter.CommonFilters import CommonFilters
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
-
+from pavara.network import Server, Client
+from pavara.constants import TCP_PORT
 from pavara.maps import load_maps
-from pavara.world import Block, FreeSolid
+from pavara.map_objects import Block 
+from pavara.effects import FreeSolid
 from pavara.utils.geom import GeomBuilder
 from pavara.walker import Walker
 from pavara.keymaps import KeyMaps
@@ -40,6 +42,11 @@ class Map_Test (ShowBase):
             incarn = self.map.world.get_incarn()
             self.map.world.attach(Walker(incarn))
             self.show_selection_screen()
+
+        #host = args[0] if args else 'localhost'
+        #print 'CONNECTING TO', host
+        #self.client = Client(self.map.world, host, TCP_PORT)
+
 
         # axes = loader.loadModel('models/yup-axis')
         # axes.setScale(10)
@@ -71,8 +78,6 @@ class Map_Test (ShowBase):
         #show ui after lerp is finished
         showui = Func(_unhide_ui)
         Sequence(cintv,showui).start()
-
-
 
     def show_selection_screen(self):
         LoadFontFace("Ui/assets/MunroSmall.otf")
@@ -198,7 +203,6 @@ class Map_Test (ShowBase):
             self.accept(key, self.set_key, [cmd, 1])
             self.accept(key+"-up", self.set_key, [cmd, 0])
 
-
     def move(self, task):
         dt = globalClock.getDt()
         if self.mouseWatcherNode.hasMouse():
@@ -258,6 +262,6 @@ class Map_Test (ShowBase):
         return task.cont
 
 if __name__ == '__main__':
-    loadPrcFile('pavara.prc')
+    loadPrcFile('panda_config.prc')
     m = Map_Test()
     m.run()

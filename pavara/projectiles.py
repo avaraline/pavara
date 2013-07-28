@@ -1,7 +1,8 @@
 from pandac.PandaModules import Point3
 from panda3d.bullet import BulletGhostNode, BulletSphereShape, BulletRigidBodyNode
 from direct.actor.Actor import Actor
-from pavara.world import PhysicalObject, TriangleExplosion
+from pavara.base_objects import PhysicalObject
+from pavara.effects import TriangleExplosion
 from pavara.utils.integrator import Integrator
 from pavara.assets import load_model
 from pavara.constants import *

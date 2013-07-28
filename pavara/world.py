@@ -1,702 +1,21 @@
-from pandac.PandaModules import *
-from panda3d.bullet import *
-from pavara.utils.geom import GeomBuilder, to_cartesian
-from pavara.utils.integrator import Integrator, Friction
-from pavara.assets import load_model
 from pavara.constants import *
-from direct.interval.LerpInterval import *
-from direct.interval.IntervalGlobal import *
-from direct.actor.Actor import Actor
+from pavara.utils.integrator import Integrator, Friction
+from pavara.base_objects import *
+from pavara.map_objects import Sky, Dome
+from pavara.utils.geom import to_cartesian
+from panda3d.core import AmbientLight, DirectionalLight, VBase4, Vec3, TransparencyAttrib, CompassEffect, NodePath
+from panda3d.bullet import BulletDebugNode, BulletWorld, BulletGhostNode, BulletSphereShape, BulletRigidBodyNode
 import math
 import random
 import string
 
-
-class WorldObject (object):
-    """
-    Base class for anything attached to a World.
-    """
-
-    world = None
-    last_unique_id = 0
-    collide_bits = NO_COLLISION_BITS
-
-    def __init__(self, name=None):
-        self.name = name
-        if not self.name:
-            self.name = '%s:%d' % (self.__class__.__name__, self.__class__.last_unique_id)
-        self.__class__.last_unique_id += 1
-
-    def __repr__(self):
-        return self.name
-
-    def attached(self):
-        """
-        Called when this object is actually attached to a World. By this time, self.world will have been set.
-        """
-        pass
-
-    def detached(self):
-        """
-        """
-        pass
-
-    def update(self, dt):
-        """
-        Called each frame if the WorldObject has registered itself as updatable.
-        """
-        pass
-
-class PhysicalObject (WorldObject):
-    """
-    A WorldObject subclass that represents a physical object; i.e. one that is visible and may have an associated
-    solid for physics collisions.
-    """
-
-    node = None
-    solid = None
-    collide_bits = MAP_COLLIDE_BIT
-
-    def create_node(self):
-        """
-        Called by World.attach to create a NodePath that will be re-parented to the World's render.
-        """
-        pass
-
-    def create_solid(self):
-        """
-        Called by World.attach to create any necessary physics geometry.
-        """
-        pass
-
-    def collision(self, other, manifold, first):
-        """
-        Called when this object is collidable, and collides with another collidable object.
-        :param manifold: The "line" between the colliding objects. See
-                         https://www.panda3d.org/reference/devel/python/classpanda3d.bullet.BulletManifoldPoint.php
-        :param first: Whether this was the "first" (node0) object in the collision.
-        """
-        pass
-
-    def rotate(self, yaw, pitch, roll):
-        """
-        Programmatically set the yaw, pitch, and roll of this object.
-        """
-        self.node.set_hpr(yaw, pitch, roll)
-
-    def rotate_by(self, yaw, pitch, roll):
-        """
-        Programmatically rotate this object by the given yaw, pitch, and roll.
-        """
-        self.node.set_hpr(self.node, yaw, pitch, roll)
-
-    def move(self, center):
-        """
-        Programmatically move this object to be centered at the given coordinates.
-        """
-        self.node.set_pos(*center)
-
-    def move_by(self, x, y, z):
-        """
-        Programmatically move this object by the given distances in each direction.
-        """
-        self.node.set_fluid_pos(self.node, x, y, z)
-
-    def position(self):
-        return self.node.get_pos()
-
-
-class CompositeObject (PhysicalObject):
-
-    def __init__(self, name=None):
-        super(CompositeObject, self).__init__(name)
-        self.objects = []
-
-    def create_node(self):
-        composite_geom = GeomBuilder('composite')
-        for obj in self.objects:
-            obj.add_to(composite_geom)
-        return NodePath(composite_geom.get_geom_node())
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        for obj in self.objects:
-            obj.add_solid(node)
-        return node
-
-    def attach(self, obj):
-        self.objects.append(obj)
-
-class Effect (object):
-    """Effects wrap objects like boxes and ramps and other effects and change
-       behavior of the wrapped object. Subclasses of this class automatically
-       delegate anything not implemented in the effect to the object being
-       wrapped."""
-    def __init__(self, effected):
-        object.__setattr__(self, 'effected', effected)
-
-    def __setattr__(self, name, value):
-        """Attributes should be assigned as deeply in the effect chain as
-           possible, so go all the way down the effect chain, and start coming
-           back until the first object to have the attribute is found. Set it
-           and return. If nothing is found, set it in this object."""
-        objs = []
-        obj = self
-
-        while hasattr(obj, 'effected'):
-            obj = obj.effected
-            objs.append(obj)
-
-        while objs:
-            obj = objs.pop()
-            if hasattr(obj, name):
-                object.__setattr__(obj, name, value)
-                return
-        object.__setattr__(self, name, value)
-
-    def __getattr__(self, name):
-        """Python only calls this function if the attribute is not defined on
-           the object. This makes it so method calls are automatically passed
-           down the effect chain if they are not defined in the effect object"""
-        return getattr(self.effected, name)
-
-
-class Hologram (Effect):
-    collide_bits = NO_COLLISION_BITS
-
-class FreeSolid (Effect):
-
-    def __init__(self, effected, mass):
-        if mass > 0:
-            self.mass = mass
-        Effect.__init__(self, effected)
-        self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
-
-    def create_solid(self):
-        node = self.effected.create_solid()
-        node.set_mass(self.mass if self.mass > 0 else 1)
-        return node
-
-
-class Transparent (Effect):
-
-    def __init__(self, effected, alpha):
-        Effect.__init__(self, effected)
-        self.alpha = alpha
-
-    def create_node(self):
-        node = self.effected.create_node()
-        node.setTwoSided(True)
-        node.setDepthWrite(False)
-        node.set_transparency(TransparencyAttrib.MAlpha)
-        node.setTwoSided(True)
-        node.setDepthWrite(False)
-        node.setAlphaScale(self.alpha)
-        return node
-
-
-class Block (PhysicalObject):
-    """
-    A block.
-    """
-
-    def __init__(self, size, color, mass, center, hpr, name=None):
-        super(Block, self).__init__(name)
-        self.size = size
-        self.color = color
-        self.mass = mass
-        self.center = center
-        self.hpr = hpr
-
-    def create_node(self):
-        return NodePath(GeomBuilder('block').add_block(self.color, (0, 0, 0), self.size).get_geom_node())
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)))
-        return node
-
-    def add_solid(self, node):
-        node.add_shape(BulletBoxShape(Vec3(self.size[0] / 2.0, self.size[1] / 2.0, self.size[2] / 2.0)), TransformState.make_pos_hpr(Point3(*self.center), self.hpr))
-
-    def add_to(self, geom_builder):
-        rot = LRotationf()
-        rot.set_hpr(self.hpr)
-        geom_builder.add_block(self.color, self.center, self.size, rot)
-
-    def attached(self):
-        self.move(self.center)
-        self.rotate(*self.hpr)
-
-class Ramp (PhysicalObject):
-    """
-    A ramp.
-    """
-
-    def __init__(self, base, top, width, thickness, color, mass, hpr, name=None):
-        super(Ramp, self).__init__(name)
-        self.base = Point3(*base)
-        self.top = Point3(*top)
-        self.width = width
-        self.thickness = thickness
-        self.color = color
-        self.mass = mass
-        self.hpr = hpr
-        self.midpoint = Point3((self.base + self.top) / 2.0)
-
-    def create_node(self):
-        rel_base = Point3(self.base - (self.midpoint - Point3(0, 0, 0)))
-        rel_top = Point3(self.top - (self.midpoint - Point3(0, 0, 0)))
-        self.geom = GeomBuilder().add_ramp(self.color, rel_base, rel_top, self.width, self.thickness).get_geom_node()
-        return NodePath(self.geom)
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        mesh = BulletConvexHullShape()
-        mesh.add_geom(self.geom.get_geom(0))
-        node.add_shape(mesh)
-        return node
-
-    def add_solid(self, node):
-        mesh = BulletConvexHullShape()
-        mesh.add_geom(GeomBuilder().add_ramp(self.color, self.base, self.top, self.width, self.thickness, LRotationf(*self.hpr)).get_geom())
-        node.add_shape(mesh)
-        return node
-
-    def add_to(self, geom_builder):
-        geom_builder.add_ramp(self.color, self.base, self.top, self.width, self.thickness, LRotationf(*self.hpr))
-
-    def attached(self):
-        self.move(self.midpoint)
-        self.rotate(*self.hpr)
-
-class Wedge (PhysicalObject):
-    """
-    Ramps with some SERIOUS 'tude.
-    """
-
-    def __init__(self, base, top, width, color, mass, hpr, name=None):
-        super(Wedge, self).__init__(name)
-        self.base = Point3(*base)
-        self.top = Point3(*top)
-        self.width = width
-        self.color = color
-        self.mass = mass
-        self.hpr = hpr
-        self.midpoint = Point3((self.base + self.top) / 2.0)
-
-    def create_node(self):
-        rel_base = Point3(self.base - (self.midpoint - Point3(0, 0, 0)))
-        rel_top = Point3(self.top - (self.midpoint - Point3(0, 0, 0)))
-        self.geom = GeomBuilder().add_wedge(self.color, rel_base, rel_top, self.width).get_geom_node()
-        return NodePath(self.geom)
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        mesh = BulletConvexHullShape()
-        mesh.add_geom(self.geom.get_geom(0))
-        node.add_shape(mesh)
-        return node
-
-    def add_solid(self, node):
-        mesh = BulletConvexHullShape()
-        mesh.add_geom(GeomBuilder().add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr)).get_geom())
-        node.add_shape(mesh)
-        return node
-
-    def add_to(self, geom_builder):
-        geom_builder.add_wedge(self.color, self.base, self.top, self.width, LRotationf(*self.hpr))
-
-    def attached(self):
-        self.move(self.midpoint)
-        self.rotate(*self.hpr)
-
-class BlockRamp (PhysicalObject):
-    """
-    Old-style ramps like in the original game. Basically just a block that is
-    rotated, and specified differently in XML. Should maybe be a Block subclass?
-    """
-
-    def __init__(self, base, top, width, thickness, color, mass, hpr, name=None):
-        super(BlockRamp, self).__init__(name)
-        self.base = Point3(*base)
-        self.top = Point3(*top)
-        self.width = width
-        self.thickness = thickness
-        self.__adjust_ends__()
-        self.color = color
-        self.length = (self.top - self.base).length()
-        self.mass = mass
-        self.hpr = hpr
-        v1 = self.top - self.base
-        if self.base.get_x() != self.top.get_x():
-            p3 = Point3(self.top.get_x()+100, self.top.get_y(), self.top.get_z())
-        else:
-            p3 = Point3(self.top.get_x(), self.top.get_y(), self.top.get_z() + 100)
-        v2 = self.top - p3
-        self.up = v1.cross(v2)
-        self.up.normalize()
-        self.midpoint = Point3((self.base + self.top) / 2.0)
-
-    def __quadratic__(self, a, b, c):
-        sqrt = math.sqrt(b**2.0 - 4.0 * a * c)
-        denom = 2.0 * a
-        return (-b - sqrt)/denom, (-b + sqrt)/denom
-
-    def __adjust_ends__(self):
-        SEARCH_ITERATIONS = 20
-        v = self.top - self.base
-        l = v.get_xz().length()
-        h = abs(v.get_y())
-        midx = l / 2.0
-        midy = h / 2.0
-        maxr = v.length() / 2.0
-        minr = max(midx, midy)
-        for i in range(0, SEARCH_ITERATIONS):
-            r = (maxr - minr)/2.0 + minr
-            # r = ((midl - x)**2 + (midh - y)**2)**0.5 substitute 0 for x and solve, then do the same for y. these two values represent the corners of a ramp and the distance between them is thickness.
-            miny, maxy = self.__quadratic__(1, -2 * midy, midx**2 + midy**2 - r ** 2)
-            minx, maxx = self.__quadratic__(1, -2 * midx, midx**2 + midy**2 - r ** 2)
-            d = (minx**2 + miny**2)**0.5
-            if d == self.thickness: # yaaaaay
-                break
-            elif d > self.thickness: # r is too small
-                minr = r
-            else: # r is too large
-                maxr = r
-        # x and y should be pretty close to where we want the corners of the ramp to be. the midpoint between them is where we want the base to be.
-        leftcorner = Point2(0, miny)
-        bottomcorner = Point2(minx, 0)
-        newbase = (leftcorner - bottomcorner)/2 + bottomcorner
-        midramp = Point2(midx, midy)
-        newtop = (midramp - newbase)*2 + newbase
-        topxz = v.get_xz()/l*newtop.get_x()
-        if int(h) == 0:
-            topy = newtop.get_y()
-        else:
-            topy = v.get_y()/h*newtop.get_y()
-        self.top = self.base + (topxz[0], topy, topxz[1])
-        bottomxz = v.get_xz()/l*newbase.get_x()
-        if int(h) == 0:
-            bottomy = newbase.get_y()
-        else:
-            bottomy = v.get_y()/h*newbase.get_y()
-        self.base = self.base + (bottomxz[0], bottomy, bottomxz[1])
-
-
-    def create_node(self):
-        return NodePath(GeomBuilder('ramp').add_block(self.color, (0, 0, 0), (self.thickness, self.width, self.length)).get_geom_node())
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)))
-        return node
-
-    def add_solid(self, node):
-        node.add_shape(BulletBoxShape(Vec3(self.thickness / 2.0, self.width / 2.0, self.length / 2.0)), TransformState.make_pos_hpr(Point3(*self.midpoint), self.hpr))
-
-    def add_to(self, geom_builder):
-        # honestly i don't understand this at all
-        diff = self.top - self.base
-        if diff.get_z() == 0:
-            vec2 = diff.get_xy()
-            vec2 = Vec2(abs(diff.get_x()), diff.get_y())
-            vec1 = Vec2(1, 0)
-        else:
-            vec1 = diff.get_yz()
-            vec1 = Vec2(diff.get_y(), abs(diff.get_z()))
-            vec2 = Vec2(0, -1)
-        rot = LRotation(diff.get_xz().signedAngleDeg(Vec2(0, -1)), (vec1.signedAngleDeg(vec2) ), 90)
-        rot = rot * LRotation(*self.hpr)
-        self.hpr = rot.get_hpr()
-        geom_builder.add_block(self.color, self.midpoint, (self.thickness, self.width, self.length), rot)
-
-    def attached(self):
-        # Do the block rotation after we've been attached (i.e. have a NodePath), so we can use node.look_at.
-        self.move(self.midpoint)
-        self.node.look_at(self.top, self.up)
-        self.rotate_by(*self.hpr)
-
-class Dome (PhysicalObject):
-    """
-    A dome.
-    """
-
-    def __init__(self, radius, samples, planes, color, mass, center, hpr, name=None):
-        super(Dome, self).__init__(name)
-        self.radius = radius
-        self.samples = samples
-        self.planes = planes
-        self.color = color
-        self.mass = mass
-        self.center = center
-        self.hpr = hpr
-
-    def create_node(self):
-        self.geom = GeomBuilder().add_dome(self.color, (0, 0, 0), self.radius, self.samples, self.planes).get_geom_node()
-        return NodePath(self.geom)
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        mesh = BulletConvexHullShape()
-        mesh.add_geom(self.geom.get_geom(0))
-        node.add_shape(mesh)
-        return node
-
-    def add_solid(self, node):
-        mesh = BulletConvexHullShape()
-        mesh.add_geom(GeomBuilder().add_dome(self.color, self.center, self.radius, self.samples, self.planes, LRotationf(*self.hpr)).get_geom())
-        node.add_shape(mesh)
-        return node
-
-    def add_to(self, geom_builder):
-        rot = LRotationf(*self.hpr)
-        geom_builder.add_dome(self.color, self.center, self.radius, self.samples, self.planes, rot)
-
-    def attached(self):
-        self.move(self.center)
-        self.rotate_by(*self.hpr)
-
-class Goody (PhysicalObject):
-    def __init__(self, pos, model, items, respawn, spin, name=None):
-        super(Goody, self).__init__(name)
-        self.pos = Vec3(*pos)
-        self.grenades = items[0]
-        self.missiles = items[1]
-        self.boosters = items[2]
-        self.model = model
-        self.respawn = respawn
-        self.spin = Vec3(*spin)
-        self.geom = None
-        self.active = True
-        self.timeout = 0
-        self.spin_bone = None
-
-    def create_node(self):
-        if self.model == "Grenade":
-            m = Actor('grenade.egg')
-            shell = m.find('**/shell')
-            shell.setColor(1,.3,.3,1)
-            inner_top = m.find('**/inner_top')
-            inner_bottom = m.find('**/inner_bottom')
-            inner_top.setColor(.4,.4,.4,1)
-            inner_bottom.setColor(.4,.4,.4,1)
-            self.spin_bone = m.controlJoint(None, 'modelRoot', 'grenade_bone')
-            m.set_scale(GRENADE_SCALE)
-
-        elif self.model == "Missile":
-            m = load_model('missile.egg')
-            body = m.find('**/bodywings')
-            body.set_color(.3,.3,1,1)
-            main_engines = m.find('**/mainengines')
-            wing_engines = m.find('**/wingengines')
-            main_engines.set_color(.1,.1,.1,1)
-            wing_engines.set_color(.1,.1,.1,1)
-            m.set_scale(MISSILE_SCALE)
-        else:
-            m = load_model('misc/rgbCube')
-            m.set_scale(.5)
-            m.set_hpr(45,45,45)
-        return m
-
-    def create_solid(self):
-        node = BulletGhostNode(self.name)
-        node_shape = BulletSphereShape(.5)
-        node.add_shape(node_shape)
-        node.set_kinematic(True)
-        return node
-
-    def attached(self):
-        self.node.set_pos(self.pos)
-        self.world.register_updater(self)
-        self.world.register_collider(self)
-        self.solid.setIntoCollideMask(GHOST_COLLIDE_BIT)
-
-    def update(self, dt):
-        if not self.active:
-            self.timeout += dt
-            if self.timeout > self.respawn:
-                self.active = True
-                self.node.show()
-                self.timeout = 0
-            return
-        if self.spin_bone:
-            self.spin_bone.set_hpr(self.spin_bone, self.spin[2]*dt, self.spin[1]*dt, self.spin[0]*dt)
-        else:
-            self.rotate_by(*[x * dt for x in self.spin])
-        result = self.world.physics.contact_test(self.solid)
-        for contact in result.getContacts():
-            node_1 = contact.getNode0()
-            node_2 = contact.getNode1()
-            if "Walker" in node_2.get_name():
-               # TODO: identify which player and credit them with the items.
-               self.active = False
-               self.node.hide()
-
-class Sky (WorldObject):
-    """
-    The sky is actually just a square re-parented onto the camera, with a shader to handle the coloring and gradient.
-    """
-
-    def __init__(self, ground=DEFAULT_GROUND_COLOR, color=DEFAULT_SKY_COLOR, horizon=DEFAULT_HORIZON_COLOR, scale=DEFAULT_HORIZON_SCALE):
-        super(Sky, self).__init__('sky')
-        self.ground = ground
-        self.color = color
-        self.horizon = horizon
-        self.scale = scale
-
-    def attached(self):
-        geom = GeomNode('sky')
-        bounds = self.world.camera.node().get_lens().make_bounds()
-        dl = bounds.getMin()
-        ur = bounds.getMax()
-        z = dl.getZ() * 0.99
-
-        geom.add_geom(GeomBuilder('sky').add_rect((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0).get_geom())
-        self.node = self.world.render.attach_new_node(geom)
-        self.node.set_shader(Shader.load('Shaders/Sky.sha'))
-        self.node.set_shader_input('camera', self.world.camera)
-        self.node.set_shader_input('sky', self.node)
-        self.node.set_shader_input('groundColor', *self.ground)
-        self.node.set_shader_input('skyColor', *self.color)
-        self.node.set_shader_input('horizonColor', *self.horizon)
-        self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
-        self.node.reparent_to(self.world.camera)
-        self.node.set_pos(self.world.camera, 0, 0, z)
-
-    def set_ground(self, color):
-        self.ground = color
-        self.node.set_shader_input('groundColor', *self.ground)
-
-    def set_color(self, color):
-        self.color = color
-        self.node.set_shader_input('skyColor', *self.color)
-
-    def set_horizon(self, color):
-        self.horizon = color
-        self.node.set_shader_input('horizonColor', *self.horizon)
-
-    def set_scale(self, height):
-        self.scale = height
-        self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
-
-    def detach(self):
-        self.node.detach_node()
-
-class Ground (PhysicalObject):
-    """
-    The ground. This is not a visible object, but does create a physical solid.
-    """
-
-    def __init__(self, radius, color, name=None):
-        super(Ground, self).__init__(name)
-        self.color = color
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        node.add_shape(BulletPlaneShape(Vec3(0, 1, 0), 1))
-        return node
-
-    def attached(self):
-        self.move((0, -1.0, 0))
-        # We need to tell the sky shader what color we are.
-        self.world.sky.set_ground(self.color)
-
-class Incarnator (PhysicalObject):
-    def __init__(self, pos, heading, name=None):
-        super(Incarnator, self).__init__(name)
-        self.pos = Vec3(*pos)
-        self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
-
-    def attached(self):
-        self.dummy_node = self.world.render.attach_new_node("incarnator"+self.name)
-        self.dummy_node.set_pos(self.world.render, self.pos)
-        if self.world.audio3d:
-            self.sound = self.world.audio3d.loadSfx('Sounds/incarnation_mono.wav')
-        else: self.sound = False
-
-    def was_used(self):
-        if self.sound:
-            self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
-            self.sound.play()
-
-
-class TriangleExplosion (WorldObject):
-    def __init__(self, pos, count, hit_normal=None, lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
-        super(TriangleExplosion, self).__init__(name)
-        self.pos = Vec3(*pos)
-        self.hit_normal = Vec3(*hit_normal) if hit_normal else None
-        self.lifetime = lifetime
-        self.color = color
-        self.size = size
-        self.count = count
-        self.shrapnels = []
-
-
-    def create_node(self):
-        self.pos_node = self.world.render.attachNewNode(self.name+"_node")
-        return self.pos_node
-
-    def attached(self):
-        for i in xrange(self.count):
-            if self.hit_normal:
-                vector = Vec3(*[random.uniform(x+.7, x-.7) for x in self.hit_normal])
-            else:
-                vector = Vec3(*[random.uniform(-1,1) for _ in xrange(3)])
-            self.shrapnels.append(self.world.attach(Shrapnel(self.pos, self.size, self.color, vector, self.lifetime)))
-
-
-class Shrapnel (PhysicalObject):
-    def __init__(self, pos, size, color, vector, lifetime, name=None):
-        super(Shrapnel, self).__init__(name)
-        self.pos = pos
-        self.vector = vector
-        self.lifetime = lifetime
-        self.size = size
-        self.color = color
-        self.mass = .01
-        self.age = 0
-
-    def create_node(self):
-        extent = self.size/2.0
-        geom_points = [Point3(0,-extent,-extent), Point3(0,extent,extent), Point3(0,-extent,extent)]
-        self.geom = GeomBuilder('tri').add_tri(self.color, geom_points).get_geom_node()
-        self.node = self.world.render.attach_new_node(self.geom)
-        self.colorhandle = self.node.find('**/*')
-        return self.node
-
-    def create_solid(self):
-        node = BulletRigidBodyNode(self.name)
-        node_shape = BulletBoxShape(Vec3(.001, .05, .05))
-        node.add_shape(node_shape)
-        node.set_mass(3)
-        node.set_angular_damping(.7)
-        return node
-
-    def attached(self):
-        self.world.register_collider(self)
-        self.world.register_updater_later(self)
-        self.node.set_pos(self.pos)
-        self.solid.apply_impulse(Vec3(*self.vector)*12, Point3(*self.pos))
-        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-
-    def update(self, dt):
-        self.age += dt*60
-        halflife = self.lifetime/2
-        if self.age > self.lifetime-halflife:
-            newcolor = [x*((self.lifetime-self.age)/halflife) for x in self.color]
-            newcolor[3] = 1 #changing the alpha channel doesn't work
-            if self.node:
-                self.node.set_color(*newcolor)
-        if self.age > self.lifetime:
-            self.world.garbage.add(self)
 
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
     """
 
-    def __init__(self, camera, debug=False, audio3d=None):
+    def __init__(self, camera, debug=False, audio3d=None, client=None, server=None):
         self.objects = {}
         self.incarnators = []
         self.collidables = set()
@@ -714,6 +33,8 @@ class World (object):
         self.physics = BulletWorld()
         self.physics.set_gravity(self.gravity)
         self.debug = debug
+        self.client = client
+        self.server = server
         if debug:
             debug_node = BulletDebugNode('Debug')
             debug_node.show_wireframe(True)
@@ -767,6 +88,12 @@ class World (object):
     def get_incarn(self):
         return random.choice(self.incarnators)
 
+    def create_hector(self, name=None):
+        # TODO: get random incarn, start there
+        h = self.attach(Hector(name))
+        h.move((0, 15, 0))
+        return h
+
     def set_ambient(self, color):
         """
         Sets the ambient light to the given color.
@@ -777,6 +104,8 @@ class World (object):
         """
         Adds a celestial light source to the scene. If it is a visible celestial, also add a sphere model.
         """
+        if not self.camera:
+            return
         location = Vec3(to_cartesian(azimuth, elevation, 1000.0 * 255.0 / 256.0))
         if intensity:
             dlight = DirectionalLight('celestial')
@@ -830,8 +159,12 @@ class World (object):
         for contact in result.getContacts():
             n0_name = contact.getNode0().get_name()
             n1_name = contact.getNode1().get_name()
-            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH and not n1_name.startswith('Walker'):
+            obj = None
+            try:
                 obj = self.objects[n1_name]
+            except:
+                break
+            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH and not n1_name.startswith('Walker'):
                 #repeat contact test with just this pair of objects
                 #otherwise all manifold point values will be the same
                 #for all objects in original result
@@ -847,13 +180,20 @@ class World (object):
                         magnitude = force * 1.0/math.sqrt(abs(radius - abs(distance)))
                         obj.solid.set_active(True)
                         obj.solid.apply_impulse(expl_vec*magnitude, mpoint.getLocalPointB())
+                    if hasattr(obj, 'damage'):
+                        obj.damage(magnitude/5)
         self.physics.remove_ghost(expl_body)
         expl_bodyNP.detach_node()
         del(expl_body, expl_bodyNP)
 
     def do_plasma_push(self, plasma, node, energy):
-        if node not in EXPLOSIONS_DONT_PUSH and not node.startswith('Walker'):
+        obj = None
+        try:
             obj = self.objects[node]
+        except:
+            raise
+    
+        if node not in EXPLOSIONS_DONT_PUSH and not node.startswith('Walker'):
             if hasattr(obj, 'decompose'):
                 obj.decompose()
             else:
@@ -865,8 +205,13 @@ class World (object):
                 local_point = (obj.node.get_pos() - dummy_node.get_pos()) *-1
                 f_vec.normalize()
                 solid.set_active(True)
-                solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
+                try:
+                    solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
+                except:
+                    pass
                 del(dummy_node)
+        if hasattr(obj, 'damage'):
+            obj.damage(energy*5)
 
 
     def update(self, task):
@@ -889,6 +234,8 @@ class World (object):
                 self.physics.remove_ghost(trash.solid)
             if(isinstance(trash.solid, BulletRigidBodyNode)):
                 self.physics.remove_rigid_body(trash.solid)
+            if hasattr(trash, 'dead'):
+                trash.dead()
             trash.node.remove_node()
             del(trash)
         self.physics.do_physics(dt)
