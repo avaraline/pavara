@@ -3,7 +3,7 @@ from pavara.utils.geom import GeomBuilder
 from pavara.base_objects import WorldObject, PhysicalObject
 from direct.interval.LerpInterval import LerpFunc
 from panda3d.bullet import BulletRigidBodyNode, BulletBoxShape
-from panda3d.core import Point3
+from panda3d.core import Point3, TransparencyAttrib
 import math
 import random
 
@@ -75,7 +75,7 @@ class Transparent (Effect):
         return node
 
 class Hostile (Effect):
-
+    
     def __init__(self, effected):
         Effect.__init__(self, effected)
         self.hostile = True

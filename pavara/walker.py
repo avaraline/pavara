@@ -89,9 +89,10 @@ class Sack (object):
 
 class Sights (object):
 
-    def __init__(self, left_barrel, right_barrel, render, physics):
-        self.render = render
-        self.physics = physics
+    def __init__(self, left_barrel, right_barrel, world):
+        self.render = world.render
+        self.physics = world.physics
+        self.world = world
         self.left_plasma = load_model('plasma_sight.egg')
         self.right_plasma = load_model('plasma_sight.egg')
         self.left_plasma.reparent_to(left_barrel)
@@ -123,11 +124,24 @@ class Sights (object):
         result = self.physics.ray_test_closest(pfrom, pto, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         if result.has_hit():
             sight.set_pos(render, result.get_hit_pos())
-            #if isbadthing(result.get_node1()):
-                #sight.find("**/sight").setColor(*SIGHTS_ENEMY_COLOR)
+            obj = False
+            nodename = result.get_node().get_name()
+            try:
+                obj = self.world.objects[nodename]
+            except:
+                raise
+            hostile = getattr(obj, 'hostile', False)
+            if hostile is False:
+                self.enemy(sight)
+            else:
+                self.friend(sight)
         else:
             sight.set_pos(render, pto)
 
+    def friend(self, sight):
+        sight.find("**/sight").setColor(*SIGHTS_ENEMY_COLOR)
+    def enemy(self, sight):
+        sight.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
 
 
 class LegBones (object):
@@ -151,7 +165,9 @@ class LegBones (object):
         self.physics = physics
         self.global_floor_pos = Point3(0,0,0)
         self.top_bone_target_angle = self.top_bone.get_p()
+        print "top bone angle: %s" % self.top_bone_target_angle
         self.bottom_bone_target_angle = self.bottom_bone.get_p()
+        print "bottom bone angle: %s" % self.bottom_bone_target_angle   
         self.crouch_factor = 0
 
     def bottom_resting_pos(self):
@@ -469,7 +485,7 @@ class Walker (PhysicalObject):
         self.loaded_missile = Hat(self.head_bone_joint, self.primary_color)
         self.loaded_grenade = Sack(self.head_bone_joint, self.primary_color)
         if self.player:
-            self.sights = Sights(self.left_barrel_joint, self.right_barrel_joint, self.world.render, self.world.physics)
+            self.sights = Sights(self.left_barrel_joint, self.right_barrel_joint, self.world)
 
 
 

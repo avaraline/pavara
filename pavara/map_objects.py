@@ -1,6 +1,6 @@
 from pavara.base_objects import *
 from pavara.utils.geom import GeomBuilder, to_cartesian
-from panda3d.core import Shader, NodePath, Point3, LRotationf, LRotation, TransformState
+from panda3d.core import Shader, NodePath, LRotationf, LRotation, TransformState, Point2, Point3, Vec2, Vec3
 from pavara.assets import load_model
 from panda3d.bullet import BulletBoxShape, BulletGhostNode, BulletSphereShape, BulletPlaneShape, BulletRigidBodyNode, BulletConvexHullShape
 from direct.actor.Actor import Actor

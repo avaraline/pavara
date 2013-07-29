@@ -14,7 +14,7 @@
 how to install dependencies
 ---------------------------
 
-pavara depends on [Panda3d](http://www.panda3d.org/download.php?sdk&version=1.8.0). Panda3d installs its own version of python, but to run the map converter and other helper tools in the repo you will need python >= 2.7 installed on your system.
+The game depends on [Panda3d](http://www.panda3d.org/download.php?sdk&version=1.8.0). Panda3d installs its own version of python, but to run the map converter and other helper tools in the repo you will need python >= 2.7 installed on your system.
 
 Panda3d installer links: [Windows](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.exe), [Mac](http://www.panda3d.org/download/panda3d-1.8.0/Panda3D-1.8.0.dmg), [Linux (Ubuntu)](http://www.panda3d.org/download.php?platform=ubuntu&version=1.8.0&sdk).
 
@@ -26,9 +26,9 @@ running
 -------
 The python script `map_test.py` must be run with the `ppython` command (provided by Panda3d) inside the source directory.
 
-* Windows: open a new `cmd.exe`, `dir \Wherever\You\Saved\pavara` then `ppython map_test.py`
+* Windows: open a new `cmd.exe`, `dir \Wherever\You\Saved\the_game` then `ppython map_test.py`
 
-* Mac/Linux: open a new terminal and `cd /path/to/pavara/folder` followed by `ppython map_test.py`
+* Mac/Linux: open a new terminal and `cd /path/to/game/folder` followed by `ppython map_test.py`
 
 * * *
 roadmap
@@ -108,12 +108,8 @@ Logic
 *	**messages**: triggering and listening for simple events, both in XML and whatever scripting set up we use
 *	**game modes**
 	*	vanilla mode with baseline hull
-	*	custom 'loadout' mode where several 'stats' are set using a fixed number of points enable you to select one or more balanced 'skills' based on the stats ???
-		*	for example, in addition to the baseline hull
-			* **agility** - increased top speed, decreased ammo capcity and armor, additional jump(s), wall jumps, floor sliding
-			* **defensive** - increased armor, decreased speed, droppable auto-turret (pillbox), droppable mines, ???
-			* **offensive** - increased ammo capacity, decreased armor, droppable remote motion sensor beacon, tele to scout, ???
-	*	co-op firefight, maps would need hooks for enemy spawn points
+	*	custom 'loadout' mode
+	*	co-op firefight
 
 Sound
 -----
@@ -137,8 +133,6 @@ Physics (Bullet)
 	*	"smart" missle tracking
 	*	walker energy, cannons, shield charging
 	*	laser cannons
-		*	less energy = less shot power
-		*	add something for the opposite situation? *arcing charge shot*: if cannons at 100% power, hold down button to charge a large 'arcing' shot, which, scaling with charge time, has the effect of 'jumping' to other players within range of the player struck by the original arc shot, doing a fraction of the damage for each 'jump'. this would drain your cannons completely and overcharging (and self-destruction) would be possible. could be 'skill'
 	*	splash/freesolid/laser damage/recoil
 
 ###lower priority
