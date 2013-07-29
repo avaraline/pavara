@@ -10,4 +10,4 @@ basic-shaders-only 1
 egg-emulate-bface 0
 model-path Models
 audio-library-name p3fmod_audio
-icon-filename icon.ico
+icon-filename icon.bmp
