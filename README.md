@@ -1,15 +1,5 @@
-<table>
-	<tr>
-		<td>
-			<h1>pavara</h1><br/>
-			A game insprired by the classic mac game
-		</td>
-		<td>
-			<img src="https://dl.dropbox.com/u/38430353/indra_thumb.jpg" alt="Indra by rherriman"/>
-		</td>
-	</tr>
-</table>
 
+<img src="http://croc.sdf.org/walker-sunset.png" width="720"/>
 * * *
 how to install dependencies
 ---------------------------
