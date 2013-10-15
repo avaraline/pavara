@@ -3,6 +3,7 @@ from panda3d.bullet import *
 from pavara.utils.geom import GeomBuilder, to_cartesian
 from pavara.utils.integrator import Integrator, Friction
 from pavara.assets import load_model
+from pavara.constants import *
 from direct.interval.LerpInterval import *
 from direct.interval.IntervalGlobal import *
 from direct.actor.Actor import Actor
@@ -10,40 +11,6 @@ import math
 import random
 import string
 
-DEFAULT_AMBIENT_COLOR = (0.4, 0.4, 0.4, 1)
-DEFAULT_GROUND_COLOR =  (0, 0, 0.15, 1)
-DEFAULT_SKY_COLOR =     (0, 0, 0.15, 1)
-DEFAULT_HORIZON_COLOR = (0, 0, 0.8, 1)
-DEFAULT_HORIZON_SCALE = 0.05
-DEFAULT_GRAVITY = Vec3(0, -9.81, 0)
-DEFAULT_FRICTION = 1
-AIR_FRICTION = 0.02
-
-NO_COLLISION_BITS = BitMask32.all_off()
-MAP_COLLIDE_BIT =   BitMask32.bit(0)
-SOLID_COLLIDE_BIT = BitMask32.bit(1)
-GHOST_COLLIDE_BIT = BitMask32.bit(2)
-
-PLASMA_SCALE = .3
-MIN_PLASMA_CHARGE = .4
-WALKER_RECHARGE_FACTOR = .23
-WALKER_ENERGY_TO_GUN_CHARGE = (.10,.36)
-WALKER_MIN_CHARGE_ENERGY = .2
-PLASMA_LIFESPAN = 900
-
-ENGINE_COLORS = [ [173.0/255.0, 0, 0, 1] #dark red
-                        , [237.0/255.0, 118.0/255.0, 21.0/255.0, 1] #bright orange
-                        , [194.0/255.0, 116.0/255.0, 14.0/255.0, 1] #darker orange
-                        , [247.0/255.0, 76.0/255.0, 42.0/255.0, 1] #brighter red
-                        ]
-MISSILE_SCALE = .29
-MISSILE_OFFSET = [0, 2.1, .58]
-MISSILE_LIFESPAN = 600
-
-GRENADE_SCALE = .35
-GRENADE_OFFSET = [0, 1.55, .9]
-
-EXPLOSIONS_DONT_PUSH = ["expl", "ground", "grenade", "missile", "shrapnel", "Walker:0_walker_cap", "plasma"]
 
 class WorldObject (object):
     """
@@ -402,10 +369,16 @@ class BlockRamp (PhysicalObject):
         midramp = Point2(midx, midy)
         newtop = (midramp - newbase)*2 + newbase
         topxz = v.get_xz()/l*newtop.get_x()
-        topy = v.get_y()/h*newtop.get_y()
+        if int(h) == 0:
+            topy = newtop.get_y()
+        else:
+            topy = v.get_y()/h*newtop.get_y()
         self.top = self.base + (topxz[0], topy, topxz[1])
         bottomxz = v.get_xz()/l*newbase.get_x()
-        bottomy = v.get_y()/h*newbase.get_y()
+        if int(h) == 0:
+            bottomy = newbase.get_y()
+        else:
+            bottomy = v.get_y()/h*newbase.get_y()
         self.base = self.base + (bottomxz[0], bottomy, bottomxz[1])
 
 
@@ -645,196 +618,6 @@ class Incarnator (PhysicalObject):
             self.world.audio3d.attachSoundToObject(self.sound, self.dummy_node)
             self.sound.play()
 
-class Plasma (PhysicalObject):
-    def __init__(self, pos, hpr, energy, name=None):
-        super(Plasma, self).__init__(name)
-        self.pos = Vec3(*pos)
-        self.hpr = hpr
-        self.energy = energy
-        self.age = 0
-
-    def create_node(self):
-        m = load_model('plasma.egg')
-        m.set_shader_auto()
-        p = m.find('**/plasma')
-        cf = self.energy
-        p.setColor(1,(150/255.0)*cf,(150/255.0)*cf)
-        m.set_scale(PLASMA_SCALE)
-        return m
-
-    def create_solid(self):
-        node = BulletGhostNode("plasma")
-        node_shape = BulletSphereShape(.05)
-        node.add_shape(node_shape)
-        node.set_kinematic(True)
-        return node
-
-    def attached(self):
-        self.node.set_pos(self.pos)
-        self.node.set_hpr(self.hpr)
-        #light = PointLight(self.name+"_light")
-        #cf  = self.energy
-        #light.set_color(VBase4(.9*cf,0,0,1))
-        #light.set_attenuation(Point3(0.1, 0.1, 0.8))
-        #self.light_node = self.node.attach_new_node(light)
-
-        #self.world.render.set_light(self.light_node)
-        self.world.register_updater(self)
-        self.world.register_collider(self)
-        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-
-    def update(self, dt):
-        self.move_by(0,0,(dt*60)/5)
-        self.rotate_by(0,0,(dt*60)*3)
-        result = self.world.physics.contact_test(self.solid)
-        self.age += dt*60
-        contacts = result.getContacts()
-        if len(contacts) > 0:
-            #self.world.render.clear_light(self.light_node)
-            cf = self.energy
-            expl_color = [1,(150/255.0)*cf,(150/255.0)*cf, 1]
-            expl_pos = self.node.get_pos(self.world.render)
-            expl = self.world.attach(TriangleExplosion(expl_pos, 5, size=.1, color=expl_color))
-            contact = contacts[0]
-            contact.getManifoldPoint().getLocalPointB()
-            n1_name = contact.getNode1().get_name()
-            self.world.do_plasma_push(self, n1_name, self.energy)
-            self.world.garbage.add(self)
-        if self.age > PLASMA_LIFESPAN:
-            self.world.garbage.add(self)
-
-class Missile (PhysicalObject):
-    def __init__(self, pos, hpr, color, name=None):
-        super(Missile, self).__init__(name)
-        self.pos = Vec3(*pos)
-        self.hpr = hpr
-        self.age = 0
-        self.color = color
-        self.velocity = Vec3(0,0,0)
-        self.integrator = Integrator(self.get_forward_vec(render))
-
-    def get_forward_vec(self, render):
-        dummy_node = NodePath('tmp')
-        dummy_node.set_hpr(self.hpr)
-        dummy_node.set_pos(self.pos)
-        f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,30))
-        del(dummy_node)
-        return f_vec
-
-    def create_node(self):
-        self.model = load_model('missile.egg')
-        self.body = self.model.find('**/bodywings')
-        self.body.set_color(*self.color)
-        self.main_engines = self.model.find('**/mainengines')
-        self.wing_engines = self.model.find('**/wingengines')
-        self.main_engines.set_color(*random.choice(ENGINE_COLORS))
-        self.wing_engines.set_color(*random.choice(ENGINE_COLORS))
-        self.model.set_scale(MISSILE_SCALE)
-        self.model.set_hpr(0,0,0)
-        return self.model
-
-    def create_solid(self):
-        node = BulletGhostNode("missile")
-        node_shape = BulletSphereShape(.08)
-        node.add_shape(node_shape)
-        node.set_kinematic(True)
-        return node
-
-    def attached(self):
-        self.node.set_pos(self.pos)
-        self.node.set_hpr(self.hpr)
-        self.world.register_updater(self)
-        self.world.register_collider(self)
-        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-
-    def update(self, dt):
-        current_pos = Point3(0, self.position().get_y(), 0)
-        pos, self.velocity = self.integrator.integrate(self.node.get_pos(), self.velocity, dt)
-        if self.velocity.length() > 30:
-            self.integrator.accel = Vec3(0,0,0)
-        else:
-            self.integrator.accel = self.get_forward_vec(self.world.render)
-        self.move(self.position() + (pos - self.node.get_pos()))
-
-        self.main_engines.set_color(*random.choice(ENGINE_COLORS))
-        self.wing_engines.set_color(*random.choice(ENGINE_COLORS))
-        result = self.world.physics.contact_test(self.solid)
-        self.age += dt
-        if len(result.getContacts()) > 0:
-            clist = list(self.color)
-            clist.extend([1])
-            expl_colors = [clist]
-            expl_colors.extend(ENGINE_COLORS)
-            expl_pos = self.node.get_pos(self.world.render)
-            for c in expl_colors:
-                self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80))
-            self.world.do_explosion(self.node, 1.5, 30)
-            self.world.garbage.add(self)
-        if self.age > MISSILE_LIFESPAN:
-            self.world.garbage.add(self)
-
-class Grenade (PhysicalObject):
-    def __init__(self, pos, hpr, color, walker_v, name=None):
-        super(Grenade, self).__init__(name)
-        self.pos = Vec3(*pos)
-        self.hpr = hpr
-        self.move_divisor = 9
-        self.color = color
-        self.forward_m = .25
-        self.walker_v = walker_v
-
-    def create_node(self):
-        self.model = Actor('grenade.egg')
-        self.shell = self.model.find('**/shell')
-        self.shell.set_color(*self.color)
-        self.inner_top = self.model.find('**/inner_top')
-        self.inner_bottom = self.model.find('**/inner_bottom')
-        self.inner_top.set_color(*random.choice(ENGINE_COLORS))
-        self.inner_bottom.set_color(*random.choice(ENGINE_COLORS))
-        self.model.set_scale(GRENADE_SCALE)
-        self.model.set_hpr(0,0,0)
-        self.spin_bone = self.model.controlJoint(None, 'modelRoot', 'grenade_bone')
-        return self.model
-
-    def create_solid(self):
-        node = BulletRigidBodyNode("grenade")
-        node.set_angular_damping(.9)
-        node_shape = BulletSphereShape(.08)
-        node.add_shape(node_shape)
-        node.set_mass(9)
-        return node
-
-    def attached(self):
-        self.node.set_pos(self.pos)
-        self.node.set_hpr(self.hpr)
-        self.world.register_updater(self)
-        self.world.register_collider(self)
-        self.solid.setIntoCollideMask(NO_COLLISION_BITS)
-        grenade_iv = render.get_relative_vector(self.node, Vec3(0,84,104))
-        grenade_iv += self.walker_v
-        self.solid.apply_impulse(grenade_iv, Point3(*self.pos))
-
-
-    def update(self, dt):
-        self.inner_top.set_color(*random.choice(ENGINE_COLORS))
-        self.inner_bottom.set_color(*random.choice(ENGINE_COLORS))
-        result = self.world.physics.contact_test(self.solid)
-        self.spin_bone.set_hpr(self.spin_bone, 0,0,10)
-        contacts = result.getContacts()
-        if len(contacts) > 0:
-            hit_node = contacts[0].get_node1().get_name()
-            if hit_node.endswith("_walker_cap"):
-                return
-            clist = list(self.color)
-            clist.extend([1])
-            expl_colors = [clist]
-            expl_colors.extend(ENGINE_COLORS)
-            expl_pos = self.node.get_pos(self.world.render)
-            for c in expl_colors:
-                self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80,))
-            self.world.do_explosion(self.node, 3, 100)
-            self.world.garbage.add(self)
-
 
 class TriangleExplosion (WorldObject):
     def __init__(self, pos, count, hit_normal=None, lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None):
@@ -881,7 +664,7 @@ class Shrapnel (PhysicalObject):
         return self.node
 
     def create_solid(self):
-        node = BulletRigidBodyNode('shrapnel')
+        node = BulletRigidBodyNode(self.name)
         node_shape = BulletBoxShape(Vec3(.001, .05, .05))
         node.add_shape(node_shape)
         node.set_mass(3)
@@ -1045,7 +828,7 @@ class World (object):
         for contact in result.getContacts():
             n0_name = contact.getNode0().get_name()
             n1_name = contact.getNode1().get_name()
-            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH:
+            if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH and not n1_name.startswith('Walker'):
                 obj = self.objects[n1_name]
                 #repeat contact test with just this pair of objects
                 #otherwise all manifold point values will be the same
@@ -1054,28 +837,44 @@ class World (object):
                 mpoint = real_c.getContacts()[0].getManifoldPoint()
                 distance = mpoint.getDistance()
                 if distance < 0:
-                    expl_vec = Vec3(mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB())
-                    expl_vec.normalize()
-                    magnitude = force * 1.0/math.sqrt(abs(radius - abs(distance)))
-                    obj.solid.set_active(True)
-                    obj.solid.apply_impulse(expl_vec*magnitude, mpoint.getLocalPointB())
+                    if n1_name.startswith("Grenade"):
+                        obj.decompose()
+                    elif n1_name.startswith("Missile"):
+                        obj.decompose()
+                    elif n1_name.startswith("Plasma"):
+                        continue
+                    else:
+                        expl_vec = Vec3(mpoint.getPositionWorldOnA() - mpoint.getPositionWorldOnB())
+                        expl_vec.normalize()
+                        magnitude = force * 1.0/math.sqrt(abs(radius - abs(distance)))
+                        obj.solid.set_active(True)
+                        obj.solid.apply_impulse(expl_vec*magnitude, mpoint.getLocalPointB())
         self.physics.remove_ghost(expl_body)
         expl_bodyNP.detach_node()
         del(expl_body, expl_bodyNP)
 
     def do_plasma_push(self, plasma, node, energy):
-        if node not in EXPLOSIONS_DONT_PUSH:
+        if node not in EXPLOSIONS_DONT_PUSH and not node.startswith('Walker'):
             obj = self.objects[node]
-            solid = obj.solid
-            dummy_node = NodePath('tmp')
-            dummy_node.set_hpr(plasma.hpr)
-            dummy_node.set_pos(plasma.pos)
-            f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,1))
-            local_point = (obj.node.get_pos() - dummy_node.get_pos()) *-1
-            f_vec.normalize()
-            solid.set_active(True)
-            solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
-            del(dummy_node)
+            if obj.name.startswith("Grenade"):
+                obj.decompose()
+                return
+            elif obj.name.startswith("Missile"):
+                obj.decompose()
+                return
+            elif obj.name.startswith("Plasma"):
+                return
+            else:
+                solid = obj.solid
+                dummy_node = NodePath('tmp')
+                dummy_node.set_hpr(plasma.hpr)
+                dummy_node.set_pos(plasma.pos)
+                f_vec = render.get_relative_vector(dummy_node, Vec3(0,0,1))
+                local_point = (obj.node.get_pos() - dummy_node.get_pos()) *-1
+                f_vec.normalize()
+                solid.set_active(True)
+                solid.apply_impulse(f_vec*(energy*35), Point3(local_point))
+                del(dummy_node)
 
 
     def update(self, task):
