@@ -18,7 +18,7 @@ from pavara.walker import Walker
 from pavara.keymaps import KeyMaps
 
 
-class Map_Test (ShowBase):
+class MapTest (ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
         self.x = None
@@ -68,8 +68,8 @@ class Map_Test (ShowBase):
         b.set_hpr(self.cam.get_hpr(render))
         b_move_by = render.get_relative_vector(self.cam, Vec3(0,0,-2))
         b.set_pos(b, b_move_by)
-        b.setColor(0,0,0)
-        b.setTransparency(TransparencyAttrib.MAlpha)
+        b.set_color(0,0,0)
+        b.set_transparency(TransparencyAttrib.MAlpha)
         #fade from full opacity to no opacity
         cintv = LerpColorScaleInterval(b, 1.5, (1,1,1,0), (1,1,1,1))
         def _unhide_ui():

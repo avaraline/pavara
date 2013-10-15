@@ -9,7 +9,6 @@ import math
 import random
 import string
 
-
 class World (object):
     """
     The World models basically everything about a map, including gravity, ambient light, the sky, and all map objects.
