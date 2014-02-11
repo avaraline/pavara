@@ -263,5 +263,5 @@ class MapTest (ShowBase):
 
 if __name__ == '__main__':
     loadPrcFile('panda_config.prc')
-    m = Map_Test()
+    m = MapTest()
     m.run()
