@@ -164,9 +164,9 @@ class World (object):
             except:
                 break
             if n0_name == "expl" and n1_name not in EXPLOSIONS_DONT_PUSH and not n1_name.startswith('Walker'):
-                #repeat contact test with just this pair of objects
-                #otherwise all manifold point values will be the same
-                #for all objects in original result
+                # repeat contact test with just this pair of objects
+                # otherwise all manifold point values will be the same
+                # for all objects in original result
                 real_c = self.physics.contact_test_pair(expl_body, obj.solid)
                 mpoint = real_c.getContacts()[0].getManifoldPoint()
                 distance = mpoint.getDistance()

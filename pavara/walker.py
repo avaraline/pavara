@@ -1,4 +1,4 @@
-from panda3d.core import Vec3, TransformState, rad2Deg, AmbientLight
+from panda3d.core import Vec3, TransformState, rad2Deg, AmbientLight, ColorBlendAttrib
 from panda3d.bullet import BulletGhostNode, BulletCylinderShape, BulletConvexHullShape, BulletRigidBodyNode, YUp
 from direct.actor.Actor import Actor
 from direct.interval.IntervalGlobal import *
@@ -13,7 +13,7 @@ BOTTOM_LEG_EXTENDED_P = -70
 MISSILE_OFFSET = [0, -.3, -.6]
 GRENADE_OFFSET = [0, .3, -.8]
 
-SIGHTS_FRIENDLY_COLOR = [114.0/255.0, 214.0/255.0, 86.0/255.0, 1]
+SIGHTS_FRIENDLY_COLOR = [14.0/255.0, 114.0/255.0, 26.0/255.0, 1]
 SIGHTS_ENEMY_COLOR = [217.0/255.0, 24.0/255.0, 24.0/255.0, 1]
 
 class Hat (object):
@@ -100,11 +100,21 @@ class Sights (object):
         self.left_plasma.set_r(180)
         self.left_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
         self.right_plasma.find("**/sight").setColor(*SIGHTS_FRIENDLY_COLOR)
-        #ambient light source for lighting sight shapes
+
+        # inverted colors based on colors behind sights
+        self.left_plasma.setTransparency(TransparencyAttrib.MAlpha)
+        self.left_plasma.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MInvSubtract,
+              ColorBlendAttrib.OIncomingAlpha, ColorBlendAttrib.OOne))
+        self.right_plasma.setTransparency(TransparencyAttrib.MAlpha)
+        self.right_plasma.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MInvSubtract,
+              ColorBlendAttrib.OIncomingAlpha, ColorBlendAttrib.OOne))
+
+        # ambient light source for lighting sight shapes
         sight_light = AmbientLight('sight_light')
         sight_light.set_color(VBase4(1,1,1,1))
         sight_lightnp = render.attach_new_node(sight_light)
-        #the following excludes the sights from z-culling (always visible)
+
+        # the following excludes the sights from z-culling (always visible)
         self.left_plasma.set_bin("fixed", 40)
         self.left_plasma.set_depth_test(False)
         self.left_plasma.set_depth_write(False)
@@ -581,7 +591,7 @@ class Walker (PhysicalObject):
         pt_to = pt_from + Vec3(0, -1.1, 0)
         result = self.world.physics.ray_test_closest(pt_from, pt_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
 
-        #this should return 'on ground' information
+        # this should return 'on ground' information
         self.skeleton.update_legs(walk, dt, self.world.render, self.world.physics)
 
         if self.y_velocity.get_y() <= 0 and result.has_hit():

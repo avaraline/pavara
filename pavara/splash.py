@@ -1,9 +1,7 @@
-import sys, os, random
+import os
 from panda3d.core import *
 from panda3d.rocket import *
 from pandac.PandaModules import WindowProperties
-from direct.gui.DirectGui import *
-from direct.showbase.ShowBase import ShowBase
 from direct.showbase import Audio3DManager
 from direct.filter.CommonFilters import CommonFilters
 from direct.interval.LerpInterval import *
@@ -11,23 +9,31 @@ from direct.interval.IntervalGlobal import *
 from pavara.network import Server, Client
 from pavara.constants import TCP_PORT
 from pavara.maps import load_maps
-from pavara.map_objects import Block 
-from pavara.effects import FreeSolid
 from pavara.utils.geom import GeomBuilder
+from pavara.local_player import LocalPlayer
 from pavara.walker import Walker
-from pavara.keymaps import KeyMaps
 
+# below globals needed because of a bug in librocket:
+# the library expects these three variables set in the
+# global scope of the class that holds callback methods
+# http://www.panda3d.org/forums/viewtopic.php?f=4&t=16412
+event = None
+self = None
+document = None
 
 class Splash (object):
-    def __init__(self, render, basewin, cam, camera, win, audio3d, in_map):
-        self.win = win
-        self.render = render
-        self.basewin = basewin
-        self.cam = cam
-        self.camera = camera
+    def __init__(self, base, showbase, in_map):
+        self.showbase = showbase
+        self.win = showbase.win
+        self.render = showbase.render
+        self.base = base
+        self.cam = showbase.cam
+        self.camera = showbase.camera
         self.doc = False
         self.map = False
-        self.audio3d = audio3d
+        self.audio3d = showbase.audio3d
+        self.mouseWatcherNode = showbase.mouseWatcherNode
+        self.r_region = RocketRegion.make('pandaRocket', self.base.win)
 
         if in_map:
             self.switch_map(in_map)
@@ -40,7 +46,7 @@ class Splash (object):
             self.show_selection_screen()
 
     def fade_in(self):
-        #blackout card
+        # blackout card
         bgeom = GeomBuilder().add_rect([0,0,0,1],-5,-5,0,5,5,0).get_geom_node()
         b = render.attach_new_node(bgeom)
         b.set_pos(self.cam.get_pos(render))
@@ -49,19 +55,18 @@ class Splash (object):
         b.set_pos(b, b_move_by)
         b.set_color(0,0,0)
         b.set_transparency(TransparencyAttrib.MAlpha)
-        #fade from full opacity to no opacity
+        # fade from full opacity to no opacity
         cintv = LerpColorScaleInterval(b, 1.5, (1,1,1,0), (1,1,1,1))
         def _unhide_ui():
             self.doc.GetElementById('content').style.display = 'block'
             b.detach_node()
-        #show ui after lerp is finished
+        # show ui after lerp is finished
         showui = Func(_unhide_ui)
         Sequence(cintv,showui).start()
 
     def show_selection_screen(self):
         LoadFontFace("Ui/assets/MunroSmall.otf")
         LoadFontFace("Ui/assets/Munro.otf")
-        self.r_region = RocketRegion.make('pandaRocket', self.basewin)
         self.r_region.setActive(1)
         context = self.r_region.getContext()
         self.doc = context.LoadDocument('Ui/rml/map_test.rml')
@@ -127,16 +132,10 @@ class Splash (object):
             self.r_region.setActive(0)
             self.ih_node.detach_node()
         except:
+            # probably self.r_region isn't set because
+            # we never loaded it (map arg on cmd line)
             pass
-        incarn = self.map.world.get_incarn()
-        walker_color_dict = {
-            "barrel_color": [.7,.7,.7],
-            "visor_color": [2.0/255, 94.0/255, 115.0/255],
-            "body_primary_color": [3.0/255, 127.0/255, 140.0/255],
-            "body_secondary_color": [217.0/255, 213.0/255, 154.0/255]
-        }
-        self.walker = self.map.world.attach(Walker(incarn, colordict=walker_color_dict, player=True))
-        
+        self.lp = LocalPlayer(self.map, self.showbase)
         taskMgr.add(self.map.world.update, 'worldUpdateTask')
         props = WindowProperties()
         props.setCursorHidden(True)

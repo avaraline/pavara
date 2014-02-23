@@ -8,7 +8,7 @@ from direct.showbase import Audio3DManager
 from direct.filter.CommonFilters import CommonFilters
 from pavara.network import Server, Client
 from pavara.constants import TCP_PORT
-from splash import Splash
+from pavara.splash import Splash
 
 
 class MapTest (ShowBase):
@@ -29,9 +29,9 @@ class MapTest (ShowBase):
         #self.client = Client(self.map.world, host, TCP_PORT)
 
 
-        # axes = loader.loadModel('models/yup-axis')
-        # axes.setScale(10)
-        # axes.reparentTo(render)
+        #axes = loader.loadModel('models/yup-axis')
+        #axes.setScale(10)
+        #axes.reparentTo(render)
 
     def initP3D(self):
         self.disableMouse()
