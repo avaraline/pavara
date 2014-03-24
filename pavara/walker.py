@@ -161,15 +161,8 @@ class Sights (object):
 
 class LegBones (object):
 
-    motion = [ [ 50]
-             , [ 0]
-             ]
-
-    TOP = 0
-    BOTTOM = 1
-
     def __init__(self, render, physics, hip, foot, foot_ref, top, bottom):
-        self.bones = [(bone, float(bone.get_p()), Point3(bone.get_pos()), motions) for (bone, motions) in zip([top, bottom], self.motion)]
+        #self.bones = [(bone, float(bone.get_p()), Point3(bone.get_pos()), motions) for (bone, motions) in zip([top, bottom], self.motion)]
         self.foot_bone = foot
         self.foot_ref = foot_ref
         self.foot_ref.set_hpr(self.foot_ref, 90, 0, 0)
@@ -276,7 +269,7 @@ class LegBones (object):
         l_from = self.foot_bone.get_pos(self.render)
         l_to = self.foot_bone.get_pos(self.render)
         l_from.y += 1
-        l_to.y -= .7
+        l_to.y -= .4
         result = self.physics.ray_test_closest(l_from, l_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         if result.has_hit():
             return self.foot_ref.get_relative_point(self.render, result.get_hit_pos())
@@ -296,6 +289,8 @@ class LegBones (object):
             target_vector = hip_pos - target_pos
             self.is_on_ground = False
 
+        #target_vector = hip_pos - target_pos
+
         pt_length = target_vector.length()
         if .01 < pt_length < (TOP_LEG_LENGTH + BOTTOM_LEG_LENGTH +.1):
             tt_angle_cos = (math.pow(TOP_LEG_LENGTH, 2) + math.pow(pt_length, 2) - math.pow(BOTTOM_LEG_LENGTH,2))/(2*TOP_LEG_LENGTH*pt_length)
@@ -304,17 +299,17 @@ class LegBones (object):
             except ValueError:
                 return
 
-            if target_top_angle and target_top_angle == target_top_angle and -120 < target_top_angle < 100:
-                target_vector.normalize()
-                self.hip_bone.get_relative_vector(self.foot_ref, target_vector)
-                delta = target_vector.get_xy().signed_angle_deg(Vec3.unitY().get_xy())
-                self.top_bone.set_p(90 - target_top_angle + delta)
+            #if target_top_angle and target_top_angle == target_top_angle and -120 < target_top_angle < 100:
+            target_vector.normalize()
+            self.hip_bone.get_relative_vector(self.foot_ref, target_vector)
+            delta = target_vector.get_xy().signed_angle_deg(Vec3.unitY().get_xy())
+            self.top_bone.set_p(90 - target_top_angle + delta)
 
             tb_angle_cos = ((math.pow(TOP_LEG_LENGTH, 2) + math.pow(BOTTOM_LEG_LENGTH, 2) - math.pow(pt_length,2))/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
             target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
 
-            if target_bottom_angle and target_bottom_angle == target_bottom_angle and -140 < target_bottom_angle < 140:
-                self.bottom_bone.set_p((180 - target_bottom_angle) * -1)
+            #if target_bottom_angle and target_bottom_angle == target_bottom_angle and -140 < target_bottom_angle < 140:
+            self.bottom_bone.set_p((180 - target_bottom_angle) * -1)
         else:
             #print "too long/short: ", pt_length
             return
@@ -333,7 +328,7 @@ class Skeleton (object):
         self.shoulder = shoulder
         self.crouch_factor = 0
         self.resting = self.shoulder.get_pos()
-        self.return_seq = self._make_return_seq_()
+        #self.return_seq = self._make_return_seq_()
         self.walk_playing = False
         self.lf_sound_played = False
         self.rf_sound_played = False
@@ -623,7 +618,7 @@ class Walker (PhysicalObject):
             friction = AIR_FRICTION
 
         #to debug walk cycle (stay in place)
-        #friction = 0
+        friction = 0
 
         speed = walk
         pos = self.position()
