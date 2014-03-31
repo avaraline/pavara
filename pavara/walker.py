@@ -17,9 +17,8 @@ SIGHTS_FRIENDLY_COLOR = [14.0/255.0, 114.0/255.0, 26.0/255.0, 1]
 SIGHTS_ENEMY_COLOR = [217.0/255.0, 24.0/255.0, 24.0/255.0, 1]
 
 MIN_WALKFUNC_SIZE_FACTOR = .001
-MAX_WALKFUNC_SIZE_FACTOR = 4
-WALKFUNC_X_LIMIT = 2.00/3.00
-WALKFUNC_STEPS = 20
+MAX_WALKFUNC_SIZE_FACTOR = 22
+WALKFUNC_STEPS = 14
 
 class LoadedMissile (object):
 
@@ -162,11 +161,15 @@ class Sights (object):
 class LegBones (object):
 
     def __init__(self, render, physics, hip, foot, foot_ref, top, bottom):
-        #self.bones = [(bone, float(bone.get_p()), Point3(bone.get_pos()), motions) for (bone, motions) in zip([top, bottom], self.motion)]
         self.foot_bone = foot
         self.foot_ref = foot_ref
         self.foot_ref.set_hpr(self.foot_ref, 90, 0, 0)
         self.walkfunc_target_node = self.foot_ref.attach_new_node('walkfunc_target')
+
+        #testgeom = load_model('misc/rgbCube')
+        #testgeom.setScale(.1)
+        #testgeom.reparent_to(self.walkfunc_target_node)
+
         self.top_bone = top
         self.bottom_bone = bottom
         self.hip_bone = hip
@@ -180,9 +183,9 @@ class LegBones (object):
         print "bottom bone angle: %s" % self.bottom_bone_target_angle   
         self.crouch_factor = 0
 
-        """walk sequence step varies from -WALKFUNC_STEPS/2 to WALKFUNC_STEPS/2
+        """walk sequence step varies from -WALKFUNC_STEPS to WALKFUNC_STEPS
          with 0 being the top or bottom of the ellipse
-         depending on down or up step. -WALKFUNC_STEPS/2 and WALKFUNC_STEPS/2
+         depending on down or up step. -WALKFUNC_STEPS and WALKFUNC_STEPS
          are the points of the ellipse where the incrementor
          switches directions between up/down step. this way
          we deal with only one potential y at any x"""
@@ -194,39 +197,49 @@ class LegBones (object):
         """sizeparam varies from .001 (a tiny ellipse)
          to 4 (full clip walking cycle ellipse)"""
         self.walkfunc_sizeparam = MIN_WALKFUNC_SIZE_FACTOR
+        """as this value gets smaller, the length of the tilted 
+         ellipse is longer"""
+        self.walkfunc_ellipse_mag_coefficient = 37
+        """the maximum x value is when the value under
+            the sqrt sign in the walk equation is 0"""
+        self.walkfunc_x_max = math.sqrt(self.walkfunc_sizeparam / self.walkfunc_ellipse_mag_coefficient)
 
+        self.direction = 0
 
     def _recompute_walkfunc_x(self):
         """compute x and then proportion so that it matches 
         current size vs the maximum size of the ellipse"""
-        self.walkfunc_x = abs(self.walk_seq_step) * WALKFUNC_X_LIMIT / (WALKFUNC_STEPS/2)
-        self.walkfunc_x = self.walkfunc_x * self.walkfunc_sizeparam / MAX_WALKFUNC_SIZE_FACTOR
+        self.walkfunc_x_max = math.sqrt(float(self.walkfunc_sizeparam) / float(self.walkfunc_ellipse_mag_coefficient))
+        self.walkfunc_x = (abs(self.walk_seq_step) * self.walkfunc_x_max) / (WALKFUNC_STEPS)
+        self.walkfunc_x = (self.walkfunc_x * self.walkfunc_sizeparam) / MAX_WALKFUNC_SIZE_FACTOR
         if (self.walk_seq_step < 0):
             self.walkfunc_x = -1 * self.walkfunc_x
 
-    def _increment_walk_seq_step(self):
-        if not (-((WALKFUNC_STEPS/2) - 1) < self.walk_seq_step < ((WALKFUNC_STEPS/2) - 1)):
+    def _increment_walk_seq_step(self, direction):
+        self.direction = 1 if direction > 0 else -1
+        if not (-((WALKFUNC_STEPS)) < self.walk_seq_step < ((WALKFUNC_STEPS))):
             self.up_step = not self.up_step
         if (self.up_step):
-            self.walk_seq_step -= 1
+            self.walk_seq_step -= 1 * self.direction
         else:
-            self.walk_seq_step += 1
-
+            self.walk_seq_step += 1 * self.direction
+        
     def _walkfunc_upper(self, x):
         """Defines the upper portion of the ellipse (up step)"""
-        return (math.sqrt(3) * math.sqrt(self.walkfunc_sizeparam - (9 * math.pow(self.walkfunc_x, 2))) + (3 * self.walkfunc_x))/6
-
+        return ((-self.direction * 15 * self.walkfunc_x) + math.sqrt(75 * ((-self.walkfunc_ellipse_mag_coefficient * math.pow(self.walkfunc_x, 2)) + self.walkfunc_sizeparam))) / 100
+       
     def _walkfunc_lower(self, x):
         """Defines the lower portion of the ellipse (down step)"""
-        return -1 * (math.sqrt(3)/6) * math.sqrt(self.walkfunc_sizeparam-(9 * math.pow(self.walkfunc_x, 2))) + (.5 * self.walkfunc_x)
-
+        return ((-self.direction * 15 * self.walkfunc_x) - math.sqrt(75 * ((-self.walkfunc_ellipse_mag_coefficient * math.pow(self.walkfunc_x, 2)) + self.walkfunc_sizeparam))) / 100
+       
     def _get_target_pos(self):
         walkfunc_y = None
         if self.up_step:
             walkfunc_y = self._walkfunc_upper(self.walkfunc_x)
         else:
             walkfunc_y = self._walkfunc_lower(self.walkfunc_x)
-        self.walkfunc_target_node.set_pos(self.foot_ref, self.walkfunc_x, walkfunc_y, 0)
+        d = 1 if self.direction > 0 else -1
+        self.walkfunc_target_node.set_pos(self.foot_ref, self.walkfunc_x + d * (.03*self.walkfunc_sizeparam), walkfunc_y, 0)
         return self.walkfunc_target_node.get_pos(self.foot_ref)
 
     def bottom_resting_pos(self):
@@ -234,31 +247,6 @@ class LegBones (object):
 
     def top_resting_pos(self):
         return self.bones[self.TOP][2] + self.crouch_factor*-50
-
-    def get_return(self, return_speed):
-        lerps = [LerpFunc(self.update_piece_hpr,
-                          fromData=float(bone.get_p()),
-                          toData=resting_p,
-                          duration=return_speed,
-                          extraArgs=[bone, idx])
-        for idx, (bone, resting_p, resting_pos, motions) in enumerate(self.bones)]
-
-        return_pos = LerpFunc(self.update_bob,
-                              fromData=float(self.top_bone.get_pos().y),
-                              toData=self.bones[self.TOP][2].y,
-                              duration=return_speed,
-                              extraArgs=[self.bones[self.TOP][0]])
-        lerps.append(return_pos)
-        return lerps
-
-    def update_piece_hpr(self, angle, bone, idx):
-        if self.crouch_factor > 0:
-            if bone is self.top_bone:
-                bone.set_p(angle + (self.crouch_factor*-50))
-            if bone is self.bottom_bone:
-                bone.set_p(angle + (self.crouch_factor*-50))
-        else:
-            bone.set_p(angle)
 
     def update_bob(self, deltay, bone):
         rest_pos = self.bones[self.TOP][2]
@@ -269,14 +257,14 @@ class LegBones (object):
         l_from = self.foot_bone.get_pos(self.render)
         l_to = self.foot_bone.get_pos(self.render)
         l_from.y += 1
-        l_to.y -= .4
+        l_to.y -= .7
         result = self.physics.ray_test_closest(l_from, l_to, MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT)
         if result.has_hit():
             return self.foot_ref.get_relative_point(self.render, result.get_hit_pos())
         else:
             return None
 
-    def ik_leg(self, data):
+    def ik_leg(self):
         floor_pos = self.get_floor_spot()
         target_pos = self._get_target_pos()
         hip_pos = self.hip_bone.get_pos(self.foot_ref)
@@ -289,6 +277,7 @@ class LegBones (object):
             target_vector = hip_pos - target_pos
             self.is_on_ground = False
 
+        #turn off the ground for debugging
         #target_vector = hip_pos - target_pos
 
         pt_length = target_vector.length()
@@ -298,8 +287,6 @@ class LegBones (object):
                 target_top_angle = rad2Deg(math.acos(tt_angle_cos))
             except ValueError:
                 return
-
-            #if target_top_angle and target_top_angle == target_top_angle and -120 < target_top_angle < 100:
             target_vector.normalize()
             self.hip_bone.get_relative_vector(self.foot_ref, target_vector)
             delta = target_vector.get_xy().signed_angle_deg(Vec3.unitY().get_xy())
@@ -307,11 +294,8 @@ class LegBones (object):
 
             tb_angle_cos = ((math.pow(TOP_LEG_LENGTH, 2) + math.pow(BOTTOM_LEG_LENGTH, 2) - math.pow(pt_length,2))/(2*TOP_LEG_LENGTH*BOTTOM_LEG_LENGTH))
             target_bottom_angle = rad2Deg(math.acos(tb_angle_cos))
-
-            #if target_bottom_angle and target_bottom_angle == target_bottom_angle and -140 < target_bottom_angle < 140:
             self.bottom_bone.set_p((180 - target_bottom_angle) * -1)
         else:
-            #print "too long/short: ", pt_length
             return
 
 class Skeleton (object):
@@ -370,9 +354,9 @@ class Skeleton (object):
             self.left_leg.up_step = not self.right_leg.up_step
             for leg in [self.left_leg, self.right_leg]:
                 leg.walkfunc_sizeparam = MAX_WALKFUNC_SIZE_FACTOR
-                leg._increment_walk_seq_step()
+                leg._increment_walk_seq_step(walk)
                 leg._recompute_walkfunc_x()
-                leg.ik_leg(0)
+                leg.ik_leg()
             if self.left_leg.is_on_ground and not self.lf_sound_played:
                 self.lf_sound.play()
                 self.lf_sound_played = True
@@ -388,7 +372,7 @@ class Skeleton (object):
             for leg in [self.left_leg, self.right_leg]:
                 leg.walkfunc_sizeparam = .001
                 leg._recompute_walkfunc_x()
-                leg.ik_leg(0)
+                leg.ik_leg()
 
 
 class Walker (PhysicalObject):
@@ -618,7 +602,7 @@ class Walker (PhysicalObject):
             friction = AIR_FRICTION
 
         #to debug walk cycle (stay in place)
-        friction = 0
+        #riction = 0
 
         speed = walk
         pos = self.position()
