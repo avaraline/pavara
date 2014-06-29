@@ -30,7 +30,7 @@ class Env(object):
     def assign(self, name, value):
         for env in reversed(self.variables):
             if name in env:
-                env['name'] = value
+                env[name] = value
                 return
         self.variables[-1][name] = value
 
@@ -66,8 +66,17 @@ def evaluate(tree, env):
                     assign(statement.targets[0], env, v)
                 else:
                     print "unsafe assignment rejected", v
+            elif isinstance(statement, ast.If):
+                test = evaluate(statement.test, env)
+                if test:
+                    evaluate(statement.body, env)
+                else:
+                    evaluate(statement.orelse, env)
+                if env.returnval is not None:
+                    return results
             elif isinstance(statement, ast.Return):
                 env.returnval = evaluate(statement.value, env)
+                return results
             else:
                 print statement
         return results
@@ -87,6 +96,11 @@ def evaluate(tree, env):
     elif isinstance(tree, ast.Attribute):
         obj = evaluate(tree.value, env)
         return getattr(obj, tree.attr)
+    elif isinstance(tree, ast.Compare):
+        left = evaluate(tree.left, env)
+        right = evaluate(tree.comparators[0], env)
+        if isinstance(tree.ops[0], ast.Eq):
+            return left == right
     else:
         print "unsupported syntax", type(tree)
 
@@ -95,4 +109,3 @@ def safe_eval(script, env=None):
         env = Env()
     return evaluate(ast.parse(script), env), env
 
-print ast.dump(ast.parse('one.two = 1'))
