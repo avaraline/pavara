@@ -6,12 +6,16 @@ from direct.filter.CommonFilters import CommonFilters
 class Icebox(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
+
         self.filters = CommonFilters(self.win, self.cam)
         self.render.setShaderAuto()
         self.setBackgroundColor(0, 0, 0)
+        self.enableParticles()
+        
         render.setAntialias(AntialiasAttrib.MAuto)
-
-        c = Clock(self)
+        self.cam.set_pos(50,25,50)
+        self.cam.look_at(0,0,0)
+        c = Clock(self, self.physicsMgr)
         taskMgr.add(c.update, 'ClockTask')
 
 if __name__ == '__main__':
