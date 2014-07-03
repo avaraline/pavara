@@ -11,12 +11,11 @@ class World (object):
         self.render = showbase.render
 
         self.bullet_world = BulletWorld()
-        self.bullet_world.setGravity(Vec3(0, -9.81, 0))
 
         if is_client:
-            
             self.init_visual()
-            
+        else:
+            self.bullet_world.setGravity(Vec3(0, -9.81, 0))
 
         self.arena = Arena('arena')
         self.attach(self.arena)
@@ -84,4 +83,4 @@ class World (object):
         if not self.is_client:
             for obj in self.updatables:
                 obj.update(dt)
-            self.bullet_world.doPhysics(dt)
+        self.bullet_world.doPhysics(dt)

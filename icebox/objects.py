@@ -55,7 +55,6 @@ class Tank(WorldObject):
         b.add_dome(RED_COLOR, (0, 0, 0), 2, 6, 4)
         b.add_block([.3, .3, .3, 1], (0, 0.6, 2.2), (.7, .7, 2))
         self.geom = b.get_geom_node()
-
         self.node = BulletGhostNode(self.name)
 
     def update(self, dt):
@@ -69,7 +68,7 @@ class Block(WorldObject):
         b.add_block(BLOCK_COLOR, (0, 0, 0), BLOCK_SIZE)
         self.geom = b.get_geom_node()
 
-        shape = BulletBoxShape(Vec3(BLOCK_SIZE))
+        shape = BulletBoxShape(Vec3(*[x/2.0 for x in BLOCK_SIZE]))
         self.node = BulletRigidBodyNode(self.name)
         self.node.set_mass(1.0)
         self.node.addShape(shape)
@@ -83,30 +82,30 @@ class Arena(WorldObject):
         super(Arena, self).__init__(name)
 
         b = GeomBuilder('floor')
-        b.add_block(FLOOR_COLOR, (0, 0, 0), (100, 1, 100))
+        b.add_block(FLOOR_COLOR, (0, 0, 0), (ARENA_SIZE, 1, ARENA_SIZE))
         floor_geom = b.get_geom_node()
         floor_np = NodePath('floor_np')
         floor_np.attach_new_node(floor_geom)
 
         b = GeomBuilder('halfcourt')
-        b.add_block(LINE_COLOR, (0, .6, 0), (100, .2, 1))
+        b.add_block(LINE_COLOR, (0, .6, 0), (ARENA_SIZE, .2, 1))
         line_geom = b.get_geom_node()
         floor_np.attach_new_node(line_geom)
 
         b = GeomBuilder('redgoal')
-        b.add_block(RED_COLOR, (0, .6, -25), (GOAL_SIZE[0], .1, GOAL_SIZE[1]))
+        b.add_block(RED_COLOR, (0, .6, -ARENA_SIZE/4.0), (GOAL_SIZE[0], .1, GOAL_SIZE[1]))
         redgoal_geom = b.get_geom_node()
         b = GeomBuilder('redgoal_overlay')
-        b.add_block(FLOOR_COLOR, (0, .65, -25), (GOAL_SIZE[0] - .8, .1, GOAL_SIZE[1] - .8))
+        b.add_block(FLOOR_COLOR, (0, .65, -ARENA_SIZE/4.0), (GOAL_SIZE[0] - .8, .1, GOAL_SIZE[1] - .8))
         redgoal_overlay_geom = b.get_geom_node()
         floor_np.attach_new_node(redgoal_geom)
         floor_np.attach_new_node(redgoal_overlay_geom)
 
         b = GeomBuilder('bluegoal')
-        b.add_block(BLUE_COLOR, (0, .6, 25), (GOAL_SIZE[0], .1, GOAL_SIZE[1]))
+        b.add_block(BLUE_COLOR, (0, .6, ARENA_SIZE/4.0), (GOAL_SIZE[0], .1, GOAL_SIZE[1]))
         bluegoal_geom = b.get_geom_node()
         b = GeomBuilder('bluegoal_overlay')
-        b.add_block(FLOOR_COLOR, (0, .65, 25), (GOAL_SIZE[0] - .8, .1, GOAL_SIZE[1] - .8,))
+        b.add_block(FLOOR_COLOR, (0, .65, ARENA_SIZE/4.0), (GOAL_SIZE[0] - .8, .1, GOAL_SIZE[1] - .8,))
         bluegoal_overlay_geom = b.get_geom_node()
         floor_np.attach_new_node(bluegoal_geom)
         floor_np.attach_new_node(bluegoal_overlay_geom)
