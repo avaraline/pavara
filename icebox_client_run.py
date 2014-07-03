@@ -10,12 +10,12 @@ class Icebox(ShowBase):
         self.filters = CommonFilters(self.win, self.cam)
         self.render.setShaderAuto()
         self.setBackgroundColor(0, 0, 0)
-        self.enableParticles()
+        #self.enableParticles()
         
         render.setAntialias(AntialiasAttrib.MAuto)
         self.cam.set_pos(50,25,50)
         self.cam.look_at(0,0,0)
-        c = Clock(self, self.physicsMgr)
+        c = Clock(self)
         taskMgr.add(c.update, 'ClockTask')
 
 if __name__ == '__main__':

@@ -6,3 +6,7 @@ RED_COLOR = [.8, .2, .2, 1]
 BLUE_COLOR = [.2, .2, .8, 1]
 
 GOAL_SIZE = (24,12,5)
+
+BLOCK_SIZE = (5, 3, 5)
+
+ARENA_SIZE = 100

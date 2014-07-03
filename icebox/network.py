@@ -47,7 +47,7 @@ class Server (object):
                 self.connections.append(newConnection)
                 self.reader.addConnection(newConnection)
                 self.last_pid += 1
-                self.players[netAddress.getIpString()] = Player(self.last_pid, self.world.add_tank())
+                self.players[netAddress.getIpString()] = Player(self.last_pid, self.world.add_tank([random.randint(0,50), 1, random.randint(0,50)]))
         while self.manager.resetConnectionAvailable():
             connPointer = PointerToConnection()
             self.manager.getResetConnection(connPointer)
@@ -112,10 +112,13 @@ class Client (object):
                     h = update.getFloat32()
                     p = update.getFloat32()
                     r = update.getFloat32()
-                    if name.startswith('Walker') and name not in self.world.objects:
-                        self.world.create_walker(name)
+                    #print 'CLIENT RECV', name, x, y, z
+                    if name.startswith('Tank') and name not in self.world.objects:
+                        self.world.add_tank([0,0,0], name=name)
+                    if name.startswith('Block') and name not in self.world.objects:
+                        self.world.add_block([0,0,0], name=name)
                     obj = self.world.objects.get(name)
                     if obj:
                         obj.move((x, y, z))
-                        obj.rotate(h, p, r)
+                        obj.rotate((h, p, r))
         return task.cont
