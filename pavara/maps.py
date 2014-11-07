@@ -45,13 +45,14 @@ class Map (object):
     has_celestials = False
     effects = []
 
-    def __init__(self, root, camera, audio3d=None):
+    def __init__(self, root, world):
         self.name = root['name'] or 'Untitled Map'
         self.author = root['author'] or 'Unknown Author'
         self.tagline = root['tagline']
         self.description = root['description'] or 'No description.'
         self.preview_cam = (parse_vector(root['preview_cam_pos'], (0,20,40)), parse_vector(root['preview_cam_hp'], (0,0)))
-        self.world = World(camera, debug=parse_bool(root['debug']), audio3d=audio3d)
+        self.world = world #World(camera, debug=parse_bool(root['debug']), audio3d=audio3d)
+        self.world.debug = parse_bool(root['debug'])
         self.process_children(root)
         if not self.has_celestials:
             self.world.add_celestial(math.radians(20), math.radians(45), (1, 1, 1, 1), 0.4, 30.0, False)
@@ -62,14 +63,14 @@ class Map (object):
         """
         Reparents the root NodePath of this Map's World to the given NodePath.
         """
-        self.world.render.setColorOff()
-        self.world.render.node().setAttrib(ColorAttrib.makeVertex())
-        self.world.render.reparent_to(render)
+        self.world.scene.setColorOff()
+        self.world.scene.node().setAttrib(ColorAttrib.makeVertex())
+        self.world.scene.reparent_to(render)
 
     def remove(self, render):
         self.world.sky.detach()
-        self.world.render.detach_node()
-        self.world.render.remove_node()
+        self.world.scene.detach_node()
+        self.world.scene.remove_node()
 
     def process_children(self, node):
         for child in node.children():
@@ -106,7 +107,7 @@ class Map (object):
         self.effects.append(Hologram)
         self.process_children(node)
         self.effects.pop()
-    
+
     def parse_hostile(self, node):
         self.effects.append(Hostile)
         self.process_children(node)
@@ -265,15 +266,15 @@ class Map (object):
             # Reset the seed.
             random.seed()
 
-def load_maps(path, camera, audio3d=None):
+def load_maps(path, world):
     """
-    Given a path to an XML file and the camera, returns a list of parsed/populated Map objects.
+    Given a path to an XML file and the world, returns a list of parsed/populated Map objects.
     """
     root = drill.parse(path)
     if root.tagname.lower() == 'map':
-        return [Map(root, camera, audio3d=audio3d)]
+        return [Map(root, world)]
     else:
         maps = []
         for map_root in root.find('map'):
-            maps.append(Map(map_root, camera, audio3d=audio3d))
+            maps.append(Map(map_root, world))
         return maps

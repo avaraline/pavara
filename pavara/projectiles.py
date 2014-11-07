@@ -45,14 +45,14 @@ class Plasma (Projectile):
         #light.set_attenuation(Point3(0.1, 0.1, 0.8))
         #self.light_node = self.node.attach_new_node(light)
 
-        #self.world.render.set_light(self.light_node)
+        #self.world.scene.set_light(self.light_node)
         self.world.register_updater(self)
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
         self.sound = self.world.audio3d.loadSfx('Sounds/plasma.wav')
         self.sound.set_balance(0)
         self.world.audio3d.attachSoundToObject(self.sound, self.node)
-        self.world.audio3d.setSoundVelocity(self.sound, render.get_relative_vector(self.node, Vec3(0,0,400)))
+        self.world.audio3d.setSoundVelocity(self.sound, self.world.scene.get_relative_vector(self.node, Vec3(0,0,400)))
         self.sound.set_loop(True)
         self.sound.play()
 
@@ -63,10 +63,10 @@ class Plasma (Projectile):
         self.age += dt*60
         contacts = result.getContacts()
         if len(contacts) > 0:
-            #self.world.render.clear_light(self.light_node)
+            #self.world.scene.clear_light(self.light_node)
             cf = self.energy
             expl_color = [1,(150/255.0)*cf,(150/255.0)*cf, 1]
-            expl_pos = self.node.get_pos(self.world.render)
+            expl_pos = self.node.get_pos(self.world.scene)
             expl = self.world.attach(TriangleExplosion(expl_pos, 5, size=.1, color=expl_color))
             contact = contacts[0]
             contact.getManifoldPoint().getLocalPointB()
@@ -123,14 +123,14 @@ class Missile (Projectile):
         self.world. audio3d.attachSoundToObject(self.sound, self.node)
         self.sound.set_loop(True)
         self.sound.play()
-        self.integrator = Integrator(self.world.render.get_relative_vector(self.node, Vec3(0,0,30)))
+        self.integrator = Integrator(self.world.scene.get_relative_vector(self.node, Vec3(0,0,30)))
 
     def decompose(self):
         clist = list(self.color)
         clist.extend([1])
         expl_colors = [clist]
         expl_colors.extend(ENGINE_COLORS)
-        expl_pos = self.node.get_pos(self.world.render)
+        expl_pos = self.node.get_pos(self.world.scene)
         for c in expl_colors:
             self.world.attach(TriangleExplosion(expl_pos, 1, size=.1, color=c, lifetime=40))
         self._remove_all()
@@ -141,7 +141,7 @@ class Missile (Projectile):
         if self.velocity.length() > 30:
             self.integrator.accel = Vec3(0,0,0)
         else:
-            self.integrator.accel = self.world.render.get_relative_vector(self.node, Vec3(0,0,30))
+            self.integrator.accel = self.world.scene.get_relative_vector(self.node, Vec3(0,0,30))
         self.move(self.position() + (pos - self.node.get_pos()))
 
         self.main_engines.set_color(*random.choice(ENGINE_COLORS))
@@ -153,7 +153,7 @@ class Missile (Projectile):
             clist.extend([1])
             expl_colors = [clist]
             expl_colors.extend(ENGINE_COLORS)
-            expl_pos = self.node.get_pos(self.world.render)
+            expl_pos = self.node.get_pos(self.world.scene)
             for c in expl_colors:
                 self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80))
             self.world.do_explosion(self.node, 1.5, 30)
@@ -205,7 +205,7 @@ class Grenade (Projectile):
         self.world.register_collider(self)
         self.solid.setIntoCollideMask(NO_COLLISION_BITS)
         self.solid.set_gravity(DEFAULT_GRAVITY*4.5)
-        grenade_iv = render.get_relative_vector(self.node, Vec3(0,8.5,13.5))
+        grenade_iv = self.world.scene.get_relative_vector(self.node, Vec3(0,8.5,13.5))
         grenade_iv += (self.walker_v * 1/2)
         self.solid.apply_impulse(grenade_iv, Point3(*self.pos))
 
@@ -214,7 +214,7 @@ class Grenade (Projectile):
         clist.extend([1])
         expl_colors = [clist]
         expl_colors.extend(ENGINE_COLORS)
-        expl_pos = self.node.get_pos(self.world.render)
+        expl_pos = self.node.get_pos(self.world.scene)
         for c in expl_colors:
             self.world.attach(TriangleExplosion(expl_pos, 1, size=.1, color=c, lifetime=40))
         self.world.garbage.add(self)
@@ -233,7 +233,7 @@ class Grenade (Projectile):
             clist.extend([1])
             expl_colors = [clist]
             expl_colors.extend(ENGINE_COLORS)
-            expl_pos = self.node.get_pos(self.world.render)
+            expl_pos = self.node.get_pos(self.world.scene)
             for c in expl_colors:
                 self.world.attach(TriangleExplosion(expl_pos, 3, size=.1, color=c, lifetime=80,))
             self.world.do_explosion(self.node, 3, 100)

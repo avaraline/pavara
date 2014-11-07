@@ -12,6 +12,7 @@ from pavara.maps import load_maps
 from pavara.utils.geom import GeomBuilder
 from pavara.local_player import LocalPlayer
 from pavara.walker import Walker
+from pavara.world import ClientWorld
 
 # below globals needed because of a bug in librocket:
 # the library expects these three variables set in the
@@ -104,9 +105,11 @@ class Splash (object):
             self.map.remove(self.render)
             del(self.map)
         if audio:
-            maps = load_maps('Maps/%s' % mapname, self.cam, audio3d=self.audio3d)
+            w = ClientWorld(self.cam, debug=False, audio3d=self.audio3d)
+            maps = load_maps('Maps/%s' % mapname, w)
         else:
-            maps = load_maps('Maps/%s' % mapname, self.cam)
+            w = ClientWorld(self.cam, debug=False, audio3d=None)
+            maps = load_maps('Maps/%s' % mapname, w)
         self.map = maps[0]
         self.map.show(self.render)
         self.camera.setPos(*self.map.preview_cam[0])

@@ -51,7 +51,7 @@ class PhysicalObject (WorldObject):
 
     def create_node(self):
         """
-        Called by World.attach to create a NodePath that will be re-parented to the World's render.
+        Called by World.attach to create a NodePath that will be re-parented to the World's scene.
         """
         pass
 

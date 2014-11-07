@@ -358,7 +358,7 @@ class Sky (WorldObject):
 
     def attached(self):
         if not self.world.camera:
-            self.node = self.world.render.attach_new_node('sky')
+            self.node = self.world.scene.attach_new_node('sky')
             return
         geom = GeomNode('sky')
         bounds = self.world.camera.node().get_lens().make_bounds()
@@ -367,7 +367,7 @@ class Sky (WorldObject):
         z = dl.getZ() * 0.99
 
         geom.add_geom(GeomBuilder('sky').add_rect((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0).get_geom())
-        self.node = self.world.render.attach_new_node(geom)
+        self.node = self.world.scene.attach_new_node(geom)
         self.node.set_shader(Shader.load('Shaders/Sky.sha'))
         self.node.set_shader_input('camera', self.world.camera)
         self.node.set_shader_input('sky', self.node)
@@ -422,8 +422,8 @@ class Incarnator (PhysicalObject):
         self.heading = Vec3(to_cartesian(math.radians(heading), 0, 1000.0 * 255.0 / 256.0)) * -1
 
     def attached(self):
-        self.dummy_node = self.world.render.attach_new_node("incarnator"+self.name)
-        self.dummy_node.set_pos(self.world.render, self.pos)
+        self.dummy_node = self.world.scene.attach_new_node("incarnator"+self.name)
+        self.dummy_node.set_pos(self.world.scene, self.pos)
         if self.world.audio3d:
             self.sound = self.world.audio3d.loadSfx('Sounds/incarnation_mono.wav')
         else: self.sound = False
