@@ -7,19 +7,24 @@ from panda3d.core import Point3, TransparencyAttrib
 import math
 import random
 
-class Effect (object):
-    """Effects wrap objects like boxes and ramps and other effects and change
-       behavior of the wrapped object. Subclasses of this class automatically
-       delegate anything not implemented in the effect to the object being
-       wrapped."""
-    def __init__(self, effected):
+class Effect(object):
+    """
+    Effects wrap objects like boxes and ramps and other effects and change
+    behavior of the wrapped object. Subclasses of this class automatically
+    delegate anything not implemented in the effect to the object being
+    wrapped.
+    """
+    def __init__(self, effected, constr=None):
         object.__setattr__(self, 'effected', effected)
+        object.__setattr__(self, 'constr', constr if constr else lambda effected: self.__class__(effected))
 
     def __setattr__(self, name, value):
-        """Attributes should be assigned as deeply in the effect chain as
-           possible, so go all the way down the effect chain, and start coming
-           back until the first object to have the attribute is found. Set it
-           and return. If nothing is found, set it in this object."""
+        """
+        Attributes should be assigned as deeply in the effect chain as
+        possible, so go all the way down the effect chain, and start coming
+        back until the first object to have the attribute is found. Set it and
+        return. If nothing is found, set it in this object.
+        """
         objs = []
         obj = self
 
@@ -35,21 +40,41 @@ class Effect (object):
         object.__setattr__(self, name, value)
 
     def __getattr__(self, name):
-        """Python only calls this function if the attribute is not defined on
-           the object. This makes it so method calls are automatically passed
-           down the effect chain if they are not defined in the effect object"""
+        """
+        Python only calls this function if the attribute is not defined on the
+        object. This makes it so method calls are automatically passed down the
+        effect chain if they are not defined in the effect object.
+        """
         return getattr(self.effected, name)
 
+    def clone_effects(self, effected):
+        """
+        Since the objects being effected are used to build actual game objects,
+        the effect decorators will be lost. This probably isn't desired, so
+        this method can be used to duplicate the effect stack onto another
+        object.
+        """
+        objs = []
+        obj = self
 
-class Hologram (Effect):
+        while hasattr(obj, 'effected'):
+            objs.append(obj)
+            obj = obj.effected
+
+        while objs:
+            obj = objs.pop()
+            effected = obj.constr(effected)
+        return effected
+
+class Hologram(Effect):
     collide_bits = NO_COLLISION_BITS
 
-class FreeSolid (Effect):
+class FreeSolid(Effect):
 
     def __init__(self, effected, mass):
         if mass > 0:
             self.mass = mass
-        Effect.__init__(self, effected)
+        Effect.__init__(self, effected, lambda effected: FreeSolid(effected, mass))
         self.collide_bits = MAP_COLLIDE_BIT | SOLID_COLLIDE_BIT
 
     def create_solid(self):
@@ -58,10 +83,10 @@ class FreeSolid (Effect):
         return node
 
 
-class Transparent (Effect):
+class Transparent(Effect):
 
     def __init__(self, effected, alpha):
-        Effect.__init__(self, effected)
+        Effect.__init__(self, effected, lambda effected: Transparent(effected, alpha))
         self.alpha = alpha
 
     def create_node(self):
@@ -74,17 +99,17 @@ class Transparent (Effect):
         node.setAlphaScale(self.alpha)
         return node
 
-class Hostile (Effect):
-    
+class Hostile(Effect):
+
     def __init__(self, effected):
         Effect.__init__(self, effected)
         self.hostile = True
 
-class Mortal (Effect):
+class Mortal(Effect):
 
     def __init__(self, effected, hp):
         self.hp = hp
-        Effect.__init__(self, effected)
+        Effect.__init__(self, effected, lambda effected: Mortal(effected, hp))
 
     def damage(self, amt):
         self.hp -= amt
@@ -92,7 +117,7 @@ class Mortal (Effect):
             self.world.garbage.add(self)
             return
         def update_color(scaleval):
-             if self.node: 
+             if self.node:
                 self.node.set_color_scale(scaleval, scaleval, scaleval, 1.0)
         ramp_up = LerpFunc(update_color, fromData=3, toData=1, duration=.2, name=None)
         ramp_up.start()
@@ -116,9 +141,9 @@ class Mortal (Effect):
             count = int(reduced)
 
         self.world.attach(TriangleExplosion(expl_pos, count, size=reduced, color=c, lifetime=60, debris_area=size))
-        
 
-class TriangleExplosion (WorldObject):
+
+class TriangleExplosion(WorldObject):
     def __init__(self, pos, count, hit_normal=None, lifetime=40, color=[1,1,1,1], size=.2, amount=5, name=None, debris_area=None):
         super(TriangleExplosion, self).__init__(name)
         self.pos = Vec3(*pos)
@@ -151,7 +176,7 @@ class TriangleExplosion (WorldObject):
             self.shrapnels.append(self.world.attach(Shrapnel(position, self.size, self.color, vector, self.lifetime)))
 
 
-class Shrapnel (PhysicalObject):
+class Shrapnel(PhysicalObject):
     def __init__(self, pos, size, color, vector, lifetime, name=None):
         super(Shrapnel, self).__init__(name)
         self.pos = pos
