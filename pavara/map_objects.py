@@ -155,6 +155,17 @@ class BlockRamp (PhysicalObject):
         return (-b - sqrt)/denom, (-b + sqrt)/denom
 
     def __adjust_ends__(self):
+        """
+        The map designer is allowed to specify the base and top of ramps by the
+        very edges. A ramp with non-zero thickness will intersect shapes it's
+        next to which is stupid and ugly and unacceptable, so this shifts
+        self.base and self.top so that the ramp will touch neighboring objects
+        very nice, very good.
+        """
+        # The math to do solve this correctly is a lot more complicated than you
+        # would think, so this is approximated by doing a binary search with 20
+        # iterations. It's close enough that no one will ever know it's not even
+        # right.
         SEARCH_ITERATIONS = 20
         v = self.top - self.base
         l = v.get_xz().length()
@@ -163,9 +174,27 @@ class BlockRamp (PhysicalObject):
         midy = h / 2.0
         maxr = v.length() / 2.0
         minr = max(midx, midy)
+        # We only have the size of a box that the ramp must fit within and the
+        # thickness of the ramp we desire. We can calculate the midpoint (around
+        # which the ramp pivots) because it's the center of the box. This next
+        # code will calculate where a circle of a given radius intersects with
+        # the box the ramp must fit within. Where does a circle of radius r from
+        # the center of the box (midx, midy) intersect the lines x = 0 and
+        # y = 0? The two points we care about are (0, miny) and (minx, 0) below.
+        # The distance between them is the thickness of a possible ramp. As
+        # radius r gets shorter, the thickness of the ramp increases, so after
+        # 20 iterations the loop can hone in on a good placement of the ramp.
         for i in range(0, SEARCH_ITERATIONS):
             r = (maxr - minr)/2.0 + minr
-            # r = ((midl - x)**2 + (midh - y)**2)**0.5 substitute 0 for x and solve, then do the same for y. these two values represent the corners of a ramp and the distance between them is thickness.
+            # r = ((midl - x)**2 + (midh - y)**2)**0.5
+            # substitute 0 for x and solve, then do the same for y. these two
+            # values represent the corners of a ramp and the distance between
+            # them is thickness.
+
+            # What's with maxy and maxx? The circle intersects the line in two
+            # points and the quadratic equation tells both. But we only care
+            # about the points close to 0 because they tell us how thick the
+            # ramp would be.
             miny, maxy = self.__quadratic__(1, -2 * midy, midx**2 + midy**2 - r ** 2)
             minx, maxx = self.__quadratic__(1, -2 * midx, midx**2 + midy**2 - r ** 2)
             d = (minx**2 + miny**2)**0.5
@@ -175,7 +204,10 @@ class BlockRamp (PhysicalObject):
                 minr = r
             else: # r is too large
                 maxr = r
-        # x and y should be pretty close to where we want the corners of the ramp to be. the midpoint between them is where we want the base to be.
+        # minx and miny should be pretty close to where we want the corners of
+        # ramp to be. the midpoint between them is where we want the base to be.
+        # So we now know enough to figure out how we want to shift the base and
+        # top.
         leftcorner = Point2(0, miny)
         bottomcorner = Point2(minx, 0)
         newbase = (leftcorner - bottomcorner)/2 + bottomcorner
